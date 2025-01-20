@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "bcryptjs": "^2.4.3",
+    "i18next": "^24.2.1",
+    "next-auth": "^4.24.11",
+    "next-i18next": "^15.4.1",
+    "react-i18next": "^15.4.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "prisma": "^6.2.1"
+  }
+}
