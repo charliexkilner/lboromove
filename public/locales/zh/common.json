@@ -1,6 +1,82 @@
 {
-  "welcome": "欢迎",
+  "welcome": "欢迎来到 LboroMove",
   "signin": "登录",
   "email": "邮箱",
-  "password": "密码"
+  "password": "密码",
+  "filters": {
+    "rooms": "🛌 房间",
+    "minPrice": "💰 最低价格",
+    "maxPrice": "💰 最高价格",
+    "newest": "👀 最新",
+    "filterBy": "筛选",
+    "title": "筛选",
+    "priceRangeTitle": "每周价格",
+    "maxPriceLabel": "最高每周价格",
+    "bedroomsTitle": "卧室数量",
+    "bathroomsTitle": "浴室数量",
+    "apply": "应用",
+    "perWeek": "每周",
+    "resetFilters": "重置筛选"
+  },
+  "property": {
+    "title": "美丽的农舍",
+    "location": "意大利农舍",
+    "price": "£450,000 (¥4,150,000)",
+    "bedroom": "卧室",
+    "bedrooms": "卧室",
+    "bathroom": "浴室",
+    "bathrooms": "浴室",
+    "perWeek": "/周",
+    "stats": {
+      "minsToTown": "到市中心",
+      "town": "分钟",
+      "bedrooms": "卧室",
+      "rooms": "间",
+      "minsToCampus": "到校园",
+      "campus": "分钟"
+    }
+  },
+  "hero": {
+    "title": "找到您理想的学生公寓。",
+    "subtitle": "发现拉夫堡最好的学生住房 - 一站式服务。"
+  },
+  "tabs": {
+    "allHouses": "所有房源",
+    "goldenTriangle": "黄金三角",
+    "greatValue": "超值房源",
+    "nearCampus": "近校区",
+    "rareFinds": "稀有房源",
+    "enSuite": "独立卫浴",
+    "largeKitchen": "大厨房",
+    "billsIncluded": "包含账单",
+    "drivewayParking": "带停车位",
+    "soloLiving": "独居房源",
+    "furnished": "带家具",
+    "garden": "带花园",
+    "quietArea": "安静区域",
+    "closeToShops": "近商店",
+    "modern": "现代装修",
+    "petFriendly": "宠物友好",
+    "bestGroups": "适合团体",
+    "noDeposit": "免押金",
+    "security": "24小时安保"
+  },
+  "locations": {
+    "allHouses": "所有房源",
+    "goldenTriangle": "黄金三角",
+    "greatValue": "超值房源",
+    "nearCampus": "近校区",
+    "rareFinds": "稀有房源",
+    "enSuite": "独立卫浴",
+    "largeKitchen": "大厨房",
+    "billsIncluded": "包含账单",
+    "drivewayParking": "带停车位",
+    "soloLiving": "独居房源",
+    "furnished": "带家具",
+    "garden": "带花园",
+    "quietArea": "安静区域",
+    "closeToShops": "近商店",
+    "modern": "现代装修",
+    "petFriendly": "宠物友好"
+  }
 }

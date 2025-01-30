@@ -1,6 +1,85 @@
 {
-  "welcome": "Welcome",
+  "welcome": "Welcome to LboroMove",
   "signin": "Sign In",
   "email": "Email",
-  "password": "Password"
+  "password": "Password",
+  "hero": {
+    "title": "FIND YOUR PERFECT STUDENT HOME.",
+    "subtitle": "Discover the best Loughborough student houses - all in one place."
+  },
+  "tabs": {
+    "allHouses": "all houses",
+    "goldenTriangle": "golden triangle",
+    "greatValue": "great value",
+    "nearCampus": "near campus",
+    "rareFinds": "rare finds",
+    "enSuite": "en-suite",
+    "largeKitchen": "large kitchen",
+    "billsIncluded": "bills included",
+    "drivewayParking": "driveway parking",
+    "soloLiving": "solo living",
+    "furnished": "furnished",
+    "garden": "garden",
+    "quietArea": "quiet area",
+    "closeToShops": "close to shops",
+    "modern": "modern",
+    "petFriendly": "pet friendly",
+    "bestGroups": "Best for Groups",
+    "noDeposit": "No Deposit",
+    "security": "24/7 Security"
+  },
+  "filters": {
+    "rooms": "🛌 ROOMS",
+    "minPrice": "💰 MIN PRICE",
+    "maxPrice": "💰 MAX PRICE",
+    "newest": "👀 NEWEST",
+    "cheapest": "🤑 CHEAPEST",
+    "spotlight": "🔦 SPOTLIGHT HOMES",
+    "goldenTriangle": "🔑 GOLDEN TRIANGLE",
+    "filterBy": "FILTER BY",
+    "title": "Filter Properties",
+    "priceRangeTitle": "PRICE PER WEEK",
+    "maxPriceLabel": "max price per week",
+    "bedroomsTitle": "BEDROOMS",
+    "bathroomsTitle": "BATHROOMS",
+    "apply": "Apply Filters",
+    "perWeek": "per week",
+    "resetFilters": "Reset filters"
+  },
+  "locations": {
+    "allHouses": "all houses",
+    "goldenTriangle": "golden triangle",
+    "greatValue": "great value",
+    "nearCampus": "near campus",
+    "rareFinds": "rare finds",
+    "enSuite": "en-suite",
+    "largeKitchen": "large kitchen",
+    "billsIncluded": "bills included",
+    "drivewayParking": "driveway parking",
+    "soloLiving": "solo living",
+    "furnished": "furnished",
+    "garden": "garden",
+    "quietArea": "quiet area",
+    "closeToShops": "close to shops",
+    "modern": "modern",
+    "petFriendly": "pet friendly"
+  },
+  "property": {
+    "title": "Beautiful Farmhouse",
+    "location": "Farmhouse in Italy",
+    "price": "£450,000",
+    "bedroom": "bedroom",
+    "bedrooms": "bedrooms",
+    "bathroom": "bathroom",
+    "bathrooms": "bathrooms",
+    "perWeek": "/week",
+    "stats": {
+      "minsToTown": "mins to",
+      "town": "town",
+      "bedrooms": "bed",
+      "rooms": "rooms",
+      "minsToCampus": "mins to",
+      "campus": "campus"
+    }
+  }
 }
