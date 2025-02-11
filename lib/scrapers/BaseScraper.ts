@@ -1,4 +1,4 @@
-import { chromium, BrowserType } from '@playwright/test';
+import { chromium } from 'playwright';
 import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 
@@ -66,8 +66,19 @@ export abstract class BaseScraper {
 
   abstract scrape(): Promise<void>;
 
-  protected async upsertProperty(data: ScrapedData): Promise<void> {
-    const hash = `${this.website}-${data.externalId}`;
+  protected async upsertProperty(property: {
+    title: string;
+    price: number;
+    rooms: number;
+    bathrooms: number;
+    images: string[];
+    description: string;
+    location: string;
+    amenities: string[];
+    externalId: string;
+    url?: string;
+  }) {
+    const hash = `${property.title}-${property.price}-${property.rooms}-${property.location}`;
 
     try {
       await this.prisma.property.upsert({
@@ -75,33 +86,19 @@ export abstract class BaseScraper {
           hash: hash,
         },
         update: {
-          title: data.title,
-          price: data.price,
-          rooms: data.rooms,
-          bathrooms: data.bathrooms,
-          images: data.images,
-          description: data.description,
-          location: data.location,
-          amenities: data.amenities,
-          url: data.url,
+          ...property,
+          scrapedFrom: this.website,
+          hash: hash,
         },
         create: {
-          hash: hash,
-          title: data.title,
-          price: data.price,
-          rooms: data.rooms,
-          bathrooms: data.bathrooms,
-          images: data.images,
-          description: data.description,
-          location: data.location,
-          amenities: data.amenities,
+          ...property,
           scrapedFrom: this.website,
-          externalId: data.externalId,
-          url: data.url,
+          hash: hash,
         },
       });
+      console.log('Found property:', 'yes');
     } catch (error) {
-      console.error(`Failed to upsert property: ${data.title}`, error);
+      console.error('Failed to upsert property:', error);
     }
   }
 }

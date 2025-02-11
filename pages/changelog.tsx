@@ -6,6 +6,47 @@ import ChangelogCard from '../components/ChangelogCard';
 export default function Changelog() {
   const changes = [
     {
+      date: 'Jan 30th 2025',
+      title: 'Major Updates, New Features, and Bugs Solved',
+      icon: '🐛',
+      description: `Recent Updates & Improvements
+Property System:
+• Improved URL structure for better SEO (/house/street-name-loughborough-id)
+• Fixed property modal loading and caching issues
+• Added proper image navigation dots on desktop view
+• Implemented better loading states and error handling
+• Fixed hydration errors in property pages
+• Added proper TypeScript types throughout the application
+
+New Tools & Features:
+• Added Room Allocator Tool
+  - Interactive spinning wheel for fair room allocation
+  - Supports multiple housemates and rooms
+  - Animated results with confetti effect
+  - Mobile responsive design
+
+• Created Student Move-In Checklist
+  - Comprehensive guide for student moving
+  - Categorized sections (Documents, Kitchen, Bathroom, etc.)
+  - Mobile-friendly layout
+  - SEO optimized content
+
+Technical Improvements:
+• Implemented React Query for better data fetching
+• Fixed multiple TypeScript type errors
+• Improved mobile responsiveness across all pages
+• Enhanced error handling and loading states
+• Added proper cache control headers
+• Fixed navigation and routing issues
+
+Next Up:
+• User accounts implementation
+• Additional student tools
+• Estate agent portal development
+• Property description AI generation
+• Saved properties feature`,
+    },
+    {
       date: 'January 27 2024',
       title: 'TO-DO',
       icon: '✅',
@@ -18,10 +59,7 @@ export default function Changelog() {
       - Workout MVP features for the estate agent side of the website
       - Design the MVP for the estate agent side of the website
       - Design user account page and what it looks like when saving properties - be sure to include saved properties and then a collection of maximum 20 properties that have been recently viewed.
-      - Update the property cards so that when you click off them or the X it doesn't load the page againa nd saves where you are on the page as if you are 100 properties down into your search you don't want to have to start again
-      
-      Done:
-      - Make room allocator tool as the first tool`,
+      - Update the property cards so that when you click off them or the X it doesn't load the page againa nd saves where you are on the page as if you are 100 properties down into your search you don't want to have to start again`,
     },
     {
       date: 'January 27 2024',

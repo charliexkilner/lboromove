@@ -7,6 +7,7 @@ import { Heart, ChevronLeft, ChevronRight } from 'react-feather';
 import { formatPriceWithCurrency } from '../utils/currency';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface PropertyCardProps {
   property: Property;
@@ -44,9 +45,10 @@ export default function PropertyCard({
   const handleClick = () => {
     const formattedTitle = property.title
       .toLowerCase()
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/[^a-z0-9-]/g, ''); // Remove special characters
-    router.push(`/house/${formattedTitle}-loughborough-${property.id}`);
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+    const url = `/house/${formattedTitle}-${property.id}`;
+    router.push(url, undefined, { shallow: true });
   };
 
   const toggleFavorite = (e: React.MouseEvent) => {
@@ -56,12 +58,16 @@ export default function PropertyCard({
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    setCurrentImageIndex((prev) =>
+      prev === property.images.length - 1 ? 0 : prev + 1
+    );
   };
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? property.images.length - 1 : prev - 1
+    );
   };
 
   const handleViewMore = (e: React.MouseEvent) => {
@@ -120,19 +126,19 @@ export default function PropertyCard({
         </button>
 
         {/* Navigation arrows */}
-        {showControls && images.length > 1 && (
+        {images.length > 1 && (
           <>
             <button
               onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors z-10"
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 hover:opacity-100 transition-opacity"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeftIcon className="h-5 w-5" />
             </button>
             <button
               onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors z-10"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 hover:opacity-100 transition-opacity"
             >
-              <ChevronRight size={20} />
+              <ChevronRightIcon className="h-5 w-5" />
             </button>
           </>
         )}

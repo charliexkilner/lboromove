@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import fetch from 'node-fetch';
+import fetch from 'cross-fetch';
 import { BaseScraper } from './BaseScraper';
 
 interface Loc8meProperty {
