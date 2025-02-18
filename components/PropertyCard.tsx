@@ -8,6 +8,7 @@ import { formatPriceWithCurrency } from '../utils/currency';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon } from '@heroicons/react/24/outline';
 
 interface PropertyCardProps {
   property: Property;
@@ -47,27 +48,8 @@ export default function PropertyCard({
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-');
-    const url = `/house/${formattedTitle}-${property.id}`;
+    const url = `/house/${property.id}`;
     router.push(url, undefined, { shallow: true });
-  };
-
-  const toggleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-  };
-
-  const nextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) =>
-      prev === property.images.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? property.images.length - 1 : prev - 1
-    );
   };
 
   const handleViewMore = (e: React.MouseEvent) => {
@@ -96,82 +78,113 @@ export default function PropertyCard({
 
   return (
     <div
-      onMouseEnter={() => {
-        prefetchPropertyData();
-        onMouseEnter?.();
-      }}
+      className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
       onClick={handleClick}
-      className="border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer bg-white"
+      onMouseEnter={() => {
+        onMouseEnter?.();
+        prefetchPropertyData();
+      }}
     >
-      <div className="relative h-48">
-        <Image
-          src={images[currentImageIndex]}
-          alt={property.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          onError={handleImageError}
-        />
-        {/* Favorite button */}
-        <button
-          onClick={toggleFavorite}
-          className="absolute top-2 right-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition-colors z-10"
-        >
-          <Heart
-            size={20}
-            className={
-              isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
-            }
-          />
-        </button>
-
-        {/* Navigation arrows */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 hover:opacity-100 transition-opacity"
-            >
-              <ChevronLeftIcon className="h-5 w-5" />
-            </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white opacity-0 hover:opacity-100 transition-opacity"
-            >
-              <ChevronRightIcon className="h-5 w-5" />
-            </button>
-          </>
-        )}
-
-        {/* Image navigation dots or view more button */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          {images.length > MAX_VISIBLE_DOTS &&
-          currentImageIndex >= MAX_VISIBLE_DOTS ? (
+      {/* Image Gallery */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <div className="relative w-full h-full">
+          {property.images && property.images.length > 0 ? (
             <>
-              {/* Blur overlay */}
-              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-              {/* Button */}
+              {/* Favorite Button */}
               <button
-                onClick={handleViewMore}
-                className="relative z-10 px-4 py-2 bg-[#4F46E5] text-white text-xs font-semibold rounded-full hover:bg-[#4338CA] transition-colors transform hover:scale-105 duration-200 shadow-lg"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsFavorite(!isFavorite);
+                }}
+                className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors z-10"
               >
-                VIEW MORE INFORMATION
+                <Heart
+                  size={20}
+                  className={
+                    isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
+                  }
+                />
               </button>
+
+              <Image
+                src={property.images[currentImageIndex]}
+                alt={`${property.street} property image ${
+                  currentImageIndex + 1
+                }`}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover"
+                priority={currentImageIndex < 4}
+              />
+
+              {/* Navigation Dots - Only show on hover and when not showing view property overlay */}
+              {currentImageIndex < 5 && (
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {property.images.slice(0, 6).map((_, idx) => (
+                    <button
+                      key={idx}
+                      className={`w-2 h-2 rounded-full ${
+                        currentImageIndex === idx ? 'bg-white' : 'bg-white/60'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCurrentImageIndex(idx);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Left/Right Navigation Arrows - Only show on hover and when not showing view property overlay */}
+              {currentImageIndex < 5 && (
+                <div className="absolute inset-0 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCurrentImageIndex((prev) =>
+                        prev === 0 ? property.images.length - 1 : prev - 1
+                      );
+                    }}
+                    className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  >
+                    <ChevronLeftIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCurrentImageIndex((prev) =>
+                        prev === property.images.length - 1 ? 0 : prev + 1
+                      );
+                    }}
+                    className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  >
+                    <ChevronRightIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+
+              {/* View More Photos Overlay */}
+              {property.images.length > 6 && currentImageIndex === 5 && (
+                <div
+                  className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleClick();
+                  }}
+                >
+                  <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    View Property
+                  </button>
+                </div>
+              )}
             </>
           ) : (
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-              {images.slice(0, MAX_VISIBLE_DOTS).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentImageIndex(index);
-                  }}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    currentImageIndex === index ? 'bg-white' : 'bg-white/60'
-                  }`}
-                />
-              ))}
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <PhotoIcon className="w-12 h-12 text-gray-400" />
             </div>
           )}
         </div>

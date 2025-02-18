@@ -23,23 +23,18 @@ export default function Discussion() {
   const [selectedSort, setSelectedSort] = useState('Top');
 
   const categories = [
-    { name: 'FOR SALE', icon: '💰', description: 'buy and sell student items' },
+    {
+      name: 'STUDENT MARKET',
+      icon: '💸',
+      description: 'buy and sell your stuff',
+    },
     {
       name: 'HOUSEMATE FINDER',
       icon: '🏠',
       description: 'find your perfect housemates',
     },
-    {
-      name: 'HOUSE HUNTING',
-      icon: '🔍',
-      description: 'tips and advice for finding houses',
-    },
-    {
-      name: 'STUDENT LIFE',
-      icon: '🎓',
-      description: 'general student discussion',
-    },
-    { name: 'EVENTS', icon: '🎉', description: 'local events and meetups' },
+    { name: 'EVENTS', icon: '🎉', description: 'local events and parties' },
+    { name: 'CONFESSIONS', icon: '🤫', description: 'got a campus crush?' },
     { name: 'QUESTIONS', icon: '❓', description: 'ask the community' },
   ];
 
@@ -338,7 +333,7 @@ export default function Discussion() {
             <div className="hidden lg:block lg:w-1/4">
               {/* Categories */}
               <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                <h2 className="text-lg font-bold mb-4">Categories</h2>
+                <h2 className="text-lg font-bold mb-4 uppercase">Categories</h2>
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <Link
@@ -350,7 +345,9 @@ export default function Discussion() {
                     >
                       <span className="text-xl pr-2">{category.icon}</span>
                       <div>
-                        <h3 className="font-medium">{category.name}</h3>
+                        <h3 className="font-medium uppercase">
+                          {category.name}
+                        </h3>
                         <p className="text-sm text-gray-500">
                           {category.description}
                         </p>

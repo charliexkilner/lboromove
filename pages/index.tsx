@@ -19,9 +19,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 
 export default function Home() {
-  const { t: heroT } = useTranslation('common');
-  const { t: tabsT } = useTranslation('common');
-  const { t: filtersT } = useTranslation('common');
+  const { t } = useTranslation('common');
   const router = useRouter();
   const { locale } = router;
   const [filters, setFilters] = useState<{
@@ -245,14 +243,12 @@ export default function Home() {
         );
         break;
 
-      case 'largeKitchen':
       case 'enSuite':
       case 'rareFinds':
       case 'nearCampus':
       case 'billsIncluded':
       case 'drivewayParking':
       case 'furnished':
-      case 'garden':
         setFilteredProperties([]);
         break;
 
@@ -428,26 +424,27 @@ export default function Home() {
           <Navbar />
           {/* Hero Section */}
           <div className="bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-              <h1 className="text-4xl font-bold text-center mb-4 pt-8">
-                FIND YOUR PERFECT STUDENT HOME.
-              </h1>
-              <p className="text-gray-600 text-center text-lg mb-8">
-                Discover the best Loughborough student houses - all in one
-                place.
-              </p>
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setIsFilterOpen(true)}
-                  className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-full shadow-sm text-sm font-medium ${
-                    Object.values(filters).some((v) => v !== undefined)
-                      ? 'text-purple-700 border-purple-300 bg-purple-50 hover:bg-purple-100'
-                      : 'text-gray-700 bg-white hover:bg-gray-50'
-                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors`}
-                >
-                  <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
-                  {getActiveFiltersText()}
-                </button>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+              <div className="text-center">
+                <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl tracking-tight">
+                  {t('hero.title')}
+                </h1>
+                <p className="max-w-xl mt-4 mx-auto text-lg text-gray-500">
+                  {t('hero.subtitle')}
+                </p>
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={() => setIsFilterOpen(true)}
+                    className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-full shadow-sm text-sm font-medium ${
+                      Object.values(filters).some((v) => v !== undefined)
+                        ? 'text-purple-700 border-purple-300 bg-purple-50 hover:bg-purple-100'
+                        : 'text-gray-700 bg-white hover:bg-gray-50'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors`}
+                  >
+                    <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
+                    {getActiveFiltersText()}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -470,48 +467,60 @@ export default function Home() {
                   className="flex space-x-4 overflow-x-auto scrollbar-hide border-b border-gray-200 px-4 sm:px-6 lg:px-8"
                 >
                   {[
-                    { id: 'allHouses', icon: '🏠', label: 'all houses' },
+                    { id: 'allHouses', icon: '🏠', label: t('tabs.allHouses') },
                     {
                       id: 'goldenTriangle',
                       icon: '🏆',
-                      label: 'golden triangle',
+                      label: t('tabs.goldenTriangle'),
                     },
-                    { id: 'greatValue', icon: '💰', label: 'great value' },
-                    { id: 'nearCampus', icon: '🎓', label: 'near campus' },
-                    { id: 'rareFinds', icon: '✨', label: 'rare finds' },
-                    { id: 'enSuite', icon: '🚿', label: 'en-suite' },
-                    { id: 'largeKitchen', icon: '🔍', label: 'large kitchen' },
+                    {
+                      id: 'greatValue',
+                      icon: '💰',
+                      label: t('tabs.greatValue'),
+                    },
+                    {
+                      id: 'nearCampus',
+                      icon: '🎓',
+                      label: t('tabs.nearCampus'),
+                    },
+                    { id: 'rareFinds', icon: '✨', label: t('tabs.rareFinds') },
+                    { id: 'enSuite', icon: '🚿', label: t('tabs.enSuite') },
                     {
                       id: 'billsIncluded',
                       icon: '💡',
-                      label: 'bills included',
+                      label: t('tabs.billsIncluded'),
                     },
                     {
                       id: 'drivewayParking',
                       icon: '🚗',
-                      label: 'driveway parking',
+                      label: t('tabs.drivewayParking'),
                     },
-                    { id: 'soloLiving', icon: '🏃', label: 'solo living' },
-                    { id: 'furnished', icon: '🛋️', label: 'furnished' },
-                    { id: 'garden', icon: '🌳', label: 'garden' },
-                  ].map((tab) => (
+                    {
+                      id: 'soloLiving',
+                      icon: '🏃',
+                      label: t('tabs.soloLiving'),
+                    },
+                    { id: 'furnished', icon: '🛋️', label: t('tabs.furnished') },
+                  ].map((tab, index, array) => (
                     <button
                       key={tab.id}
                       onClick={() => handleTabChange(tab.id)}
-                      className={`relative inline-flex flex-col items-center px-1 pt-3 pb-2.5 text-sm
-                        ${
-                          activeTab === tab.id
-                            ? 'text-purple-600 font-semibold'
-                            : 'text-gray-500 hover:text-gray-700 font-medium'
-                        }
+                      className={`relative inline-flex flex-col items-center px-1 pt-3 pb-2.5
+                        min-w-[120px] ${
+                          index === array.length - 1 ? 'mr-8' : ''
+                        } ${
+                        activeTab === tab.id
+                          ? 'text-purple-600 font-bold'
+                          : 'text-gray-500 hover:text-gray-700 font-medium'
+                      }
                       `}
                     >
                       <span className="text-2xl mb-1.5">{tab.icon}</span>
-                      <span className="text-sm whitespace-nowrap">
+                      <span className="text-xs whitespace-nowrap px-2 uppercase tracking-tight">
                         {tab.label}
                       </span>
                       {activeTab === tab.id && (
-                        <span className="text-xs text-gray-500 mt-0.5">
+                        <span className="text-xs text-gray-500 mt-0.5 px-2 normal-case">
                           {getTabCount(tab.id)} properties
                         </span>
                       )}
@@ -602,25 +611,27 @@ export default function Home() {
         <Navbar />
         {/* Hero Section */}
         <div className="bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
-            <h1 className="text-4xl font-bold text-center mb-0 pt-8">
-              FIND YOUR PERFECT STUDENT HOME.
-            </h1>
-            <p className="text-gray-600 text-center text-lg mb-8">
-              Discover the best Loughborough student houses - all in one place.
-            </p>
-            <div className="flex justify-center">
-              <button
-                onClick={() => setIsFilterOpen(true)}
-                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-full shadow-sm text-sm font-medium ${
-                  Object.values(filters).some((v) => v !== undefined)
-                    ? 'text-purple-700 border-purple-300 bg-purple-50 hover:bg-purple-100'
-                    : 'text-gray-700 bg-white hover:bg-gray-50'
-                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors`}
-              >
-                <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
-                {getActiveFiltersText()}
-              </button>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl tracking-tight">
+                {t('hero.title')}
+              </h1>
+              <p className="max-w-xl mt-4 mx-auto text-lg text-gray-500">
+                {t('hero.subtitle')}
+              </p>
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => setIsFilterOpen(true)}
+                  className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-full shadow-sm text-sm font-medium ${
+                    Object.values(filters).some((v) => v !== undefined)
+                      ? 'text-purple-700 border-purple-300 bg-purple-50 hover:bg-purple-100'
+                      : 'text-gray-700 bg-white hover:bg-gray-50'
+                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors`}
+                >
+                  <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
+                  {getActiveFiltersText()}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -643,48 +654,48 @@ export default function Home() {
                 className="flex space-x-4 overflow-x-auto scrollbar-hide border-b border-gray-200 px-4 sm:px-6 lg:px-8"
               >
                 {[
-                  { id: 'allHouses', icon: '🏠', label: 'all houses' },
+                  { id: 'allHouses', icon: '🏠', label: t('tabs.allHouses') },
                   {
                     id: 'goldenTriangle',
                     icon: '🏆',
-                    label: 'golden triangle',
+                    label: t('tabs.goldenTriangle'),
                   },
-                  { id: 'greatValue', icon: '💰', label: 'great value' },
-                  { id: 'nearCampus', icon: '🎓', label: 'near campus' },
-                  { id: 'rareFinds', icon: '✨', label: 'rare finds' },
-                  { id: 'enSuite', icon: '🚿', label: 'en-suite' },
-                  { id: 'largeKitchen', icon: '🔍', label: 'large kitchen' },
+                  { id: 'greatValue', icon: '💰', label: t('tabs.greatValue') },
+                  { id: 'nearCampus', icon: '🎓', label: t('tabs.nearCampus') },
+                  { id: 'rareFinds', icon: '✨', label: t('tabs.rareFinds') },
+                  { id: 'enSuite', icon: '🚿', label: t('tabs.enSuite') },
                   {
                     id: 'billsIncluded',
                     icon: '💡',
-                    label: 'bills included',
+                    label: t('tabs.billsIncluded'),
                   },
                   {
                     id: 'drivewayParking',
                     icon: '🚗',
-                    label: 'driveway parking',
+                    label: t('tabs.drivewayParking'),
                   },
-                  { id: 'soloLiving', icon: '🏃', label: 'solo living' },
-                  { id: 'furnished', icon: '🛋️', label: 'furnished' },
-                  { id: 'garden', icon: '🌳', label: 'garden' },
-                ].map((tab) => (
+                  { id: 'soloLiving', icon: '🏃', label: t('tabs.soloLiving') },
+                  { id: 'furnished', icon: '🛋️', label: t('tabs.furnished') },
+                ].map((tab, index, array) => (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`relative inline-flex flex-col items-center px-1 pt-3 pb-2.5 text-sm
-                      ${
-                        activeTab === tab.id
-                          ? 'text-purple-600 font-semibold'
-                          : 'text-gray-500 hover:text-gray-700 font-medium'
-                      }
+                    className={`relative inline-flex flex-col items-center px-1 pt-3 pb-2.5
+                      min-w-[120px] ${
+                        index === array.length - 1 ? 'mr-8' : ''
+                      } ${
+                      activeTab === tab.id
+                        ? 'text-purple-600 font-bold'
+                        : 'text-gray-500 hover:text-gray-700 font-medium'
+                    }
                     `}
                   >
                     <span className="text-2xl mb-1.5">{tab.icon}</span>
-                    <span className="text-sm whitespace-nowrap">
+                    <span className="text-xs whitespace-nowrap px-2 uppercase tracking-tight">
                       {tab.label}
                     </span>
                     {activeTab === tab.id && (
-                      <span className="text-xs text-gray-500 mt-0.5">
+                      <span className="text-xs text-gray-500 mt-0.5 px-2 normal-case">
                         {getTabCount(tab.id)} properties
                       </span>
                     )}
