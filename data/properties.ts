@@ -3,6 +3,12 @@ import { Property } from '@prisma/client';
 // Export the type for use in components
 export type { Property };
 
+// First, define the amenity type
+interface Amenity {
+  name: string;
+  icon: string;
+}
+
 export const properties: Property[] = [
   {
     id: 1,
@@ -20,12 +26,11 @@ export const properties: Property[] = [
     description:
       'Beautiful student house located in the heart of the student area. Recently renovated with modern appliances and furnishings throughout.',
     amenities: [
-      { name: 'En-suite', icon: '🚿' },
-      { name: 'Bills Included', icon: '💡' },
-      { name: 'Large Kitchen', icon: '🍳' },
-      { name: 'Garden', icon: '🌳' },
-      { name: 'Dishwasher', icon: '🍽️' },
-      { name: 'Fast WiFi', icon: '📶' },
+      'En-suite',
+      'Bills Included',
+      'Large Kitchen',
+      'Garden',
+      'Dishwasher',
     ],
     createdAt: new Date(),
   },
@@ -45,11 +50,11 @@ export const properties: Property[] = [
     description:
       'Charming house perfect for students, located close to campus and town center.',
     amenities: [
-      { name: 'Bills Included', icon: '💡' },
-      { name: 'Large Kitchen', icon: '🍳' },
-      { name: 'Garden', icon: '🌳' },
-      { name: 'Washing Machine', icon: '🧺' },
-      { name: 'Fast WiFi', icon: '📶' },
+      'Bills Included',
+      'Large Kitchen',
+      'Garden',
+      'Washing Machine',
+      'Fast WiFi',
     ],
     createdAt: new Date(),
   },

@@ -18,10 +18,10 @@ import { calculateWalkingTime } from '../utils/distance';
 // Update the amenity icons mapping
 const AMENITY_ICONS: Record<string, string> = {
   'En-suite': '🚿',
+  'Bills Included': '💡',
   'Large Kitchen': '🍳',
   Garden: '🌳',
   Dishwasher: '🍽️',
-  'Bills Included': '💡',
   Driveway: '🚗',
   'Washing Machine': '🧺',
   'Fast WiFi': '📶',

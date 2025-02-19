@@ -99,33 +99,32 @@ model Favorite {
 }
 
 model Property {
-  id          Int      @id @default(autoincrement())
-  title       String
-  price       Float
-  rooms       Int
-  bathrooms   Int
-  images      String[]
-  description String
-  location    String
-  amenities   String[]
-  scrapedFrom String
-  externalId  String
-  hash        String   @unique
-  url         String?
-  keyFeatures Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  title           String
+  price           Float
+  rooms           Int
+  bathrooms       Int
+  images          String[]
+  description     String?
+  amenities       String[]
+  scrapedFrom     String
+  externalId      String
+  hash            String   @unique
+  url             String?
+  keyFeatures     Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   isGoldenTriangle Boolean  @default(false)
 
   // Relations
-  landlordId  String?
-  landlord    User?    @relation("LandlordProperties", fields: [landlordId], references: [id])
-  viewedBy    RecentlyViewed[]
-  collections CollectionProperty[]
+  landlordId      String?
+  landlord        User?    @relation("LandlordProperties", fields: [landlordId], references: [id])
+  viewedBy        RecentlyViewed[]
+  collections     CollectionProperty[]
 
-  latitude  Float?
-  longitude Float?
-  street    String?
+  latitude        Float?
+  longitude       Float?
+  street          String?
 
   @@unique([title, price, rooms, location], name: "property_unique")
 }
