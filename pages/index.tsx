@@ -198,7 +198,9 @@ export default function Home() {
       case 'all-houses':
         return allProperties.length;
       case 'golden-triangle':
-        return allProperties.filter((p) => p.isGoldenTriangle === true).length;
+        return allProperties.filter(
+          (p: Property) => p.isGoldenTriangle === true
+        ).length;
       case 'great-value':
         // Use the same logic as the filter (£135 or less)
         const greatValueCount = allProperties.filter(
@@ -212,11 +214,7 @@ export default function Home() {
         return allProperties.filter((p) => isCloseToUniversity(p)).length;
       case 'en-suite':
         return allProperties.filter((p) =>
-          p.amenities.some(
-            (a) =>
-              a.toLowerCase().includes('en-suite') ||
-              a.toLowerCase().includes('ensuite')
-          )
+          p.amenities.some((a: string) => a.toLowerCase().includes('en-suite'))
         ).length;
       case 'bills-included':
         return allProperties.filter((p) =>
@@ -653,7 +651,8 @@ function getPropertyCount(
     case 'all-houses':
       return allProperties.length;
     case 'golden-triangle':
-      return allProperties.filter((p) => p.isGoldenTriangle === true).length;
+      return allProperties.filter((p: Property) => p.isGoldenTriangle === true)
+        .length;
     case 'great-value':
       // Log the count to debug
       const greatValueCount = allProperties.filter(
@@ -667,14 +666,14 @@ function getPropertyCount(
       return allProperties.filter((p) => isCloseToUniversity(p)).length;
     case 'en-suite':
       return allProperties.filter((p) =>
-        p.amenities?.some((a) => {
+        p.amenities?.some((a: string) => {
           const amenity = a.toLowerCase();
           return amenity.includes('en-suite') || amenity.includes('ensuite');
         })
       ).length;
     case 'bills-included':
       return allProperties.filter((p) =>
-        p.amenities?.some((a) => {
+        p.amenities?.some((a: string) => {
           const amenity = a.toLowerCase();
           return (
             amenity.includes('bills included') ||
@@ -684,7 +683,7 @@ function getPropertyCount(
       ).length;
     case 'driveway-parking':
       return allProperties.filter((p) =>
-        p.amenities?.some((a) => {
+        p.amenities?.some((a: string) => {
           const amenity = a.toLowerCase();
           return amenity.includes('parking') || amenity.includes('driveway');
         })

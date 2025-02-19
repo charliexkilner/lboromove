@@ -13,7 +13,12 @@ interface FilterPopoverProps {
     bathrooms?: number;
     maxPrice?: number;
   };
-  onFilterChange: (newFilters: any) => void;
+  onFilterChange: (filters: any) => void;
+  initialFilters?: {
+    bedrooms?: number;
+    bathrooms?: number;
+    maxPrice?: number;
+  };
 }
 
 export default function FilterPopover({
