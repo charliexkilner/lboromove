@@ -4,12 +4,16 @@ import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { useAuthModal } from '@/hooks/useAuthModal';
 
-export default function AuthModal() {
+interface AuthModalProps {
+  onClose: () => void;
+}
+
+export default function AuthModal({ onClose }: AuthModalProps) {
   const { isOpen, closeModal } = useAuthModal();
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={closeModal}>
+      <Dialog open={true} onClose={onClose} className="relative z-50">
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
