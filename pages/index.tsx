@@ -53,6 +53,10 @@ export default function Home() {
     data,
     isLoading,
     error: queryError,
+  }: {
+    data: any;
+    isLoading: boolean;
+    error: unknown;
   } = useQuery({
     queryKey: ['properties', filters],
     queryFn: async () => {
@@ -406,7 +410,7 @@ export default function Home() {
               ) : queryError ? (
                 <div className="text-center text-red-500 py-12">
                   <p className="text-lg font-medium">
-                    {queryError instanceof Error
+                    {(queryError as unknown) instanceof Error
                       ? (queryError as Error).message
                       : 'An error occurred'}
                   </p>
@@ -592,7 +596,7 @@ export default function Home() {
             ) : queryError ? (
               <div className="text-center text-red-500 py-12">
                 <p className="text-lg font-medium">
-                  {queryError instanceof Error
+                  {(queryError as unknown) instanceof Error
                     ? (queryError as Error).message
                     : 'An error occurred'}
                 </p>
