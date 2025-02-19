@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@auth/prisma-adapter": "^2.7.4",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "4.16.2",
@@ -13,6 +14,7 @@
     "next-auth": "^4.24.11",
     "next-i18next": "^15.4.1",
     "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
     "puppeteer": "^24.1.1",
     "react-confetti": "^6.2.2",
     "react-feather": "^2.0.10",
@@ -20,7 +22,8 @@
     "react-i18next": "^15.4.0",
     "react-intersection-observer": "^9.15.0",
     "react-markdown": "^9.0.3",
-    "tailwind-scrollbar-hide": "^2.0.0"
+    "tailwind-scrollbar-hide": "^2.0.0",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.1",
@@ -30,7 +33,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/react": "^19.0.7",
     "autoprefixer": "^10.4.20",
-    "playwright": "^1.39.0",
+    "playwright": "^1.50.1",
     "postcss": "^8.5.1",
     "prisma": "4.16.2",
     "tailwindcss": "^3.4.17",
@@ -55,5 +58,8 @@
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=18.17.0"
   }
 }

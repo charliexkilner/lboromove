@@ -1,133 +1,188 @@
-import React from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import Image from 'next/image';
+import { signIn } from 'next-auth/react';
+import { useAuthModal } from '@/hooks/useAuthModal';
 
-interface AuthModalProps {
-  onClose: () => void;
-}
+export default function AuthModal() {
+  const { isOpen, closeModal } = useAuthModal();
 
-export default function AuthModal({ onClose }: AuthModalProps) {
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white text-gray-900 rounded-lg w-full max-w-md p-8 relative shadow-xl">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={closeModal}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
         >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+          <div className="fixed inset-0 bg-black bg-opacity-25" />
+        </Transition.Child>
 
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4 text-gray-900">
-            Create a free <br />
-            LBOROMOVE account
-          </h2>
-          <div className="text-gray-600 mb-6 space-y-2">
-            <div className="grid grid-cols-4 gap-4 max-w-sm mx-auto mb-6">
-              <div className="text-center">
-                <div className="text-3xl mb-1">❤️</div>
-                <div className="text-sm">Save Favorites</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-1">💬</div>
-                <div className="text-sm">Student Chat</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-1">🛠️</div>
-                <div className="text-sm">Student Tools</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-1">🔍</div>
-                <div className="text-sm">Filter Houses</div>
-              </div>
-            </div>
-            <p className="mt-4">
-              Already a member?{' '}
-              <a
-                href="#"
-                className="text-purple-600 hover:text-purple-700 font-medium"
-              >
-                Sign in
-              </a>{' '}
-              to continue exploring.
-            </p>
-          </div>
-        </div>
-
-        {/* Auth Buttons */}
-        <div className="space-y-4">
-          <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
-            <Image
-              src="/icons/google.svg"
-              alt="Google"
-              width={20}
-              height={20}
-            />
-            Continue with Google
-          </button>
-          <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors">
-            <Image
-              src="/icons/apple.svg"
-              alt="Apple"
-              width={20}
-              height={20}
-              className="text-black"
-            />
-            Continue with Apple
-          </button>
-          <button className="w-full bg-[#1877F2] text-white py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-[#1864D9] transition-colors">
-            <Image
-              src="/icons/facebook.svg"
-              alt="Facebook"
-              width={20}
-              height={20}
-              className="text-white"
-            />
-            Continue with Facebook
-          </button>
-          <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-purple-700 transition-colors">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            Continue with email
-          </button>
-        </div>
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                <div className="absolute top-4 right-4">
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-500"
+                    onClick={closeModal}
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
 
-        {/* Join Stats */}
-        <div className="mt-8 flex items-center justify-center gap-12 text-sm text-gray-500">
-          <div className="text-center">
-            <p className="font-semibold text-gray-900 text-lg">22,465</p>
-            <p>houses</p>
-          </div>
-          <div className="text-center">
-            <p className="font-semibold text-gray-900 text-lg">1,000+</p>
-            <p>students</p>
+                <div className="mt-2 text-center">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-2xl font-bold leading-6 text-gray-900 mb-8"
+                  >
+                    Create a free
+                    <br />
+                    LBOROMOVE account
+                  </Dialog.Title>
+
+                  <div className="grid grid-cols-4 gap-4 mb-8 px-4">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">❤️</div>
+                      <div className="text-sm">
+                        Save
+                        <br />
+                        Favorites
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">💬</div>
+                      <div className="text-sm">
+                        Student
+                        <br />
+                        Chat
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">🔧</div>
+                      <div className="text-sm">
+                        Student
+                        <br />
+                        Tools
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">🔍</div>
+                      <div className="text-sm">
+                        Filter
+                        <br />
+                        Houses
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => signIn('google')}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Image
+                        src="/google.svg"
+                        alt="Google"
+                        width={20}
+                        height={20}
+                      />
+                      Continue with Google
+                    </button>
+
+                    <button
+                      onClick={() => signIn('apple')}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Image
+                        src="/apple.svg"
+                        alt="Apple"
+                        width={20}
+                        height={20}
+                      />
+                      Continue with Apple
+                    </button>
+
+                    <button
+                      onClick={() => signIn('email')}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Continue with email
+                    </button>
+                  </div>
+
+                  <div className="mt-6 text-sm text-gray-500">
+                    Already a member?{' '}
+                    <button
+                      onClick={() => signIn()}
+                      className="text-purple-600 hover:text-purple-700 font-semibold"
+                    >
+                      Sign in
+                    </button>{' '}
+                    to continue exploring.
+                  </div>
+
+                  <div className="mt-8 flex justify-between text-sm text-gray-500">
+                    <div>
+                      <span className="font-semibold text-gray-900">
+                        22,465
+                      </span>
+                      <br />
+                      houses
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">
+                        1,000+
+                      </span>
+                      <br />
+                      students
+                    </div>
+                  </div>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
-      </div>
-    </div>
+      </Dialog>
+    </Transition>
   );
 }

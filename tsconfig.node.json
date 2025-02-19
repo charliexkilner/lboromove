@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es2017",
-    "module": "commonjs",
-    "lib": ["es2017"],
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "target": "ES2020",
     "moduleResolution": "node",
     "outDir": "dist",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["scripts/**/*", "prisma/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["scripts/**/*"]
 }

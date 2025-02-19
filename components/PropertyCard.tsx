@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { PhotoIcon } from '@heroicons/react/24/outline';
+import { useProtectedAction } from '@/hooks/useProtectedAction';
 
 interface PropertyCardProps {
   property: Property;
@@ -32,6 +33,7 @@ export default function PropertyCard({
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const runProtectedAction = useProtectedAction();
 
   const images = Array.isArray(property.images)
     ? property.images
@@ -76,6 +78,13 @@ export default function PropertyCard({
     router.prefetch(`/p/${property.id}`);
   };
 
+  const handleFavoriteClick = () => {
+    runProtectedAction(() => {
+      // Add to favorites logic here
+      console.log('Adding to favorites:', property.id);
+    });
+  };
+
   return (
     <div
       className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
@@ -92,11 +101,7 @@ export default function PropertyCard({
             <>
               {/* Favorite Button */}
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsFavorite(!isFavorite);
-                }}
+                onClick={handleFavoriteClick}
                 className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors z-10"
               >
                 <Heart
@@ -109,7 +114,7 @@ export default function PropertyCard({
 
               <Image
                 src={property.images[currentImageIndex]}
-                alt={`${property.street} property image ${
+                alt={`${property.title} property image ${
                   currentImageIndex + 1
                 }`}
                 fill

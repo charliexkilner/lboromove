@@ -6,6 +6,36 @@ import ChangelogCard from '../components/ChangelogCard';
 export default function Changelog() {
   const changes = [
     {
+      date: 'February 19 2025',
+      title: 'TO-DO',
+      icon: '📜',
+      description: `Lots to do but feeling good about the progress so far - see below: 
+      • Add a "Saved Properties" feature to allow users to save properties they are interested in and display it on their profile
+      • Make sure all loc8me properties are showing
+      • If I have time add other scraping options like Toplets
+      • Try and workout how to get student user type to work - do landlord and admin later
+      • Try and finish all the student tools and make sure they work 
+      • Design the student user profile page and make sure it works
+      • Translate all of the student tools to mandarin and hindi
+      • Add an image version to the discussion cards
+      • Make the filters on the right hand side on the discussion be rounded full buttons on mobile
+      • Make the padding below the filter button less and make the padding above the title bigger`,
+    },
+    {
+      date: 'February 18 2025',
+      title: 'Feature Request: Flatmate Finder',
+      icon: '🏡',
+      description: `As seen on LSU discussion board people are looking for "rather than just putting random people with other random people, a profile could help students find friends easier as they'll have more in common. University of Sheffield do this really well. It enables students to choose their flat based on the personalities of others already in the flat"
+      "It is also not just morning / night owl type things on the profile"
+      Based on this I will be implementing a flatemate finder on the discussion page of the website and there will be infiormation about that person on their profile. I was also thinking that similar to LinkedIn when they can change your profile to "looking for work" maybe student's profiles can be public if searching for flatmates although it just shows basic information about them not their favourites etc that only they can see.`,
+    },
+    {
+      date: 'February 18 2025',
+      title: 'Feature Request: Walk Score',
+      icon: '🚶‍♂️',
+      description: `Implement a walk score on properties that rank how easy it is to walk to campus and to walk to town - see similiar version on Zillow for inspiration.`,
+    },
+    {
       date: 'February 11 2025',
       title: 'Multi-language Support & UI Improvements',
       icon: '🌍',

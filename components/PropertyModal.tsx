@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { formatPriceWithCurrency } from '../utils/currency';
 import toast from 'react-hot-toast';
 import FullScreenGallery from './FullScreenGallery';
+import { calculateWalkingTime } from '../utils/distance';
 
 // Update the amenity icons mapping
 const AMENITY_ICONS: Record<string, string> = {
@@ -76,6 +77,10 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
     e.stopPropagation();
     setIsGalleryOpen(true);
   };
+
+  // Calculate walking times only if property exists and has coordinates
+  const walkToTown = property ? calculateWalkingTime(property, 'town') : 0;
+  const walkToCampus = property ? calculateWalkingTime(property, 'campus') : 0;
 
   return (
     <Transition.Root show={true} as={Fragment}>
@@ -220,23 +225,24 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                       {/* About Tab Content */}
                       {activeTab === 'about' && (
                         <div>
-                          {/* Key Stats */}
-                          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-fr gap-4 mb-6">
+                          {/* First row */}
+                          <div className="grid grid-cols-3 gap-4 mb-6">
                             {/* Price per week */}
                             <div className="bg-gray-50 p-4 rounded-lg">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-start">
                                 <p className="text-sm text-gray-500 uppercase">
                                   Price per week
                                 </p>
                               </div>
                               <p className="text-lg font-medium mt-1">
-                                <span className="mr-2">💰</span>
-                                {formatPriceWithCurrency(property.price)}
+                                <span className="mr-2">💰</span>£
+                                {property.price}
                               </p>
                             </div>
+
                             {/* Bedrooms */}
                             <div className="bg-gray-50 p-4 rounded-lg">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-start">
                                 <p className="text-sm text-gray-500 uppercase">
                                   Bedrooms
                                 </p>
@@ -246,9 +252,10 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                                 {property.rooms}
                               </p>
                             </div>
+
                             {/* Bathrooms */}
-                            <div className="bg-gray-50 p-4 rounded-lg col-span-2 md:col-span-1">
-                              <div className="flex items-center space-x-2">
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <div className="flex items-start">
                                 <p className="text-sm text-gray-500 uppercase">
                                   Bathrooms
                                 </p>
@@ -256,6 +263,52 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                               <p className="text-lg font-medium mt-1">
                                 <span className="mr-2">🚽</span>
                                 {property.bathrooms}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Second row */}
+                          <div className="grid grid-cols-3 gap-4 mb-6">
+                            {/* Listed By */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <div className="flex items-start">
+                                <p className="text-sm text-gray-500 uppercase">
+                                  Listed By
+                                </p>
+                              </div>
+                              <p className="text-lg font-medium mt-1">
+                                <span className="mr-2">🍊</span>
+                                {property?.scrapedFrom || 'Unknown'}
+                              </p>
+                            </div>
+
+                            {/* Walk to Town */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <div className="flex items-start">
+                                <p className="text-sm text-gray-500 uppercase">
+                                  Walk to Town
+                                </p>
+                              </div>
+                              <p className="text-lg font-medium mt-1">
+                                {property?.latitude ? walkToTown : '-'}
+                                <span className="text-sm text-gray-500 ml-1">
+                                  {property?.latitude ? 'mins' : 'N/A'}
+                                </span>
+                              </p>
+                            </div>
+
+                            {/* Walk to Campus */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <div className="flex items-start">
+                                <p className="text-sm text-gray-500 uppercase">
+                                  Walk to Campus
+                                </p>
+                              </div>
+                              <p className="text-lg font-medium mt-1">
+                                {property?.latitude ? walkToCampus : '-'}
+                                <span className="text-sm text-gray-500 ml-1">
+                                  {property?.latitude ? 'mins' : 'N/A'}
+                                </span>
                               </p>
                             </div>
                           </div>

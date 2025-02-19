@@ -6,14 +6,96 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  STUDENT
+  LANDLORD
+  ADMIN
+}
+
+enum StudyYear {
+  FIRST_YEAR
+  SECOND_YEAR
+  FINAL_YEAR
+  MASTERS
+  PHD
+  PLACEMENT_YEAR
 }
 
 model User {
+  id            String    @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(STUDENT)
+  studyYear     StudyYear?
+  
+  // Auth related
+  accounts      Account[]
+  sessions      Session[]
+  
+  // User activity
+  favorites     Favorite[]
+  recentlyViewed RecentlyViewed[]
+  savedSearches SavedSearch[]
+  
+  // Discussion related
+  posts         DiscussionPost[]
+  comments      Comment[]
+  postVotes     PostVote[]
+  commentVotes  CommentVote[]
+  
+  // Collections
+  collections   Collection[]
+  memberOf      CollectionMember[]
+  
+  // Landlord specific
+  isVerifiedLandlord Boolean @default(false)
+  properties    Property[]    @relation("LandlordProperties")
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Favorite {
   id        String   @id @default(cuid())
-  email     String   @unique
-  phone     String?
-  password  String
+  userId    String
+  houseId   String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, houseId])
 }
 
 model Property {
@@ -29,11 +111,23 @@ model Property {
   scrapedFrom String
   externalId  String
   hash        String   @unique
-  @@unique([title, price, rooms, location], name: "property_unique")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   url         String?
   keyFeatures Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isGoldenTriangle Boolean  @default(false)
+
+  // Relations
+  landlordId  String?
+  landlord    User?    @relation("LandlordProperties", fields: [landlordId], references: [id])
+  viewedBy    RecentlyViewed[]
+  collections CollectionProperty[]
+
+  latitude  Float?
+  longitude Float?
+  street    String?
+
+  @@unique([title, price, rooms, location], name: "property_unique")
 }
 
 model ScrapingLog {
@@ -46,4 +140,103 @@ model ScrapingLog {
   itemsScraped Int       @default(0)
 
   @@index([website, startTime])
+}
+
+model RecentlyViewed {
+  id        String   @id @default(cuid())
+  userId    String
+  propertyId Int
+  viewedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property  Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId])
+}
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String
+  filters     Json     // Store search parameters
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  name        String
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  members     CollectionMember[]
+  properties  CollectionProperty[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CollectionMember {
+  id           String     @id @default(cuid())
+  collectionId String
+  userId       String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([collectionId, userId])
+}
+
+model CollectionProperty {
+  id           String     @id @default(cuid())
+  collectionId String
+  propertyId   Int
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  addedAt      DateTime   @default(now())
+
+  @@unique([collectionId, propertyId])
+}
+
+model DiscussionPost {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  authorId    String
+  isAnonymous Boolean  @default(false)
+  author      User     @relation(fields: [authorId], references: [id])
+  comments    Comment[]
+  votes       PostVote[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  authorId  String
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  votes     CommentVote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PostVote {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  value     Int      @db.SmallInt // 1 for upvote, -1 for downvote
+  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model CommentVote {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  value     Int      @db.SmallInt
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
 }

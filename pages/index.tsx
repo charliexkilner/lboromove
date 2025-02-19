@@ -2,6 +2,7 @@ import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { GetServerSideProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { isCloseToUniversity } from '../utils/distance';
 import Navbar from '../components/Navbar';
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
@@ -17,6 +18,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { fetchAPI } from '../utils/api';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
+import { usePropertyStore } from '../stores/usePropertyStore';
 
 export default function Home() {
   const { t } = useTranslation('common');
@@ -35,11 +37,17 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState('allHouses');
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+
+  const {
+    properties,
+    filteredProperties,
+    setProperties,
+    setActiveTab,
+    activeTab,
+  } = usePropertyStore();
 
   const {
     data,
@@ -63,6 +71,9 @@ export default function Home() {
         const response = await fetchAPI(
           `/api/properties?${queryParams.toString()}`
         );
+        if (response.properties) {
+          setProperties(response.properties);
+        }
         return response;
       } catch (error) {
         console.error('Error fetching properties:', error);
@@ -74,11 +85,6 @@ export default function Home() {
 
   // Update allProperties definition
   const allProperties = data?.properties || [];
-
-  useEffect(() => {
-    // Apply current tab's filter to new data
-    handleTabChange(activeTab);
-  }, [allProperties, activeTab]);
 
   useEffect(() => {
     // Prefetch all main navigation routes
@@ -108,6 +114,14 @@ export default function Home() {
     };
   }, [router]);
 
+  useEffect(() => {
+    console.log('Properties loaded:', {
+      total: properties.length,
+      filtered: filteredProperties.length,
+      sample: properties[0],
+    });
+  }, [properties, filteredProperties]);
+
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
       const scrollAmount = 200;
@@ -123,138 +137,8 @@ export default function Home() {
   };
 
   const handleTabChange = (tabName: string) => {
+    console.log('Tab changed to:', tabName);
     setActiveTab(tabName);
-
-    switch (tabName) {
-      case 'allHouses':
-        setFilteredProperties(allProperties);
-        break;
-
-      case 'soloLiving':
-        setFilteredProperties(
-          allProperties.filter((p) => {
-            return p.rooms === 1 || p.rooms === '1';
-          })
-        );
-        break;
-
-      case 'greatValue':
-        setFilteredProperties(
-          allProperties.filter((p) => {
-            const price =
-              typeof p.price === 'string' ? parseFloat(p.price) : p.price;
-            return !isNaN(price) && price <= 145;
-          })
-        );
-        break;
-
-      case 'goldenTriangle':
-        const goldenTriangleStreets = [
-          {
-            name: 'Cumberland',
-            variants: ['Cumberland Road', 'Cumberland Rd', 'Cumberland Rd.'],
-          },
-          { name: 'Ashby', variants: ['Ashby Road', 'Ashby Rd', 'Ashby Rd.'] },
-          {
-            name: 'Fearon',
-            variants: ['Fearon Street', 'Fearon St', 'Fearon St.'],
-          },
-          {
-            name: 'Forest',
-            variants: ['Forest Road', 'Forest Rd', 'Forest Rd.'],
-          },
-          {
-            name: 'George',
-            variants: ['George Street', 'George St', 'George St.'],
-          },
-          {
-            name: 'Storer',
-            variants: ['Storer Road', 'Storer Rd', 'Storer Rd.'],
-          },
-          {
-            name: 'Station',
-            variants: ['Station Street', 'Station St', 'Station St.'],
-          },
-          {
-            name: 'Havelock',
-            variants: ['Havelock Street', 'Havelock St', 'Havelock St.'],
-          },
-          {
-            name: 'Leopold',
-            variants: ['Leopold Street', 'Leopold St', 'Leopold St.'],
-          },
-          {
-            name: 'Oxford',
-            variants: ['Oxford Street', 'Oxford St', 'Oxford St.'],
-          },
-          {
-            name: 'Radmoor',
-            variants: ['Radmoor Road', 'Radmoor Rd', 'Radmoor Rd.'],
-          },
-          { name: 'York', variants: ['York Road', 'York Rd', 'York Rd.'] },
-          {
-            name: 'Granville',
-            variants: ['Granville Street', 'Granville St', 'Granville St.'],
-          },
-          {
-            name: 'Chestnut',
-            variants: ['Chestnut Street', 'Chestnut St', 'Chestnut St.'],
-          },
-          {
-            name: 'Regent',
-            variants: ['Regent Street', 'Regent St', 'Regent St.'],
-          },
-          {
-            name: 'Hastings',
-            variants: ['Hastings Street', 'Hastings St', 'Hastings St.'],
-          },
-          {
-            name: 'Broad',
-            variants: ['Broad Street', 'Broad St', 'Broad St.'],
-          },
-          {
-            name: 'Packe',
-            variants: ['Packe Street', 'Packe St', 'Packe St.'],
-          },
-          {
-            name: 'Burleigh',
-            variants: ['Burleigh Road', 'Burleigh Rd', 'Burleigh Rd.'],
-          },
-          {
-            name: 'Frederick',
-            variants: ['Frederick Street', 'Frederick St', 'Frederick St.'],
-          },
-          {
-            name: 'William',
-            variants: ['William Street', 'William St', 'William St.'],
-          },
-        ];
-
-        setFilteredProperties(
-          allProperties.filter((property) => {
-            if (!property.location) return false;
-            const location = property.location.toLowerCase();
-            return goldenTriangleStreets.some((street) =>
-              street.variants.some((variant) =>
-                location.includes(variant.toLowerCase())
-              )
-            );
-          })
-        );
-        break;
-
-      case 'enSuite':
-      case 'rareFinds':
-      case 'nearCampus':
-      case 'billsIncluded':
-      case 'drivewayParking':
-      case 'furnished':
-        setFilteredProperties([]);
-        break;
-
-      default:
-        setFilteredProperties(allProperties);
-    }
   };
 
   // Update the getActiveFiltersText function
@@ -311,111 +195,64 @@ export default function Home() {
   // Update the getTabCount function
   const getTabCount = (tabName: string) => {
     switch (tabName) {
-      case 'allHouses':
+      case 'all-houses':
         return allProperties.length;
-      case 'soloLiving':
-        return allProperties.filter((p) => p.rooms === 1 || p.rooms === '1')
-          .length;
-      case 'greatValue':
-        return allProperties.filter((p) => {
-          const price =
-            typeof p.price === 'string' ? parseFloat(p.price) : p.price;
-          return !isNaN(price) && price <= 145;
-        }).length;
-      case 'goldenTriangle':
-        const goldenTriangleStreets = [
-          {
-            name: 'Cumberland',
-            variants: ['Cumberland Road', 'Cumberland Rd', 'Cumberland Rd.'],
-          },
-          { name: 'Ashby', variants: ['Ashby Road', 'Ashby Rd', 'Ashby Rd.'] },
-          {
-            name: 'Fearon',
-            variants: ['Fearon Street', 'Fearon St', 'Fearon St.'],
-          },
-          {
-            name: 'Forest',
-            variants: ['Forest Road', 'Forest Rd', 'Forest Rd.'],
-          },
-          {
-            name: 'George',
-            variants: ['George Street', 'George St', 'George St.'],
-          },
-          {
-            name: 'Storer',
-            variants: ['Storer Road', 'Storer Rd', 'Storer Rd.'],
-          },
-          {
-            name: 'Station',
-            variants: ['Station Street', 'Station St', 'Station St.'],
-          },
-          {
-            name: 'Havelock',
-            variants: ['Havelock Street', 'Havelock St', 'Havelock St.'],
-          },
-          {
-            name: 'Leopold',
-            variants: ['Leopold Street', 'Leopold St', 'Leopold St.'],
-          },
-          {
-            name: 'Oxford',
-            variants: ['Oxford Street', 'Oxford St', 'Oxford St.'],
-          },
-          {
-            name: 'Radmoor',
-            variants: ['Radmoor Road', 'Radmoor Rd', 'Radmoor Rd.'],
-          },
-          { name: 'York', variants: ['York Road', 'York Rd', 'York Rd.'] },
-          {
-            name: 'Granville',
-            variants: ['Granville Street', 'Granville St', 'Granville St.'],
-          },
-          {
-            name: 'Chestnut',
-            variants: ['Chestnut Street', 'Chestnut St', 'Chestnut St.'],
-          },
-          {
-            name: 'Regent',
-            variants: ['Regent Street', 'Regent St', 'Regent St.'],
-          },
-          {
-            name: 'Hastings',
-            variants: ['Hastings Street', 'Hastings St', 'Hastings St.'],
-          },
-          {
-            name: 'Broad',
-            variants: ['Broad Street', 'Broad St', 'Broad St.'],
-          },
-          {
-            name: 'Packe',
-            variants: ['Packe Street', 'Packe St', 'Packe St.'],
-          },
-          {
-            name: 'Burleigh',
-            variants: ['Burleigh Road', 'Burleigh Rd', 'Burleigh Rd.'],
-          },
-          {
-            name: 'Frederick',
-            variants: ['Frederick Street', 'Frederick St', 'Frederick St.'],
-          },
-          {
-            name: 'William',
-            variants: ['William Street', 'William St', 'William St.'],
-          },
-        ];
-        return allProperties.filter((property) => {
-          if (!property.location) return false;
-          const location = property.location.toLowerCase();
-          return goldenTriangleStreets.some((street) =>
-            street.variants.some((variant) =>
-              location.includes(variant.toLowerCase())
-            )
-          );
-        }).length;
-      default:
+      case 'golden-triangle':
+        return allProperties.filter((p) => p.isGoldenTriangle === true).length;
+      case 'great-value':
+        // Use the same logic as the filter (£135 or less)
+        const greatValueCount = allProperties.filter(
+          (p) => p.price <= 135
+        ).length;
+        console.log('Great Value tab count:', greatValueCount);
+        return greatValueCount;
+      case 'solo-living':
+        return allProperties.filter((p) => p.rooms === 1).length;
+      case 'near-campus':
+        return allProperties.filter((p) => isCloseToUniversity(p)).length;
+      case 'en-suite':
+        return allProperties.filter((p) =>
+          p.amenities.some(
+            (a) =>
+              a.toLowerCase().includes('en-suite') ||
+              a.toLowerCase().includes('ensuite')
+          )
+        ).length;
+      case 'bills-included':
+        return allProperties.filter((p) =>
+          p.amenities.some(
+            (a) =>
+              a.toLowerCase().includes('bills included') ||
+              a.toLowerCase().includes('all bills included')
+          )
+        ).length;
+      case 'driveway-parking':
+        return allProperties.filter((p) =>
+          p.amenities.some(
+            (a) =>
+              a.toLowerCase().includes('parking') ||
+              a.toLowerCase().includes('driveway')
+          )
+        ).length;
+      case 'rare-finds':
+        // Implement your rare finds logic here
         return 0;
+      default:
+        return allProperties.length;
     }
   };
+
+  // Add this effect instead to handle initial data load
+  useEffect(() => {
+    if (allProperties.length > 0) {
+      setProperties(allProperties);
+    }
+  }, [allProperties, setProperties]);
+
+  // Add this effect to set initial tab
+  useEffect(() => {
+    setActiveTab('all-houses');
+  }, []); // Run once on mount
 
   if (isLoading) {
     return (
@@ -467,40 +304,47 @@ export default function Home() {
                   className="flex space-x-4 overflow-x-auto scrollbar-hide border-b border-gray-200 px-4 sm:px-6 lg:px-8"
                 >
                   {[
-                    { id: 'allHouses', icon: '🏠', label: t('tabs.allHouses') },
                     {
-                      id: 'goldenTriangle',
+                      id: 'all-houses',
+                      icon: '🏠',
+                      label: t('tabs.allHouses'),
+                    },
+                    {
+                      id: 'golden-triangle',
                       icon: '🏆',
                       label: t('tabs.goldenTriangle'),
                     },
                     {
-                      id: 'greatValue',
+                      id: 'great-value',
                       icon: '💰',
                       label: t('tabs.greatValue'),
                     },
                     {
-                      id: 'nearCampus',
+                      id: 'near-campus',
                       icon: '🎓',
                       label: t('tabs.nearCampus'),
                     },
-                    { id: 'rareFinds', icon: '✨', label: t('tabs.rareFinds') },
-                    { id: 'enSuite', icon: '🚿', label: t('tabs.enSuite') },
                     {
-                      id: 'billsIncluded',
+                      id: 'rare-finds',
+                      icon: '✨',
+                      label: t('tabs.rareFinds'),
+                    },
+                    { id: 'en-suite', icon: '🚿', label: t('tabs.enSuite') },
+                    {
+                      id: 'bills-included',
                       icon: '💡',
                       label: t('tabs.billsIncluded'),
                     },
                     {
-                      id: 'drivewayParking',
+                      id: 'driveway-parking',
                       icon: '🚗',
                       label: t('tabs.drivewayParking'),
                     },
                     {
-                      id: 'soloLiving',
+                      id: 'solo-living',
                       icon: '🏃',
                       label: t('tabs.soloLiving'),
                     },
-                    { id: 'furnished', icon: '🛋️', label: t('tabs.furnished') },
                   ].map((tab, index, array) => (
                     <button
                       key={tab.id}
@@ -654,28 +498,39 @@ export default function Home() {
                 className="flex space-x-4 overflow-x-auto scrollbar-hide border-b border-gray-200 px-4 sm:px-6 lg:px-8"
               >
                 {[
-                  { id: 'allHouses', icon: '🏠', label: t('tabs.allHouses') },
+                  { id: 'all-houses', icon: '🏠', label: t('tabs.allHouses') },
                   {
-                    id: 'goldenTriangle',
+                    id: 'golden-triangle',
                     icon: '🏆',
                     label: t('tabs.goldenTriangle'),
                   },
-                  { id: 'greatValue', icon: '💰', label: t('tabs.greatValue') },
-                  { id: 'nearCampus', icon: '🎓', label: t('tabs.nearCampus') },
-                  { id: 'rareFinds', icon: '✨', label: t('tabs.rareFinds') },
-                  { id: 'enSuite', icon: '🚿', label: t('tabs.enSuite') },
                   {
-                    id: 'billsIncluded',
+                    id: 'great-value',
+                    icon: '💰',
+                    label: t('tabs.greatValue'),
+                  },
+                  {
+                    id: 'near-campus',
+                    icon: '🎓',
+                    label: t('tabs.nearCampus'),
+                  },
+                  { id: 'rare-finds', icon: '✨', label: t('tabs.rareFinds') },
+                  { id: 'en-suite', icon: '🚿', label: t('tabs.enSuite') },
+                  {
+                    id: 'bills-included',
                     icon: '💡',
                     label: t('tabs.billsIncluded'),
                   },
                   {
-                    id: 'drivewayParking',
+                    id: 'driveway-parking',
                     icon: '🚗',
                     label: t('tabs.drivewayParking'),
                   },
-                  { id: 'soloLiving', icon: '🏃', label: t('tabs.soloLiving') },
-                  { id: 'furnished', icon: '🛋️', label: t('tabs.furnished') },
+                  {
+                    id: 'solo-living',
+                    icon: '🏃',
+                    label: t('tabs.soloLiving'),
+                  },
                 ].map((tab, index, array) => (
                   <button
                     key={tab.id}
@@ -787,3 +642,54 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
     },
   };
 };
+
+function getPropertyCount(
+  allProperties: Property[],
+  activeTab: string
+): number {
+  if (!allProperties) return 0;
+
+  switch (activeTab) {
+    case 'all-houses':
+      return allProperties.length;
+    case 'golden-triangle':
+      return allProperties.filter((p) => p.isGoldenTriangle === true).length;
+    case 'great-value':
+      // Log the count to debug
+      const greatValueCount = allProperties.filter(
+        (p) => p.price <= 135
+      ).length;
+      console.log('Great Value properties count:', greatValueCount);
+      return greatValueCount;
+    case 'solo-living':
+      return allProperties.filter((p) => p.rooms === 1).length;
+    case 'near-campus':
+      return allProperties.filter((p) => isCloseToUniversity(p)).length;
+    case 'en-suite':
+      return allProperties.filter((p) =>
+        p.amenities?.some((a) => {
+          const amenity = a.toLowerCase();
+          return amenity.includes('en-suite') || amenity.includes('ensuite');
+        })
+      ).length;
+    case 'bills-included':
+      return allProperties.filter((p) =>
+        p.amenities?.some((a) => {
+          const amenity = a.toLowerCase();
+          return (
+            amenity.includes('bills included') ||
+            amenity.includes('all bills included')
+          );
+        })
+      ).length;
+    case 'driveway-parking':
+      return allProperties.filter((p) =>
+        p.amenities?.some((a) => {
+          const amenity = a.toLowerCase();
+          return amenity.includes('parking') || amenity.includes('driveway');
+        })
+      ).length;
+    default:
+      return allProperties.length;
+  }
+}

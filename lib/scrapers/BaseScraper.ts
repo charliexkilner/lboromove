@@ -24,22 +24,6 @@ export abstract class BaseScraper {
     this.website = website;
   }
 
-  protected async createBrowser() {
-    return chromium.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-      ],
-      executablePath:
-        process.platform === 'darwin'
-          ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-          : undefined,
-    });
-  }
-
   protected async logScraping(
     status: string,
     message?: string,

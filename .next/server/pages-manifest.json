@@ -4,6 +4,6 @@
   "/_document": "pages/_document.js",
   "/tools": "pages/tools.js",
   "/house/[slug]": "pages/house/[slug].js",
-  "/api/properties": "pages/api/properties.js",
+  "/api/properties/[id]": "pages/api/properties/[id].js",
   "/": "pages/index.js"
 }

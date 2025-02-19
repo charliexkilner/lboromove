@@ -1,5 +1,5 @@
-import { Loc8meScraper } from '../lib/scrapers/Loc8meScraper';
-import { PrismaClient } from '@prisma/client';
+const { Loc8meScraper } = require('../lib/scrapers/Loc8meScraper');
+const { PrismaClient } = require('@prisma/client');
 
 async function runScrapers() {
   const prisma = new PrismaClient();
@@ -20,4 +20,4 @@ async function runScrapers() {
   await prisma.$disconnect();
 }
 
-runScrapers();
+runScrapers().catch(console.error);

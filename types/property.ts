@@ -15,4 +15,7 @@ export interface Property {
     lat: number;
     lng: number;
   };
+  latitude?: number | null;
+  longitude?: number | null;
+  street?: string;
 }

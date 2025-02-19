@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../../lib/prisma';
+import { prisma } from '../../../lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,17 +14,30 @@ export default async function handler(
 
   try {
     const { id } = req.query;
-
-    // Extract the numeric ID from the URL (e.g., "fearon-street-1855" -> "1855")
-    const propertyId = parseInt(id.toString().split('-').pop() || '');
+    const propertyId = parseInt(id as string);
 
     if (isNaN(propertyId)) {
       return res.status(400).json({ message: 'Invalid property ID' });
     }
 
     const property = await prisma.property.findUnique({
-      where: {
-        id: propertyId,
+      where: { id: propertyId },
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        rooms: true,
+        bathrooms: true,
+        images: true,
+        description: true,
+        location: true,
+        amenities: true,
+        street: true,
+        latitude: true,
+        longitude: true,
+        scrapedFrom: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -39,7 +52,5 @@ export default async function handler(
   } catch (error) {
     console.error('Property API Error:', error);
     return res.status(500).json({ message: 'Internal server error' });
-  } finally {
-    await prisma.$disconnect();
   }
 }

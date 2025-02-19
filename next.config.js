@@ -2,9 +2,10 @@ const { i18n } = require('./next-i18next.config');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  i18n: {
-    locales: ['en', 'hi', 'zh'],
-    defaultLocale: 'en',
+  i18n,
+  transpilePackages: ['zustand'],
+  experimental: {
+    esmExternals: 'loose',
   },
   images: {
     domains: [
@@ -51,6 +52,7 @@ const nextConfig = {
     }
     return config;
   },
+  swcMinify: false, // Temporarily disable SWC minification
 };
 
 module.exports = nextConfig;

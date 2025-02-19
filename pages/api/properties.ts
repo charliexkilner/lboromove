@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../lib/prisma';
+import { prisma } from '../../lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,33 +18,46 @@ export default async function handler(
     // Build the where clause for filtering
     const where: any = {};
 
-    if (bedrooms && !isNaN(Number(bedrooms))) {
-      where.rooms = parseInt(bedrooms as string);
+    if (bedrooms) {
+      where.rooms = Number(bedrooms);
     }
 
-    if (bathrooms && !isNaN(Number(bathrooms))) {
-      where.bathrooms = parseInt(bathrooms as string);
+    if (bathrooms) {
+      where.bathrooms = Number(bathrooms);
     }
 
-    if (maxPrice && !isNaN(Number(maxPrice))) {
+    if (maxPrice) {
       where.price = {
-        lte: parseInt(maxPrice as string),
+        lte: Number(maxPrice),
       };
     }
 
-    // Get all properties at once
     const properties = await prisma.property.findMany({
       where,
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        rooms: true,
+        bathrooms: true,
+        images: true,
+        description: true,
+        location: true,
+        amenities: true,
+        street: true,
+        latitude: true,
+        longitude: true,
+        isGoldenTriangle: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    // Return all properties
-    return res.status(200).json({
-      properties: properties || [],
-      total: properties.length,
-    });
+    console.log(`Found ${properties.length} properties`);
+    return res.status(200).json({ properties });
   } catch (error) {
     // Ensure we're always sending JSON even for errors
     console.error('API Error:', error);
