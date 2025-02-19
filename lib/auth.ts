@@ -6,8 +6,22 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaClient } from '@prisma/client';
 import type { NextAuthOptions } from 'next-auth';
 import bcrypt from 'bcryptjs';
+import { DefaultSession, DefaultUser } from 'next-auth';
+import { UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
+declare module 'next-auth' {
+  interface User extends DefaultUser {
+    role: UserRole;
+  }
+
+  interface Session extends DefaultSession {
+    user: {
+      role: UserRole;
+    } & DefaultSession['user'];
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
