@@ -151,7 +151,7 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                           </button>
                           {/* Image dots for mobile */}
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-1">
-                            {property.images.map((_, index) => (
+                            {property.images.map((_: string, index: number) => (
                               <button
                                 key={index}
                                 onClick={() => setCurrentImageIndex(index)}
@@ -322,7 +322,7 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                               Amenities
                             </h3>
                             <div className="grid grid-cols-2 gap-y-3">
-                              {property.amenities?.map((amenity) => (
+                              {property.amenities?.map((amenity: string) => (
                                 <div
                                   key={amenity}
                                   className="flex items-center space-x-2"
@@ -365,17 +365,19 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                             </button>
                             {/* Image dots for desktop */}
                             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-1 max-w-[90%]">
-                              {property.images.map((_, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => setCurrentImageIndex(index)}
-                                  className={`w-2 h-2 rounded-full transition-colors ${
-                                    currentImageIndex === index
-                                      ? 'bg-white'
-                                      : 'bg-white/50'
-                                  }`}
-                                />
-                              ))}
+                              {property.images.map(
+                                (_: string, index: number) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => setCurrentImageIndex(index)}
+                                    className={`w-2 h-2 rounded-full transition-colors ${
+                                      currentImageIndex === index
+                                        ? 'bg-white'
+                                        : 'bg-white/50'
+                                    }`}
+                                  />
+                                )
+                              )}
                             </div>
                           </>
                         )}

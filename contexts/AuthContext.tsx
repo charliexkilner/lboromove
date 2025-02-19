@@ -34,7 +34,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }}
       >
         {children}
-        <AuthModal />
+        {isAuthModalOpen && <AuthModal onClose={hideAuthModal} />}
       </AuthModalContext.Provider>
     </AuthContext.Provider>
   );

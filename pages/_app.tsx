@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { AuthProvider } from '../contexts/AuthContext';
-import AuthModal from '@/components/AuthModal';
 
 function App({ Component, pageProps }: AppProps) {
   // Move queryClient creation inside component to avoid hydration mismatch
@@ -24,22 +23,11 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <SessionProvider session={pageProps.session}>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
           <Component {...pageProps} />
-          <Toaster
-            position="bottom-center"
-            toastOptions={{
-              // Ensure consistent styling between server and client
-              style: {
-                background: '#333',
-                color: '#fff',
-              },
-            }}
-          />
-          <AuthModal />
-        </QueryClientProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </SessionProvider>
   );
 }

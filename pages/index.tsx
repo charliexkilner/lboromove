@@ -202,19 +202,19 @@ export default function Home() {
           (p: Property) => p.isGoldenTriangle === true
         ).length;
       case 'great-value':
-        // Use the same logic as the filter (£135 or less)
         const greatValueCount = allProperties.filter(
-          (p) => p.price <= 135
+          (p: Property) => p.price <= 135
         ).length;
         console.log('Great Value tab count:', greatValueCount);
         return greatValueCount;
       case 'solo-living':
-        return allProperties.filter((p) => p.rooms === 1).length;
+        return allProperties.filter((p: Property) => p.rooms === 1).length;
       case 'near-campus':
-        return allProperties.filter((p) => isCloseToUniversity(p)).length;
+        return allProperties.filter((p: Property) => isCloseToUniversity(p))
+          .length;
       case 'en-suite':
-        return allProperties.filter((p) =>
-          p.amenities.some((a: string) => a.toLowerCase().includes('en-suite'))
+        return allProperties.filter((p: Property) =>
+          p.amenities?.some((a: string) => a.toLowerCase().includes('en-suite'))
         ).length;
       case 'bills-included':
         return allProperties.filter((p) =>
@@ -407,7 +407,7 @@ export default function Home() {
                 <div className="text-center text-red-500 py-12">
                   <p className="text-lg font-medium">
                     {queryError instanceof Error
-                      ? queryError.message
+                      ? (queryError as Error).message
                       : 'An error occurred'}
                   </p>
                   <button
@@ -593,7 +593,7 @@ export default function Home() {
               <div className="text-center text-red-500 py-12">
                 <p className="text-lg font-medium">
                   {queryError instanceof Error
-                    ? queryError.message
+                    ? (queryError as Error).message
                     : 'An error occurred'}
                 </p>
                 <button
