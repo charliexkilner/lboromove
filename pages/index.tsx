@@ -217,17 +217,17 @@ export default function Home() {
           p.amenities?.some((a: string) => a.toLowerCase().includes('en-suite'))
         ).length;
       case 'bills-included':
-        return allProperties.filter((p) =>
-          p.amenities.some(
-            (a) =>
+        return allProperties.filter((p: Property) =>
+          p.amenities?.some(
+            (a: string) =>
               a.toLowerCase().includes('bills included') ||
               a.toLowerCase().includes('all bills included')
           )
         ).length;
       case 'driveway-parking':
-        return allProperties.filter((p) =>
-          p.amenities.some(
-            (a) =>
+        return allProperties.filter((p: Property) =>
+          p.amenities?.some(
+            (a: string) =>
               a.toLowerCase().includes('parking') ||
               a.toLowerCase().includes('driveway')
           )
@@ -672,21 +672,20 @@ function getPropertyCount(
         })
       ).length;
     case 'bills-included':
-      return allProperties.filter((p) =>
-        p.amenities?.some((a: string) => {
-          const amenity = a.toLowerCase();
-          return (
-            amenity.includes('bills included') ||
-            amenity.includes('all bills included')
-          );
-        })
+      return allProperties.filter((p: Property) =>
+        p.amenities?.some(
+          (a: string) =>
+            a.toLowerCase().includes('bills included') ||
+            a.toLowerCase().includes('all bills included')
+        )
       ).length;
     case 'driveway-parking':
-      return allProperties.filter((p) =>
-        p.amenities?.some((a: string) => {
-          const amenity = a.toLowerCase();
-          return amenity.includes('parking') || amenity.includes('driveway');
-        })
+      return allProperties.filter((p: Property) =>
+        p.amenities?.some(
+          (a: string) =>
+            a.toLowerCase().includes('parking') ||
+            a.toLowerCase().includes('driveway')
+        )
       ).length;
     default:
       return allProperties.length;

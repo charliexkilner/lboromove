@@ -106,6 +106,7 @@ model Property {
   bathrooms       Int
   images          String[]
   description     String?
+  location        String
   amenities       String[]
   scrapedFrom     String
   externalId      String

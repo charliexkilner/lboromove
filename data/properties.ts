@@ -20,8 +20,6 @@ export const properties: Property[] = [
       '/images/houses/32-royland-road/1.jpg',
       '/images/houses/32-royland-road/2.jpg',
     ],
-    minToTown: 15,
-    minToCampus: 10,
     location: 'Loughborough',
     description:
       'Beautiful student house located in the heart of the student area. Recently renovated with modern appliances and furnishings throughout.',
@@ -32,7 +30,12 @@ export const properties: Property[] = [
       'Garden',
       'Dishwasher',
     ],
+    scrapedFrom: 'William Davis',
+    externalId: '32-royland-road',
+    hash: '32-royland-road-1',
     createdAt: new Date(),
+    updatedAt: new Date(),
+    isGoldenTriangle: false,
   },
   {
     id: 2,
