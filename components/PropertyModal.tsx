@@ -14,6 +14,8 @@ import { formatPriceWithCurrency } from '../utils/currency';
 import toast from 'react-hot-toast';
 import FullScreenGallery from './FullScreenGallery';
 import { calculateWalkingTime } from '../utils/distance';
+import { getPropertyIdFromSlug } from '@/utils/url';
+import PropertyMap from './PropertyMap';
 
 // Update the amenity icons mapping
 const AMENITY_ICONS: Record<string, string> = {
@@ -36,7 +38,6 @@ interface PropertyModalProps {
 }
 
 export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
-  const propertyId = slug.split('-').pop();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('about');
   const [isFavorite, setIsFavorite] = useState(false);
@@ -49,11 +50,12 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
   };
 
   const { data: property, isLoading } = useQuery({
-    queryKey: ['property', propertyId],
+    queryKey: ['property', slug],
     queryFn: async () => {
-      const response = await fetch(`/api/properties/${propertyId}`);
-      if (!response.ok) throw new Error('Failed to fetch property');
-      return response.json();
+      const id = getPropertyIdFromSlug(slug);
+      const res = await fetch(`/api/properties/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch property');
+      return res.json();
     },
   });
 
@@ -81,6 +83,22 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
   // Calculate walking times only if property exists and has coordinates
   const walkToTown = property ? calculateWalkingTime(property, 'town') : 0;
   const walkToCampus = property ? calculateWalkingTime(property, 'campus') : 0;
+
+  const getAgencyEmoji = (property) => {
+    if (
+      property.url?.includes('loc8me') ||
+      property.externalId?.includes('loc8me')
+    ) {
+      return '🟠'; // Loc8me emoji remains orange
+    } else if (
+      property.url?.includes('top-lets') ||
+      property.externalId?.includes('top-lets')
+    ) {
+      return '🔴'; // Changed from 🟠 to 🔴 for Top Lets
+    } else {
+      return '🏠'; // Default emoji
+    }
+  };
 
   return (
     <Transition.Root show={true} as={Fragment}>
@@ -277,7 +295,9 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                                 </p>
                               </div>
                               <p className="text-lg font-medium mt-1">
-                                <span className="mr-2">🍊</span>
+                                <span className="mr-2">
+                                  {getAgencyEmoji(property)}
+                                </span>
                                 {property?.scrapedFrom || 'Unknown'}
                               </p>
                             </div>
@@ -335,6 +355,14 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                               ))}
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {activeTab === 'map' && (
+                        <div className="mb-8">
+                          <PropertyMap
+                            streetName={property.street || property.title}
+                          />
                         </div>
                       )}
                     </div>

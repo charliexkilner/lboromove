@@ -38,7 +38,7 @@ const GOLDEN_TRIANGLE_STREETS = [
   return [`${base} ${suffix}`, `${base} ${shortSuffix}`];
 });
 
-async function updateGoldenTriangleProperties() {
+export async function updateGoldenTriangleProperties() {
   try {
     // First, reset all properties to not be in the Golden Triangle
     await prisma.property.updateMany({
@@ -93,8 +93,8 @@ async function updateGoldenTriangleProperties() {
   }
 }
 
-// Run the update function
-updateGoldenTriangleProperties().catch((error) => {
-  console.error('Failed to update Golden Triangle properties:', error);
-  process.exit(1);
-});
+if (require.main === module) {
+  updateGoldenTriangleProperties()
+    .catch(console.error)
+    .finally(() => prisma.$disconnect());
+}

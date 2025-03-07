@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function updatePropertyStreets() {
+export async function updatePropertyStreets() {
   const properties = await prisma.property.findMany({
     where: {
       street: null,
@@ -28,6 +28,9 @@ async function updatePropertyStreets() {
   }
 }
 
-updatePropertyStreets()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+// Keep this for direct execution
+if (require.main === module) {
+  updatePropertyStreets()
+    .catch(console.error)
+    .finally(() => prisma.$disconnect());
+}

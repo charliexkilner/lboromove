@@ -1,6 +1,8 @@
-import { PrismaClient } from '@prisma/client';
-import fetch from 'cross-fetch';
-import { BaseScraper } from './BaseScraper';
+import type { PrismaClient } from '@prisma/client';
+import type { BaseScraper as BaseScraperType } from './BaseScraper';
+
+const { default: fetch } = require('cross-fetch');
+const { BaseScraper } = require('./BaseScraper');
 
 interface Loc8meProperty {
   id: number;
@@ -29,10 +31,10 @@ interface Loc8meApiResponse {
   properties: Loc8meProperty[];
 }
 
-export class Loc8meScraper extends BaseScraper {
+class Loc8meScraper extends BaseScraper {
   private readonly baseUrl = 'https://loc8me.co.uk/wp-json/api/v1/properties';
 
-  constructor(prisma: PrismaClient) {
+  constructor(prisma: typeof PrismaClient) {
     super(prisma, 'loc8me');
   }
 
@@ -168,3 +170,5 @@ export class Loc8meScraper extends BaseScraper {
     return title;
   }
 }
+
+module.exports = { Loc8meScraper };

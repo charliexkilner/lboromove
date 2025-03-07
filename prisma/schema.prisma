@@ -116,6 +116,7 @@ model Property {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   isGoldenTriangle Boolean  @default(false)
+  source          String?
 
   // Relations
   landlordId      String?
@@ -126,6 +127,10 @@ model Property {
   latitude        Float?
   longitude       Float?
   street          String?
+
+  distanceToTown   Float?
+  distanceToCampus Float?
+  isNearCampus     Boolean @default(false)
 
   @@unique([title, price, rooms, location], name: "property_unique")
 }

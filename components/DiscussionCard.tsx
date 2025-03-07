@@ -1,4 +1,5 @@
 import { Discuession } from '../types/discussion';
+import { ArrowUpIcon } from '@heroicons/react/24/outline';
 
 interface DiscussionCardProps {
   discussion: Discuession;
@@ -59,6 +60,19 @@ export default function DiscussionCard({ discussion }: DiscussionCardProps) {
             </div>
             */}
           </div>
+        </div>
+
+        {/* Voting Section */}
+        <div className="flex flex-col items-center w-12">
+          <button
+            onClick={handleUpvote}
+            className={`p-1 rounded hover:bg-gray-100 transition-colors ${
+              hasUpvoted ? 'text-purple-600' : 'text-gray-400'
+            }`}
+          >
+            <ArrowUpIcon className="h-5 w-5" />
+          </button>
+          <span className="text-sm font-medium text-gray-700">{upvotes}</span>
         </div>
       </div>
     </div>

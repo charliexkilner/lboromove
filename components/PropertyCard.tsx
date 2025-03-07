@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 import { useProtectedAction } from '@/hooks/useProtectedAction';
+import { generatePropertySlug } from '@/utils/url';
 
 interface PropertyCardProps {
   property: Property;
@@ -45,18 +46,15 @@ export default function PropertyCard({
     e.currentTarget.src = DEFAULT_IMAGE;
   };
 
-  const handleClick = () => {
-    const formattedTitle = property.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-');
-    const url = `/house/${property.id}`;
-    router.push(url, undefined, { shallow: true });
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const slug = generatePropertySlug(property);
+    router.push(`/house/${slug}`, undefined, { shallow: true });
   };
 
   const handleViewMore = (e: React.MouseEvent) => {
     e.stopPropagation();
-    handleClick();
+    handleClick(e);
   };
 
   const formatTitle = (title: string) => {
@@ -86,161 +84,162 @@ export default function PropertyCard({
   };
 
   return (
-    <div
-      className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+    <Link
+      href={`/house/${generatePropertySlug(property)}`}
       onClick={handleClick}
-      onMouseEnter={() => {
-        onMouseEnter?.();
-        prefetchPropertyData();
-      }}
     >
-      {/* Image Gallery */}
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <div className="relative w-full h-full">
-          {property.images && property.images.length > 0 ? (
-            <>
-              {/* Favorite Button */}
-              <button
-                onClick={handleFavoriteClick}
-                className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors z-10"
-              >
-                <Heart
-                  size={20}
-                  className={
-                    isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
-                  }
+      <div
+        className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+        onMouseEnter={() => {
+          onMouseEnter?.();
+          prefetchPropertyData();
+        }}
+      >
+        {/* Image Gallery */}
+        <div className="relative aspect-[4/3] overflow-hidden">
+          <div className="relative w-full h-full">
+            {property.images && property.images.length > 0 ? (
+              <>
+                {/* Favorite Button */}
+                <button
+                  onClick={handleFavoriteClick}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors z-10"
+                >
+                  <Heart
+                    size={20}
+                    className={
+                      isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
+                    }
+                  />
+                </button>
+
+                <Image
+                  src={property.images[currentImageIndex]}
+                  alt={`${property.title} property image ${
+                    currentImageIndex + 1
+                  }`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover"
+                  priority={currentImageIndex < 4}
                 />
-              </button>
 
-              <Image
-                src={property.images[currentImageIndex]}
-                alt={`${property.title} property image ${
-                  currentImageIndex + 1
-                }`}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover"
-                priority={currentImageIndex < 4}
-              />
+                {/* Navigation Dots - Only show on hover and when not showing view property overlay */}
+                {currentImageIndex < 5 && (
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {property.images.slice(0, 6).map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`w-2 h-2 rounded-full ${
+                          currentImageIndex === idx ? 'bg-white' : 'bg-white/60'
+                        }`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCurrentImageIndex(idx);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
 
-              {/* Navigation Dots - Only show on hover and when not showing view property overlay */}
-              {currentImageIndex < 5 && (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {property.images.slice(0, 6).map((_, idx) => (
+                {/* Left/Right Navigation Arrows - Only show on hover and when not showing view property overlay */}
+                {currentImageIndex < 5 && (
+                  <div className="absolute inset-0 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      key={idx}
-                      className={`w-2 h-2 rounded-full ${
-                        currentImageIndex === idx ? 'bg-white' : 'bg-white/60'
-                      }`}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setCurrentImageIndex(idx);
+                        setCurrentImageIndex((prev) =>
+                          prev === 0 ? property.images.length - 1 : prev - 1
+                        );
                       }}
-                    />
-                  ))}
-                </div>
-              )}
+                      className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                    >
+                      <ChevronLeftIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCurrentImageIndex((prev) =>
+                          prev === property.images.length - 1 ? 0 : prev + 1
+                        );
+                      }}
+                      className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                    >
+                      <ChevronRightIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
 
-              {/* Left/Right Navigation Arrows - Only show on hover and when not showing view property overlay */}
-              {currentImageIndex < 5 && (
-                <div className="absolute inset-0 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setCurrentImageIndex((prev) =>
-                        prev === 0 ? property.images.length - 1 : prev - 1
-                      );
-                    }}
-                    className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                {/* View More Photos Overlay */}
+                {property.images.length > 6 && currentImageIndex === 5 && (
+                  <div
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+                    onClick={handleViewMore}
                   >
-                    <ChevronLeftIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setCurrentImageIndex((prev) =>
-                        prev === property.images.length - 1 ? 0 : prev + 1
-                      );
-                    }}
-                    className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                  >
-                    <ChevronRightIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
+                    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                      View Property
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <PhotoIcon className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
+          </div>
+        </div>
 
-              {/* View More Photos Overlay */}
-              {property.images.length > 6 && currentImageIndex === 5 && (
-                <div
-                  className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleClick();
-                  }}
-                >
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                    View Property
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <PhotoIcon className="w-12 h-12 text-gray-400" />
+        <div className="p-4">
+          {/* Property Title */}
+          <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+            {formatTitle(property.title)}
+          </h3>
+
+          <div className="grid grid-cols-3 gap-4 text-center">
+            {/* Price */}
+            <div className="flex flex-col items-center">
+              <span className="text-lg font-bold">£{property.price}</span>
+              <span className="text-xs text-gray-500">
+                {locale === 'zh'
+                  ? '/周'
+                  : locale === 'hi'
+                  ? '/सप्ताह'
+                  : 'per week'}
+              </span>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="p-4">
-        {/* Property Title */}
-        <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-          {formatTitle(property.title)}
-        </h3>
-
-        <div className="grid grid-cols-3 gap-4 text-center">
-          {/* Price */}
-          <div className="flex flex-col items-center">
-            <span className="text-lg font-bold">£{property.price}</span>
-            <span className="text-xs text-gray-500">
-              {locale === 'zh'
-                ? '/周'
-                : locale === 'hi'
-                ? '/सप्ताह'
-                : 'per week'}
-            </span>
-          </div>
-          {/* Rooms */}
-          <div className="flex flex-col items-center">
-            <span className="text-lg font-bold">{property.rooms}</span>
-            <span className="text-xs text-gray-500">
-              {locale === 'zh'
-                ? '卧室'
-                : locale === 'hi'
-                ? 'बेडरूम'
-                : property.rooms === 1
-                ? 'bedroom'
-                : 'bedrooms'}
-            </span>
-          </div>
-          {/* Bathrooms */}
-          <div className="flex flex-col items-center">
-            <span className="text-lg font-bold">{property.bathrooms}</span>
-            <span className="text-xs text-gray-500">
-              {locale === 'zh'
-                ? '浴室'
-                : locale === 'hi'
-                ? 'बाथरूम'
-                : property.bathrooms === 1
-                ? 'bathroom'
-                : 'bathrooms'}
-            </span>
+            {/* Rooms */}
+            <div className="flex flex-col items-center">
+              <span className="text-lg font-bold">{property.rooms}</span>
+              <span className="text-xs text-gray-500">
+                {locale === 'zh'
+                  ? '卧室'
+                  : locale === 'hi'
+                  ? 'बेडरूम'
+                  : property.rooms === 1
+                  ? 'bedroom'
+                  : 'bedrooms'}
+              </span>
+            </div>
+            {/* Bathrooms */}
+            <div className="flex flex-col items-center">
+              <span className="text-lg font-bold">{property.bathrooms}</span>
+              <span className="text-xs text-gray-500">
+                {locale === 'zh'
+                  ? '浴室'
+                  : locale === 'hi'
+                  ? 'बाथरूम'
+                  : property.bathrooms === 1
+                  ? 'bathroom'
+                  : 'bathrooms'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

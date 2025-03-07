@@ -9,357 +9,521 @@ import {
   ClockIcon,
   FunnelIcon,
   PlusIcon,
+  ArrowUpIcon,
+  ChevronDownIcon,
+  AdjustmentsHorizontalIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import NewPostModal from '../../components/modals/NewPostModal';
+import FilterModal from '../../components/modals/FilterModal';
+import { useRouter } from 'next/router';
+
+type Post = {
+  id: string;
+  title: string;
+  shortDesc: string;
+  category: string;
+  author: string;
+  timeAgo: string;
+  comments: number;
+  upvotes: number;
+};
 
 const truncateText = (text: string, maxLength: number) => {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 };
 
+type Category = {
+  id: string;
+  icon: string;
+  label: string;
+  count: number;
+};
+
+const generateDummyPosts = (): Post[] => {
+  return [
+    // Housemate Finder posts
+    {
+      id: '1',
+      title: 'Looking for a housemate in Golden Triangle',
+      shortDesc:
+        'I have a spare room in a 3-bed house near UEA. £450pcm including bills. Available from September.',
+      category: 'housemate-finder',
+      author: 'Emily',
+      timeAgo: '2 hours ago',
+      comments: 7,
+      upvotes: 12,
+    },
+    {
+      id: '2',
+      title: 'Postgrad student seeking quiet flatmate',
+      shortDesc:
+        'PhD student looking for a considerate flatmate for a 2-bed apartment in city center. £500pcm + bills.',
+      category: 'housemate-finder',
+      author: 'Michael',
+      timeAgo: '1 day ago',
+      comments: 3,
+      upvotes: 5,
+    },
+
+    // For Sale posts
+    {
+      id: '3',
+      title: 'Desk and office chair - perfect for students',
+      shortDesc:
+        'Selling my IKEA desk and ergonomic chair. Both in excellent condition. £80 for both or can sell separately.',
+      category: 'for-sale',
+      author: 'Alex',
+      timeAgo: '5 hours ago',
+      comments: 9,
+      upvotes: 4,
+    },
+    {
+      id: '4',
+      title: 'Textbooks for Computer Science courses',
+      shortDesc:
+        'Various CS textbooks for sale. Most are in good condition with minimal highlighting. £10-25 each.',
+      category: 'for-sale',
+      author: 'Jamie',
+      timeAgo: '3 days ago',
+      comments: 2,
+      upvotes: 3,
+    },
+
+    // Events posts
+    {
+      id: '5',
+      title: 'House party this Saturday - all welcome!',
+      shortDesc:
+        'Hosting a house party in my place near the SU. Starting at 8pm, bring your own drinks!',
+      category: 'events',
+      author: 'Sophie',
+      timeAgo: '1 day ago',
+      comments: 15,
+      upvotes: 22,
+    },
+    {
+      id: '6',
+      title: 'Study group for Economics finals',
+      shortDesc:
+        'Meeting at the library this Thursday at 2pm to prepare for Economics finals. All welcome!',
+      category: 'events',
+      author: 'Daniel',
+      timeAgo: '12 hours ago',
+      comments: 4,
+      upvotes: 8,
+    },
+
+    // Questions posts
+    {
+      id: '7',
+      title: 'Best letting agents in Norwich?',
+      shortDesc:
+        'Looking for recommendations for student-friendly letting agents. Who has had good experiences?',
+      category: 'questions',
+      author: 'Olivia',
+      timeAgo: '6 hours ago',
+      comments: 11,
+      upvotes: 7,
+    },
+    {
+      id: '8',
+      title: 'How to deal with noisy neighbors?',
+      shortDesc:
+        "My neighbors party until 3am most nights. I've tried talking to them but no luck. Any advice?",
+      category: 'questions',
+      author: 'Ben',
+      timeAgo: '2 days ago',
+      comments: 14,
+      upvotes: 18,
+    },
+
+    // House Hunting posts
+    {
+      id: '9',
+      title: 'Any houses still available for September?',
+      shortDesc:
+        'Our group of 4 is still looking for a house for next academic year. Any leads would be appreciated!',
+      category: 'house-hunting',
+      author: 'Grace',
+      timeAgo: '3 hours ago',
+      comments: 5,
+      upvotes: 4,
+    },
+    {
+      id: '10',
+      title: 'Advice on Golden Triangle vs. City Center',
+      shortDesc:
+        'Trying to decide between a house in Golden Triangle or a flat in the city center. Pros and cons?',
+      category: 'house-hunting',
+      author: 'Tom',
+      timeAgo: '4 days ago',
+      comments: 8,
+      upvotes: 6,
+    },
+
+    // Student Life posts
+    {
+      id: '11',
+      title: 'Best places to study on campus?',
+      shortDesc:
+        "Looking for quiet study spots on campus that aren't always packed. Any hidden gems?",
+      category: 'student-life',
+      author: 'Zoe',
+      timeAgo: '7 hours ago',
+      comments: 12,
+      upvotes: 15,
+    },
+    {
+      id: '12',
+      title: 'Cheapest supermarkets near UEA',
+      shortDesc:
+        'Which supermarkets offer the best value for money? Trying to save on my food budget this term.',
+      category: 'student-life',
+      author: 'Ryan',
+      timeAgo: '5 days ago',
+      comments: 10,
+      upvotes: 20,
+    },
+
+    // Posts with no category
+    {
+      id: '13',
+      title: 'Lost my student ID card',
+      shortDesc:
+        'Lost my student ID somewhere between the library and the SU yesterday. Has anyone found it?',
+      category: '',
+      author: 'Lily',
+      timeAgo: '1 day ago',
+      comments: 3,
+      upvotes: 2,
+    },
+    {
+      id: '14',
+      title: 'Anyone want to start a band?',
+      shortDesc:
+        'I play guitar and am looking for other musicians to jam with. All skill levels welcome!',
+      category: '',
+      author: 'Josh',
+      timeAgo: '2 days ago',
+      comments: 6,
+      upvotes: 9,
+    },
+    {
+      id: '15',
+      title: 'Free furniture to collect',
+      shortDesc:
+        'Moving out and have some furniture to give away. Must collect from Golden Triangle by this weekend.',
+      category: '',
+      author: 'Emma',
+      timeAgo: '8 hours ago',
+      comments: 18,
+      upvotes: 25,
+    },
+  ];
+};
+
 export default function Discussion() {
   const { t } = useTranslation('common');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('Top');
+  const [votes, setVotes] = useState<{ [key: string]: boolean }>({});
+  const [showNewPostModal, setShowNewPostModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeSort, setActiveSort] = useState('trending');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
+  const router = useRouter();
+  const { category } = router.query;
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([
+    { id: 'housemate-finder', icon: '🏠', label: 'HOUSEMATE FINDER', count: 0 },
+    { id: 'for-sale', icon: '💰', label: 'FOR SALE', count: 0 },
+    { id: 'events', icon: '🎉', label: 'EVENTS', count: 0 },
+    { id: 'questions', icon: '❓', label: 'QUESTIONS', count: 0 },
+    { id: 'house-hunting', icon: '🔍', label: 'HOUSE HUNTING', count: 0 },
+    { id: 'student-life', icon: '🎓', label: 'STUDENT LIFE', count: 0 },
+  ]);
 
-  const categories = [
-    {
-      name: 'STUDENT MARKET',
-      icon: '💸',
-      description: 'buy and sell your stuff',
-    },
-    {
-      name: 'HOUSEMATE FINDER',
-      icon: '🏠',
-      description: 'find your perfect housemates',
-    },
-    { name: 'EVENTS', icon: '🎉', description: 'local events and parties' },
-    { name: 'CONFESSIONS', icon: '🤫', description: 'got a campus crush?' },
-    { name: 'QUESTIONS', icon: '❓', description: 'ask the community' },
+  const sortOptions = [
+    { id: 'new', label: 'New', icon: ClockIcon },
+    { id: 'top', label: 'Top', icon: ChartBarIcon },
   ];
 
-  const posts = [
-    {
-      title: 'Looking for one more housemate (Kingfisher)',
-      shortDesc:
-        "We're a group of 3 students (2 guys, 1 girl) looking for one more housemate to join us in our 4-bedroom student house in Kingfisher for the upcoming academic year, the house is £130 a week including builds.",
-      category: '🏠 HOUSEMATE FINDER',
-      author: 'Charlie',
-      timeAgo: '2h ago',
-      upvotes: 12,
-      comments: 5,
-    },
-    {
-      title: 'Selling my course textbooks (Computer Science Year 2)',
-      shortDesc:
-        "Clearing out my textbooks from this year. All in great condition, barely used some of them! Including 'Introduction to Algorithms', 'Database Systems', and 'Computer Networks'. Prices negotiable, pickup from campus.",
-      category: '💰 FOR SALE',
-      author: 'TechBookWorm',
-      timeAgo: '4h ago',
-      upvotes: 8,
-      comments: 3,
-    },
-    {
-      title: 'Best takeaways near campus that deliver late?',
-      shortDesc:
-        "I'm pulling an all-nighter for my dissertation and need some food recommendations. What places are still delivering after midnight? Preferably something not too expensive!",
-      category: '❓ QUESTIONS',
-      author: 'LateNightStudent',
-      timeAgo: '6h ago',
-      upvotes: 15,
-      comments: 12,
-    },
-    {
-      title: 'End of Year Party at Junction - This Friday!',
-      shortDesc:
-        "We're organizing a massive end of year party this Friday at Junction! £5 entry with student ID, drinks deals all night, and great music. Come celebrate the end of exams with us! Starts at 9PM.",
-      category: '🎉 EVENTS',
-      author: 'PartyPlanner',
-      timeAgo: '12h ago',
-      upvotes: 45,
-      comments: 28,
-    },
-    {
-      title: 'Tips for viewing student houses?',
-      shortDesc:
-        "Going to view my first student house tomorrow and I'm not sure what to look out for. Any advice on red flags or important things to check? Don't want to get stuck in a bad house next year!",
-      category: '🔍 HOUSE HUNTING',
-      author: 'FirstTimer',
-      timeAgo: '1d ago',
-      upvotes: 32,
-      comments: 19,
-    },
-    {
-      title: 'Selling my mini fridge - perfect for student room',
-      shortDesc:
-        'Moving out and selling my mini fridge. Perfect condition, only used for one year. Great for keeping drinks cold in your room! £30 ONO. Can deliver within reasonable distance.',
-      category: '💰 FOR SALE',
-      author: 'MovingOut2023',
-      timeAgo: '1d ago',
-      upvotes: 6,
-      comments: 4,
-    },
-    {
-      title: '2 girls looking for 2 more to complete house share',
-      shortDesc:
-        "We're two second-year Psychology students looking for 2 more girls to complete our house share for next year. House is on Victoria Road, £125pw including bills. We're clean, sociable but respectful of study time!",
-      category: '🏠 HOUSEMATE FINDER',
-      author: 'PsychGirls',
-      timeAgo: '1d ago',
-      upvotes: 9,
-      comments: 7,
-    },
-    {
-      title: 'Anyone else having issues with Campus WiFi?',
-      shortDesc:
-        'The library WiFi has been super slow today, especially around the silent study area. Anyone else experiencing this? Really need to submit my assignment today!',
-      category: '❓ QUESTIONS',
-      author: 'WiFiWarrior',
-      timeAgo: '2d ago',
-      upvotes: 28,
-      comments: 15,
-    },
-    {
-      title: 'Society Meetup - Board Games Night',
-      shortDesc:
-        "The Board Games Society is hosting a casual games night this Thursday in the Student Union, Room 3. Everyone welcome, whether you're a member or not! We'll have plenty of games, snacks, and good vibes.",
-      category: '🎉 EVENTS',
-      author: 'BoardGamePro',
-      timeAgo: '2d ago',
-      upvotes: 21,
-      comments: 8,
-    },
-    {
-      title: 'Warning: Avoid Sunrise Lettings!',
-      shortDesc:
-        "Just wanted to warn everyone about our experience with Sunrise Lettings. They've been terrible with maintenance, took 3 months to fix our heating, and now they're trying to charge us for pre-existing damage.",
-      category: '🔍 HOUSE HUNTING',
-      author: 'AngryTenant',
-      timeAgo: '3d ago',
-      upvotes: 89,
-      comments: 42,
-    },
-    {
-      title: 'Study group for MATH201 Final',
-      shortDesc:
-        "Anyone want to form a study group for the MATH201 final? Planning to meet in the library every Tuesday and Thursday evening. All welcome, especially if you're good at calculus!",
-      category: '🎓 STUDENT LIFE',
-      author: 'MathWhiz',
-      timeAgo: '3d ago',
-      upvotes: 15,
-      comments: 11,
-    },
-  ];
+  const getSortedPosts = (posts: Post[], sortType: string) => {
+    if (sortType === 'new') {
+      // Sort by time (most recent first)
+      // This is a simple implementation - in a real app you'd parse the timeAgo properly
+      return [...posts].sort((a, b) => {
+        // Convert timeAgo to approximate hours for sorting
+        const getHours = (timeStr: string) => {
+          if (timeStr.includes('hour')) {
+            return parseInt(timeStr.split(' ')[0]);
+          } else if (timeStr.includes('day')) {
+            return parseInt(timeStr.split(' ')[0]) * 24;
+          }
+          return 0;
+        };
+        return getHours(a.timeAgo) - getHours(b.timeAgo);
+      });
+    } else if (sortType === 'top') {
+      // Sort by upvotes (highest first)
+      return [...posts].sort((a, b) => b.upvotes - a.upvotes);
+    }
+    return posts;
+  };
+
+  useEffect(() => {
+    // Update selectedCategory based on URL query
+    setSelectedCategory((category as string) || 'All');
+
+    // Use dummy data instead of API fetch
+    setLoading(true);
+    try {
+      const dummyPosts = generateDummyPosts();
+      setPosts(dummyPosts);
+
+      // Create a new array with updated counts
+      const updatedCategories = categories.map((cat) => ({
+        ...cat,
+        count: dummyPosts.filter((post: Post) => post.category === cat.id)
+          .length,
+      }));
+
+      // Update the categories state
+      setCategories(updatedCategories);
+
+      // Filter posts if category is selected
+      let filtered = category
+        ? dummyPosts.filter((post: Post) => post.category === category)
+        : dummyPosts;
+
+      // Apply sorting
+      filtered = getSortedPosts(filtered, activeSort);
+
+      setFilteredPosts(filtered);
+    } catch (error) {
+      console.error('Error with dummy posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [category, activeSort]);
+
+  useEffect(() => {
+    if (posts.length > 0) {
+      const filtered = category
+        ? posts.filter((post) => post.category === category)
+        : posts;
+
+      setFilteredPosts(getSortedPosts(filtered, activeSort));
+    }
+  }, [activeSort]);
+
+  const handleUpvote = (postTitle: string) => {
+    setVotes((prev) => ({
+      ...prev,
+      [postTitle]: !prev[postTitle],
+    }));
+  };
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === category) {
+      router.push('/discussion');
+    } else {
+      router.push({
+        pathname: '/discussion',
+        query: { category: categoryId },
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      {/* Main content wrapper */}
-      <div className="pt-16 sm:pt-20">
-        {/* Main content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Main Content */}
-            <div className="lg:w-3/4">
-              {/* Action Bar */}
-              <div className="flex items-center gap-3 mb-4">
-                {/* Sort dropdown */}
-                <div className="relative">
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm hover:bg-gray-50"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  >
-                    {/* Dynamic icon based on selected option */}
-                    {selectedSort === 'Top' && (
-                      <ArrowTrendingUpIcon className="h-5 w-5" />
-                    )}
-                    {selectedSort === 'New' && (
-                      <ClockIcon className="h-5 w-5" />
-                    )}
-                    {selectedSort === 'Trending' && (
-                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M13 7L20 14M20 14L13 21M20 14H4"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                    <span className="hidden sm:inline">{selectedSort}</span>
-                    <svg
-                      className={`h-4 w-4 ml-1 transform transition-transform ${
-                        isDropdownOpen ? 'rotate-180' : ''
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+        <div className="flex justify-between items-center mb-6">
+          <div className="relative">
+            <div className="sm:hidden">
+              <button
+                onClick={() => setIsTopMenuOpen(!isTopMenuOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm"
+              >
+                <ChartBarIcon className="h-5 w-5" />
+                <span className="capitalize">{activeSort}</span>
+                <ChevronDownIcon
+                  className={`h-5 w-5 transition-transform ${
+                    isTopMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {isTopMenuOpen && (
+                <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-lg shadow-lg py-1 z-10">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        setActiveSort(option.id);
+                        setIsTopMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-4 py-2 text-left ${
+                        activeSort === option.id
+                          ? 'text-purple-600 bg-purple-50'
+                          : 'text-gray-600 hover:bg-gray-50'
                       }`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
-                      {['Top', 'New', 'Trending'].map((option) => (
-                        <button
-                          key={option}
-                          className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${
-                            selectedSort === option
-                              ? 'text-purple-600'
-                              : 'text-gray-700'
-                          }`}
-                          onClick={() => {
-                            setSelectedSort(option);
-                            setIsDropdownOpen(false);
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            {option === 'Top' && (
-                              <ArrowTrendingUpIcon className="h-5 w-5" />
-                            )}
-                            {option === 'New' && (
-                              <ClockIcon className="h-5 w-5" />
-                            )}
-                            {option === 'Trending' && (
-                              <svg
-                                className="h-5 w-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M13 7L20 14M20 14L13 21M20 14H4"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            )}
-                            {option}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right side buttons */}
-                <div className="flex items-center gap-2 ml-auto">
-                  {/* Filter button */}
-                  <button className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50">
-                    <FunnelIcon className="h-5 w-5" />
-                  </button>
-
-                  {/* Desktop Create Post button */}
-                  <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-full shadow-sm hover:bg-purple-700 transition-colors">
-                    <PlusIcon className="h-5 w-5" />
-                    <span className="font-medium">Create Post</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Floating Action Button for Create Post on Mobile */}
-              <div className="fixed bottom-20 right-4 sm:hidden z-50">
-                <button className="flex items-center justify-center w-14 h-14 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-colors">
-                  <PlusIcon className="h-6 w-6" />
-                </button>
-              </div>
-
-              {/* Remove the padding at the bottom since we no longer have a full-width button */}
-              <div>
-                {/* Posts List */}
-                <div className="space-y-4">
-                  {posts.map((post, index) => (
-                    <div
-                      key={index}
-                      className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                            <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs">
-                              {post.category}
-                            </span>
-                            <span>
-                              Posted by{' '}
-                              <span className="hover:underline hover:cursor-pointer">
-                                {post.author}
-                              </span>
-                            </span>
-                            <span>•</span>
-                            <span>{post.timeAgo}</span>
-                          </div>
-                          <h3 className="text-xl font-medium mb-2 mt-2">
-                            {post.title}
-                          </h3>
-                          <div className="relative">
-                            <p className="text-gray-600 mb-2">
-                              {truncateText(post.shortDesc, 175)}
-                            </p>
-                            {post.shortDesc.length > 175 && (
-                              <div className="absolute bottom-0 right-0 left-0 h-full bg-gradient-to-t from-white to-transparent pointer-events-none" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-500">
-                            <ChatBubbleLeftIcon className="h-5 w-5" />
-                            <span>{post.comments} comments</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-center text-gray-500">
-                          <button className="hover:text-purple-600">▲</button>
-                          <span className="text-sm font-medium">
-                            {post.upvotes}
-                          </span>
-                          <button className="hover:text-purple-600">▼</button>
-                        </div>
-                      </div>
-                    </div>
+                      <option.icon className="h-5 w-5" />
+                      <span>{option.label}</span>
+                    </button>
                   ))}
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Sidebar - Categories only visible on desktop */}
-            <div className="hidden lg:block lg:w-1/4">
-              {/* Categories */}
-              <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                <h2 className="text-lg font-bold mb-4 uppercase">Categories</h2>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <Link
-                      key={category.name}
-                      href={`/discussion/${category.name
-                        .toLowerCase()
-                        .replace(' ', '-')}`}
-                      className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg"
-                    >
-                      <span className="text-xl pr-2">{category.icon}</span>
-                      <div>
-                        <h3 className="font-medium uppercase">
-                          {category.name}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {category.description}
-                        </p>
+            <div className="hidden sm:flex items-center gap-3">
+              {sortOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveSort(option.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                    activeSort === option.id
+                      ? 'bg-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <option.icon className="h-5 w-5" />
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowNewPostModal(true)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span className="hidden sm:inline">Create new post</span>
+            <span className="sm:hidden">Post</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            {loading ? (
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+              </div>
+            ) : filteredPosts.length > 0 ? (
+              <div className="space-y-4">
+                {filteredPosts.map((post, index) => (
+                  <div
+                    key={index}
+                    className="relative bg-white rounded-lg shadow-sm p-6 mb-4"
+                  >
+                    <div className="pr-12 sm:pr-16">
+                      <h2 className="text-lg font-medium mb-2">{post.title}</h2>
+                      <p className="text-gray-600 mb-4">{post.shortDesc}</p>
+
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mt-4">
+                        <div className="flex items-center gap-2 sm:gap-4 overflow-hidden">
+                          <div className="bg-gray-100 px-2 sm:px-3 py-1 rounded-full text-gray-600 whitespace-nowrap lowercase">
+                            {post.category}
+                          </div>
+
+                          <span className="truncate">
+                            Posted by {post.author} • {post.timeAgo}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 ml-2">
+                          <ChatBubbleLeftIcon className="h-4 w-4" />
+                          <span>{post.comments}</span>
+                        </div>
                       </div>
-                    </Link>
-                  ))}
-                </div>
+                    </div>
+
+                    <div
+                      onClick={() => handleUpvote(post.title)}
+                      className={`flex flex-col items-center justify-center w-12 sm:w-16 h-full border-l ${
+                        votes[post.title]
+                          ? 'border-purple-200 bg-purple-50 text-purple-600'
+                          : 'border-gray-200 hover:bg-gray-50 text-gray-500'
+                      } transition-colors group cursor-pointer absolute right-0 top-0`}
+                    >
+                      <ArrowUpIcon
+                        className={`h-4 w-4 sm:h-5 sm:w-5 mb-1 transition-colors ${
+                          votes[post.title]
+                            ? 'text-purple-600'
+                            : 'text-gray-400'
+                        }`}
+                      />
+                      <span
+                        className={`text-xs sm:text-sm font-medium transition-colors ${
+                          votes[post.title]
+                            ? 'text-purple-600'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        {post.upvotes + (votes[post.title] ? 1 : 0)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  No discussions found in this category.
+                </p>
+                <button
+                  onClick={() => router.push('/discussion')}
+                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                >
+                  View All Discussions
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-semibold mb-4">CATEGORIES</h2>
+              <div className="space-y-4">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`w-full flex items-start text-left px-4 py-3 rounded-lg transition-colors ${
+                      category === cat.id
+                        ? 'bg-purple-50 text-purple-600'
+                        : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <span className="text-2xl mr-3">{cat.icon}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium uppercase">{cat.label}</span>
+                      <span className="text-sm text-gray-500">
+                        {cat.count} posts
+                      </span>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showNewPostModal && (
+        <NewPostModal onClose={() => setShowNewPostModal(false)} />
+      )}
+      {showFilters && <FilterModal onClose={() => setShowFilters(false)} />}
     </div>
   );
 }

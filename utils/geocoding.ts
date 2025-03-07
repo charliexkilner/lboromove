@@ -6,9 +6,17 @@ interface GeocodeResult {
 }
 
 export async function geocode(address: string): Promise<GeocodeResult> {
-  const apiKey = process.env.OPENROUTE_API_KEY;
+  const apiKey =
+    process.env.OPENROUTE_API_KEY || process.env.NEXT_PUBLIC_OPENROUTE_API_KEY;
   if (!apiKey) {
-    throw new Error('OpenRouteService API key not found');
+    console.error('Environment variables:', {
+      hasOpenRouteKey: !!process.env.OPENROUTE_API_KEY,
+      hasNextPublicKey: !!process.env.NEXT_PUBLIC_OPENROUTE_API_KEY,
+      nodeEnv: process.env.NODE_ENV,
+    });
+    throw new Error(
+      'OpenRouteService API key not found. Please check your .env file.'
+    );
   }
 
   // Clean up the address

@@ -1,23 +1,27 @@
-const { Loc8meScraper } = require('../lib/scrapers/Loc8meScraper');
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import { Loc8meScraper } from '../lib/scrapers/Loc8meScraper';
+import { TopLetsScraper } from '../lib/scrapers/TopLetsScraper';
 
-async function runScrapers() {
+async function main() {
   const prisma = new PrismaClient();
 
-  const scrapers = [
-    new Loc8meScraper(prisma),
-    // Add more scrapers here as needed
-  ];
+  try {
+    // Run Loc8me scraper
+    console.log('Starting Loc8me scraper...');
+    const loc8meScraper = new Loc8meScraper(prisma);
+    await loc8meScraper.scrape();
 
-  for (const scraper of scrapers) {
-    try {
-      await scraper.scrape();
-    } catch (error) {
-      console.error('Scraper failed:', error);
-    }
+    // Run Top Lets scraper
+    console.log('Starting Top Lets scraper...');
+    const topLetsScraper = new TopLetsScraper(prisma);
+    await topLetsScraper.scrape();
+
+    console.log('All scrapers completed successfully!');
+  } catch (error) {
+    console.error('Error running scrapers:', error);
+  } finally {
+    await prisma.$disconnect();
   }
-
-  await prisma.$disconnect();
 }
 
-runScrapers().catch(console.error);
+main();

@@ -6,6 +6,39 @@ import ChangelogCard from '../components/ChangelogCard';
 export default function Changelog() {
   const changes = [
     {
+      date: 'March 6 2025',
+      title: 'To-Do',
+      icon: '🧠',
+      description: `Property card to-do:
+      Make sure map is working
+      Remove additonal text under the cards
+      Make the listed by text clickable and take you to estate agent page that has all of their properties and description
+      Have a message on the rating panel that says "be the first one to review this property and underneath it has a text box with the star rating slider.
+      Make the near-by tab work just showing up to 12 properties that are in a 5-7 minute walkj from the current house
+      Similar tab to have other properties with the same price plus or minus £10 a week with the same amount of bedrooms and to only show 12 properties too.  `,
+    },
+    {
+      date: 'February 26 2025',
+      title: 'New Ideas',
+      icon: '🧠',
+      description: `Location neighbourhood overlay like levesio website vut `,
+    },
+    {
+      date: 'February 20 2025',
+      title: 'Map on Property Modal',
+      icon: '📜',
+      description: `Made the map on the property modal work. As well as making it very efficient byt fetching the coordinates when the property modal loads and then store the coordinates in the modal's state - this means that when the user switches between tabs the map won't be effected and won't need to re-fetch coordinates or reintilisase hopefully inturn providing a smoother user experience.
+      It also uses the same API used for the near campus and near-by tab on the property page which is open source and called OpenRouteService.`,
+    },
+    {
+      date: 'February 20 2025',
+      title: 'TO-DO',
+      icon: '📜',
+      description: `Create the near-by and similar tabs on the property modals.
+      Near-by will use the geolocating to get houses within a close radius and similar will give 6 similar houses that match the same amount of bedrooms and is within the same price brakcet of whatever the current house is plus or min £20 a week.
+      Make a placeholder for the ratings tab on the property modal - say that this is coming soon etc etc.`,
+    },
+    {
       date: 'February 19 2025',
       title: 'TO-DO',
       icon: '📜',

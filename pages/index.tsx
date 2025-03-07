@@ -1,6 +1,6 @@
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
-import { GetServerSideProps } from 'next';
+import { GetServerSideProps } from 'next/types';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { isCloseToUniversity } from '../utils/distance';
 import Navbar from '../components/Navbar';
@@ -19,6 +19,7 @@ import { fetchAPI } from '../utils/api';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 import { usePropertyStore } from '../stores/usePropertyStore';
+import { getPropertyIdFromSlug } from '@/utils/url';
 
 export default function Home() {
   const { t } = useTranslation('common');
@@ -40,6 +41,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [localFilteredProperties, setLocalFilteredProperties] = useState<
+    Property[]
+  >([]);
 
   const {
     properties,
@@ -47,6 +51,7 @@ export default function Home() {
     setProperties,
     setActiveTab,
     activeTab,
+    setFilteredProperties,
   } = usePropertyStore();
 
   const {
@@ -102,9 +107,8 @@ export default function Home() {
     const handleRouteChange = (url: string) => {
       const propertyMatch = url.match(/\/house\/(.*?)$/);
       if (propertyMatch) {
-        setSelectedProperty(propertyMatch[1]);
-      } else {
-        setSelectedProperty(null);
+        const propertyId = getPropertyIdFromSlug(propertyMatch[1]);
+        setSelectedProperty(propertyId);
       }
     };
 
@@ -143,6 +147,38 @@ export default function Home() {
   const handleTabChange = (tabName: string) => {
     console.log('Tab changed to:', tabName);
     setActiveTab(tabName);
+
+    // Filter properties based on the selected tab
+    let filtered;
+    switch (tabName) {
+      case 'all-houses':
+        filtered = properties;
+        break;
+      case 'golden-triangle':
+        filtered = properties.filter((p) => p.isGoldenTriangle === true);
+        break;
+      case 'great-value':
+        filtered = properties.filter((p) => p.price <= 135);
+        break;
+      case 'solo-living':
+        filtered = properties.filter((p) => p.rooms === 1);
+        break;
+      case 'large-houses':
+        filtered = properties.filter((p) => p.rooms >= 5);
+        break;
+      case 'near-campus':
+        filtered = properties.filter((p) => isCloseToUniversity(p));
+        break;
+      case 'rare-finds':
+        // Implement your rare finds logic here
+        filtered = properties;
+        break;
+      default:
+        filtered = properties;
+    }
+
+    // Update the local state instead
+    setLocalFilteredProperties(filtered);
   };
 
   // Update the getActiveFiltersText function
@@ -213,6 +249,8 @@ export default function Home() {
         return greatValueCount;
       case 'solo-living':
         return allProperties.filter((p: Property) => p.rooms === 1).length;
+      case 'large-houses':
+        return allProperties.filter((p: Property) => p.rooms >= 5).length;
       case 'near-campus':
         return allProperties.filter((p: Property) => isCloseToUniversity(p))
           .length;
@@ -331,21 +369,15 @@ export default function Home() {
                       icon: '✨',
                       label: t('tabs.rareFinds'),
                     },
-                    { id: 'en-suite', icon: '🚿', label: t('tabs.enSuite') },
-                    {
-                      id: 'bills-included',
-                      icon: '💡',
-                      label: t('tabs.billsIncluded'),
-                    },
-                    {
-                      id: 'driveway-parking',
-                      icon: '🚗',
-                      label: t('tabs.drivewayParking'),
-                    },
                     {
                       id: 'solo-living',
                       icon: '🏃',
                       label: t('tabs.soloLiving'),
+                    },
+                    {
+                      id: 'large-houses',
+                      icon: '🏰',
+                      label: 'Large Houses',
                     },
                   ].map((tab, index, array) => (
                     <button
@@ -424,7 +456,7 @@ export default function Home() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredProperties.map((property) => (
+                    {localFilteredProperties.map((property) => (
                       <PropertyCard
                         key={property.id}
                         property={property}
@@ -442,7 +474,10 @@ export default function Home() {
               slug={selectedProperty}
               onClose={() => {
                 router.push('/', undefined, { shallow: true });
-                setSelectedProperty(null);
+                // Fix the event listener
+                router.events.on('routeChangeComplete', () => {
+                  setSelectedProperty(null);
+                });
               }}
             />
           )}
@@ -517,21 +552,15 @@ export default function Home() {
                     label: t('tabs.nearCampus'),
                   },
                   { id: 'rare-finds', icon: '✨', label: t('tabs.rareFinds') },
-                  { id: 'en-suite', icon: '🚿', label: t('tabs.enSuite') },
-                  {
-                    id: 'bills-included',
-                    icon: '💡',
-                    label: t('tabs.billsIncluded'),
-                  },
-                  {
-                    id: 'driveway-parking',
-                    icon: '🚗',
-                    label: t('tabs.drivewayParking'),
-                  },
                   {
                     id: 'solo-living',
                     icon: '🏃',
                     label: t('tabs.soloLiving'),
+                  },
+                  {
+                    id: 'large-houses',
+                    icon: '🏰',
+                    label: 'Large Houses',
                   },
                 ].map((tab, index, array) => (
                   <button
@@ -610,7 +639,7 @@ export default function Home() {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredProperties.map((property) => (
+                  {localFilteredProperties.map((property) => (
                     <PropertyCard
                       key={property.id}
                       property={property}
@@ -628,7 +657,10 @@ export default function Home() {
             slug={selectedProperty}
             onClose={() => {
               router.push('/', undefined, { shallow: true });
-              setSelectedProperty(null);
+              // Fix the event listener
+              router.events.on('routeChangeComplete', () => {
+                setSelectedProperty(null);
+              });
             }}
           />
         )}
@@ -637,7 +669,11 @@ export default function Home() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
+export const getServerSideProps: GetServerSideProps = async ({
+  locale,
+}: {
+  locale?: string;
+}) => {
   return {
     props: {
       ...(await serverSideTranslations(locale ?? 'en', ['common'])),
@@ -666,6 +702,8 @@ function getPropertyCount(
       return greatValueCount;
     case 'solo-living':
       return allProperties.filter((p) => p.rooms === 1).length;
+    case 'large-houses':
+      return allProperties.filter((p) => p.rooms >= 5).length;
     case 'near-campus':
       return allProperties.filter((p) => isCloseToUniversity(p)).length;
     case 'en-suite':
