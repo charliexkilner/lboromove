@@ -2,57 +2,45 @@ const { i18n } = require('./next-i18next.config');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   i18n,
-  transpilePackages: ['zustand'],
-  experimental: {
-    esmExternals: 'loose',
-  },
   images: {
     domains: [
-      'example.com',
-      'res.cloudinary.com',
-      'images.unsplash.com',
-      'lh3.googleusercontent.com',
-      'loc8me.co.uk',
-      'resource.rentcafe.com',
+      'resource.rentcafe.com', 
+      'firebasestorage.googleapis.com', 
+      'images.rentals.com',
       'cdn.profoto.com',
+      'www.lboro.ac.uk',
+      'lboro.ac.uk'
     ],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'loc8me.co.uk',
-        pathname: '/wp-content/uploads/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'resource.rentcafe.com',
-        pathname: '/image/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.profoto.com',
-        pathname: '/cdn/**',
+        hostname: '**',
       },
     ],
-    unoptimized: process.env.NODE_ENV === 'development',
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    minimumCacheTTL: 60,
   },
-  reactStrictMode: true,
-  webpack: (config, { isServer }) => {
-    // Fix module resolution
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
-    }
+  // Optimize the build for Vercel
+  swcMinify: true,
+  // Avoid Mapbox related ESM issues
+  transpilePackages: ['mapbox-gl'],
+  // Increase build timeouts for larger apps
+  experimental: {
+    serverComponentsExternalPackages: ['prisma', '@prisma/client'],
+    optimizeCss: true
+  },
+  webpack: (config) => {
+    // Add support for importing worker files
+    config.module.rules.push({
+      test: /\.worker\.js$/,
+      loader: 'worker-loader',
+      options: {
+        filename: 'static/[hash].worker.js',
+        publicPath: '/_next/',
+      },
+    });
     return config;
   },
-  swcMinify: false, // Temporarily disable SWC minification
 };
 
 module.exports = nextConfig;

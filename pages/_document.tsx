@@ -17,14 +17,7 @@ class MyDocument extends Document {
     return (
       <Html>
         <Head>
-          {/* Add Mapbox GL JS script and CSS - Use CDN without async for better reliability */}
-          <link 
-            href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" 
-            rel="stylesheet" 
-          />
-          <script 
-            src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"
-          ></script>
+          {/* Leave Head empty - we'll load Mapbox in a different way */}
         </Head>
         <body>
           <Main />

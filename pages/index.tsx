@@ -25,7 +25,18 @@ import { getCampusPropertiesAsProperties, getCampusPropertiesWithKeyFeatures } f
 import CampusPropertyModal from '../components/CampusPropertyModal';
 import CampusPropertyCard from '../components/CampusPropertyCard';
 import Image from 'next/image';
-import PropertyMap from '../components/PropertyMap';
+import dynamic from 'next/dynamic';
+
+// Import PropertyMap with dynamic import to prevent SSR issues
+const PropertyMap = dynamic(() => import('../components/PropertyMap'), { 
+  ssr: false, 
+  loading: () => (
+    <div className="flex flex-col items-center justify-center h-[80vh]">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+      <p className="text-gray-700">Loading map view...</p>
+    </div>
+  )
+});
 
 // Define a type for serialized properties with string dates
 type SerializedProperty = Omit<Partial<Property>, 'createdAt' | 'updatedAt'> & {

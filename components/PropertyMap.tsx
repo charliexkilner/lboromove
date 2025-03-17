@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import dynamic from "next/dynamic";
 import { Property } from "@prisma/client";
-import { usePropertyStore } from "../stores/usePropertyStore";
 import { Heart, X, Map as MapIcon, Home, Navigation } from "react-feather";
 import { Feature, Polygon } from 'geojson';
+import MapboxLoader from "./MapboxLoader";
 
-// Ensure Mapbox token is set correctly - this must happen before any map is created
-mapboxgl.accessToken = "pk.eyJ1IjoiY2hhcmxpZWtpbG5lciIsImEiOiJjbDEzdG9temIwank0M2twZDMzOGRmeW83In0.Jm5wwTD8SyYzvsmxaFYDQw";
+// Don't import mapboxgl directly - we'll load it client-side only
+let mapboxgl: any = null;
 
 // GeoJSON for the Golden Triangle area
 const goldenTriangleGeoJSON: Feature<Polygon> = {
@@ -49,7 +48,7 @@ const universityCampusGeoJSON: Feature<Polygon> = {
 };
 
 // Create heatmap effect with multiple layers of decreasing size and opacity
-function createHeatmapEffect(map: mapboxgl.Map, sourceId: string, color: string, intensity = 1) {
+function createHeatmapEffect(map: any, sourceId: string, color: string, intensity = 1) {
   try {
     // Base layer - full opacity
     map.addLayer({
@@ -95,7 +94,7 @@ interface PropertyMapProps {
 
 const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<any>(null);
   const [selectedProperty, setSelectedProperty] = useState<ExtendedProperty | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(12);
@@ -103,13 +102,27 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
   const [mapError, setMapError] = useState<string | null>(null);
   const [markersAdded, setMarkersAdded] = useState(false);
+  const [mapboxReady, setMapboxReady] = useState(false);
 
-  // Simple, direct map initialization - focus on reliability
+  // Handler for when Mapbox is loaded
+  const handleMapboxLoad = () => {
+    console.log("Mapbox loaded successfully");
+    setMapboxReady(true);
+    // Set mapboxgl after it's loaded
+    if (typeof window !== 'undefined') {
+      mapboxgl = window.mapboxgl;
+      // Set the token after mapboxgl is available
+      if (mapboxgl) {
+        mapboxgl.accessToken = "pk.eyJ1IjoiY2hhcmxpZWtpbG5lciIsImEiOiJjbDEzdG9temIwank0M2twZDMzOGRmeW83In0.Jm5wwTD8SyYzvsmxaFYDQw";
+      }
+    }
+  };
+
+  // Initialize map only after mapboxgl is available
   useEffect(() => {
+    if (!mapboxReady || !mapboxgl || map.current || !mapContainer.current) return;
+
     console.log("Map initialization starting...");
-    
-    // Don't re-initialize if already done
-    if (map.current || !mapContainer.current) return;
     
     // Clean up any previous instances
     const cleanup = () => {
@@ -160,10 +173,12 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
       });
 
       // Add basic controls
-      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      if (mapboxgl.NavigationControl) {
+        map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      }
       
       // Handle errors
-      map.current.on("error", (e) => {
+      map.current.on("error", (e: any) => {
         console.error("Mapbox error:", e);
         setMapError("Error loading map components");
       });
@@ -182,7 +197,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
 
     // Clean up on unmount
     return cleanup;
-  }, []);
+  }, [mapboxReady]);
 
   // Add a separate effect to resize the map when needed
   useEffect(() => {
@@ -206,7 +221,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
 
   // Add markers in a separate effect after map is loaded
   useEffect(() => {
-    if (!map.current || !mapLoaded || markersAdded) return;
+    if (!mapboxgl || !map.current || !mapLoaded || markersAdded) return;
     
     console.log("Adding markers for", properties.length, "properties");
     
@@ -246,7 +261,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
     } catch (e) {
       console.error("Error adding markers:", e);
     }
-  }, [mapLoaded, properties, zoomLevel]);
+  }, [mapLoaded, properties, zoomLevel, mapboxgl]);
 
   // Create marker HTML based on zoom level
   const createMarkerHTML = (property: Property, zoom: number) => {
@@ -300,8 +315,11 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
 
   return (
     <div className="w-full h-full relative">
+      {/* MapboxLoader component to load Mapbox on client side */}
+      <MapboxLoader onLoad={handleMapboxLoad} />
+
       {/* Loading indicator */}
-      {!mapLoaded && !mapError && (
+      {(!mapboxReady || !mapLoaded) && !mapError && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
           <p className="text-gray-700">Loading map...</p>
@@ -423,4 +441,5 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
   );
 };
 
+// Use dynamic import with SSR disabled to prevent server-side Mapbox issues
 export default PropertyMap;
