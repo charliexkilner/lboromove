@@ -13,24 +13,36 @@ export default async function handler(
   }
 
   try {
+    console.log('API Request query params:', req.query);
+    
     const { bedrooms, bathrooms, maxPrice } = req.query;
 
     // Build the where clause for filtering
     const where: any = {};
 
-    if (bedrooms) {
-      where.rooms = Number(bedrooms);
+    // Only apply filters if they are explicitly provided and valid
+    if (bedrooms && bedrooms !== 'undefined' && !isNaN(Number(bedrooms))) {
+      where.rooms = {
+        gte: Number(bedrooms)
+      };
+      console.log(`Filtering by bedrooms: >= ${bedrooms}`);
     }
 
-    if (bathrooms) {
-      where.bathrooms = Number(bathrooms);
+    if (bathrooms && bathrooms !== 'undefined' && !isNaN(Number(bathrooms))) {
+      where.bathrooms = {
+        gte: Number(bathrooms)
+      };
+      console.log(`Filtering by bathrooms: >= ${bathrooms}`);
     }
 
-    if (maxPrice) {
+    if (maxPrice && maxPrice !== 'undefined' && !isNaN(Number(maxPrice))) {
       where.price = {
         lte: Number(maxPrice),
       };
+      console.log(`Filtering by price: <= ${maxPrice}`);
     }
+
+    console.log('API Query where clause:', where);
 
     const properties = await prisma.property.findMany({
       where,

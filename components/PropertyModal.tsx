@@ -35,9 +35,10 @@ const AMENITY_ICONS: Record<string, string> = {
 interface PropertyModalProps {
   slug: string;
   onClose: () => void;
+  isCampusProperty?: boolean;
 }
 
-export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
+export default function PropertyModal({ slug, onClose, isCampusProperty = false }: PropertyModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('about');
   const [isFavorite, setIsFavorite] = useState(false);
@@ -53,10 +54,15 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
     queryKey: ['property', slug],
     queryFn: async () => {
       const id = getPropertyIdFromSlug(slug);
-      const res = await fetch(`/api/properties/${id}`);
+      // Use the base URL from environment variable or fallback to relative path
+      const baseUrl = typeof window !== 'undefined' && window.location.origin 
+        ? window.location.origin 
+        : '';
+      const res = await fetch(`${baseUrl}/api/properties/${id}`);
       if (!res.ok) throw new Error('Failed to fetch property');
       return res.json();
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const nextImage = () => {
@@ -84,7 +90,7 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
   const walkToTown = property ? calculateWalkingTime(property, 'town') : 0;
   const walkToCampus = property ? calculateWalkingTime(property, 'campus') : 0;
 
-  const getAgencyEmoji = (property) => {
+  const getAgencyEmoji = (property: any) => {
     if (
       property.url?.includes('loc8me') ||
       property.externalId?.includes('loc8me')
@@ -98,6 +104,51 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
     } else {
       return '🏠'; // Default emoji
     }
+  };
+
+  // Render campus property details
+  const renderCampusPropertyDetails = () => {
+    if (!property) return null;
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-gray-700 mb-2">Location</h3>
+          <p>{property.location}</p>
+        </div>
+        
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-gray-700 mb-2">Catering</h3>
+          <p>{property.catering || 'Not specified'}</p>
+        </div>
+        
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-gray-700 mb-2">Bathroom Type</h3>
+          <p>{property.bathroomType || 'Not specified'}</p>
+        </div>
+        
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-gray-700 mb-2">Price Range</h3>
+          <p>{property.priceRange || formatPriceWithCurrency(property.price, 'en') + ' per week'}</p>
+        </div>
+      </div>
+    );
+  };
+
+  // Render pricing options for campus properties
+  const renderPricingOptions = () => {
+    if (!property || !property.pricingOptions || property.pricingOptions.length === 0) return null;
+    
+    return (
+      <div className="mt-6">
+        <h3 className="font-semibold text-gray-700 mb-2">Pricing Options</h3>
+        <ul className="list-disc pl-5 space-y-1">
+          {(property.pricingOptions as string[]).map((option: string, index: number) => (
+            <li key={index} className="text-gray-600">{option}</li>
+          ))}
+        </ul>
+      </div>
+    );
   };
 
   return (
@@ -355,6 +406,19 @@ export default function PropertyModal({ slug, onClose }: PropertyModalProps) {
                               ))}
                             </div>
                           </div>
+
+                          {/* Show different details based on property type */}
+                          {isCampusProperty ? (
+                            <>
+                              {renderCampusPropertyDetails()}
+                              {renderPricingOptions()}
+                            </>
+                          ) : (
+                            <>
+                              {/* Regular property details */}
+                              {/* ... existing details code ... */}
+                            </>
+                          )}
                         </div>
                       )}
 

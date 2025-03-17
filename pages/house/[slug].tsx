@@ -47,27 +47,36 @@ export default function PropertyPage() {
   );
 }
 
-export async function getServerSideProps({ params }) {
+export async function getServerSideProps({ params }: { params: { slug: string } }) {
   if (!params?.slug) {
     return { notFound: true };
   }
 
   const id = getPropertyIdFromSlug(params.slug);
-
+  
+  // Determine the base URL - use environment variable or fallback to localhost
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  
   // Pre-fetch the property data
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/properties/${id}`
-  );
-
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${baseUrl}/api/properties/${id}`);
+    
+    if (!res.ok) {
+      console.error(`Failed to fetch property data: ${res.status} ${res.statusText}`);
+      return { notFound: true };
+    }
+    
+    const propertyData = await res.json();
+    
+    return {
+      props: {
+        fallback: {
+          [`/api/properties/${id}`]: propertyData,
+        },
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching property data:', error);
     return { notFound: true };
   }
-
-  return {
-    props: {
-      fallback: {
-        [`/api/properties/${id}`]: await res.json(),
-      },
-    },
-  };
 }

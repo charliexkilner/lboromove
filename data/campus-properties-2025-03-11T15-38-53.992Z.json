@@ -1,0 +1,282 @@
+[
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/butler-court/",
+    "imageUrl": "",
+    "priceRange": "£124.19-203.44 per week",
+    "minPrice": 124.19,
+    "maxPrice": 203.44,
+    "pricingOptions": [
+      "£5,198.30 (£124.19 per week) - Standard (4 beds)",
+      "£8,293.46 (£198.14 per week) - Large En-Suite, 4ft bed (136 beds)",
+      "£8,515.27 (£203.44 per week) - Deluxe En-Suite  (69 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/cayley/",
+    "imageUrl": "",
+    "priceRange": "£179.18-229.86 per week",
+    "minPrice": 179.18,
+    "maxPrice": 229.86,
+    "pricingOptions": [
+      "£7,499.96 (£179.18 per week) - Standard (86 beds)",
+      "£9,019.38 (£215.48 per week) - Standard, 4ft bed (132 beds)",
+      "£9,302.75 (£222.25 per week) - Shared en-suite (24 beds)",
+      "£9,621.28 (£229.86 per week) - En-suite (87 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/claudia-parsons/",
+    "imageUrl": "",
+    "priceRange": "£176.49-211.15 per week",
+    "minPrice": 176.49,
+    "maxPrice": 211.15,
+    "pricingOptions": [
+      "£8,808.08 (£211.15 per week) - En-suite, 4ft bed (409 beds)",
+      "£8,043.01 (£176.49 per week) - Standard, 4ft bed (12 beds)",
+      "£8,360.07 (£183.45 per week) - Large Standard, 4ft Bed (7 beds)",
+      "£9,614.98 (£210.99 per week) - En-suite, 4ft Bed (52 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/david-collett/",
+    "imageUrl": "",
+    "priceRange": "£159.33-212.79 per week",
+    "minPrice": 159.33,
+    "maxPrice": 212.79,
+    "pricingOptions": [
+      "£6,669.10 (£159.33 per week) - Standard (211 beds)",
+      "£7,057.53 (£168.61 per week) - Standard, 4ft bed (95 beds)",
+      "£8,906.78 (£212.79 per week) - En-suite, 4ft bed (56 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/elvyn-richards/",
+    "imageUrl": "",
+    "priceRange": "£Infinity--Infinity per week",
+    "minPrice": null,
+    "maxPrice": null,
+    "pricingOptions": [],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/falkner-eggington/",
+    "imageUrl": "",
+    "priceRange": "£116.73 per week",
+    "minPrice": 116.73,
+    "maxPrice": 116.73,
+    "pricingOptions": [
+      "£5,903.01 (£116.73 per week) - Standard, without wash hand basin"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/faraday/",
+    "imageUrl": "",
+    "priceRange": "£179.18-232.63 per week",
+    "minPrice": 179.18,
+    "maxPrice": 232.63,
+    "pricingOptions": [
+      "£7,448.77 (£179.18 per week) - Standard (152 beds)",
+      "£9,239.25 (£222.25 per week) - Shared en-suite (30 beds)",
+      "£9,354.82 (£225.03 per week) - Shared en-suite, 4ft bed (20 beds)",
+      "£9,555.61 (£229.86 per week) - En-suite (114 beds)",
+      "£9,670.76 (£232.63 per week) - En-suite, 4ft bed (51 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/harry-french/",
+    "imageUrl": "",
+    "priceRange": "£117.62-222.35 per week",
+    "minPrice": 117.62,
+    "maxPrice": 222.35,
+    "pricingOptions": [
+      "£5,981.92 (£117.62 per week) - Small bedroom in 2 bedroom flat",
+      "£6,852.80 (£134.75 per week) - Standard",
+      "£8,236.59 (£161.96 per week) - Single bedroom in 2 bedroom flat",
+      "£9,442.20 (£185.66 per week) - Double bedroom in 2 bedroom flat",
+      "£10,348.67 (£203.49 per week) - Studio Flat",
+      "£11,308.33 (£222.35 per week) - Double bedroom self-contained flat"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/hazlerigg-rutland/",
+    "imageUrl": "",
+    "priceRange": "£198.87 per week",
+    "minPrice": 198.87,
+    "maxPrice": 198.87,
+    "pricingOptions": [
+      "£8,267.23 (£198.87 per week) - En-suite, 4ft bed (196 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/john-phillips/",
+    "imageUrl": "",
+    "priceRange": "£198.57-198.87 per week",
+    "minPrice": 198.57,
+    "maxPrice": 198.87,
+    "pricingOptions": [
+      "£8,254.84 (£198.87 per week) - En-suite, 4ft bed (149 beds)",
+      "£10,041.87 (£198.57 per week) - En-suite, 4ft bed (149 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/robert-bakewell/",
+    "imageUrl": "",
+    "priceRange": "£198.87 per week",
+    "minPrice": 198.87,
+    "maxPrice": 198.87,
+    "pricingOptions": [
+      "£8,295.64 (£198.87 per week) - En-suite, 4ft bed (400 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/royce/",
+    "imageUrl": "",
+    "priceRange": "£179.18-232.63 per week",
+    "minPrice": 179.18,
+    "maxPrice": 232.63,
+    "pricingOptions": [
+      "£7,499.96 (£179.18 per week) - Standard (195 beds)",
+      "£9,302.75 (£222.25 per week) - Shared en-suite (2 beds)",
+      "£9,621.28 (£229.86 per week) - En-suite (80 beds)",
+      "£9,737.23 (£232.63 per week) - En-suite, 4ft bed (96 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/rutherford/",
+    "imageUrl": "",
+    "priceRange": "£Infinity--Infinity per week",
+    "minPrice": null,
+    "maxPrice": null,
+    "pricingOptions": [],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/telford/",
+    "imageUrl": "",
+    "priceRange": "£128.09 per week",
+    "minPrice": 128.09,
+    "maxPrice": 128.09,
+    "pricingOptions": [
+      "£5,068.90 (£128.09 per week) - Standard (529 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/the-holt/",
+    "imageUrl": "",
+    "priceRange": "£160.60-196.36 per week",
+    "minPrice": 160.6,
+    "maxPrice": 196.36,
+    "pricingOptions": [
+      "£6,699.17 (£160.60 per week) - One bedroom, 4ft bed, in 2 bedroom bungalow (6 beds)",
+      "£6,761.24 (£162.08 per week) - En-suite (1 bed)",
+      "£7,344.70 (£176.07 per week) - En-suite, 4ft bed (237 beds)",
+      "£8,044.01 (£192.84 per week) - Large en-suite, 4ft bed (16 beds)",
+      "£8,190.88 (£196.36 per week) - Studio flat, 4ft bed (1 bed)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/towers/",
+    "imageUrl": "",
+    "priceRange": "£195.01 per week",
+    "minPrice": 195.01,
+    "maxPrice": 195.01,
+    "pricingOptions": [
+      "£8,134.70 (£195.01 per week) - Standard 4ft bed (309 beds)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/william-morris/",
+    "imageUrl": "",
+    "priceRange": "£145.96-220.66 per week",
+    "minPrice": 145.96,
+    "maxPrice": 220.66,
+    "pricingOptions": [
+      "£6,067.96 (£145.96 per week) - Standard, 4ft bed in 6-7 bed flat (179 beds)",
+      "£6,413.07 (£154.27 per week) - Standard, 4ft bed in 3-5 bed flat (113 beds)",
+      "£7,810.49 (£187.88 per week) - En-suite, 4ft bed (162 beds)",
+      "£8,625.43 (£207.48 per week) - Studio Flat (12 beds)",
+      "£6,288.83 (£151.28 per week) - Standard, 4ft bed in Somerton or Highfields (7 beds)",
+      "£6,524.64 (£156.95 per week) -  Standard (double bed) in Somerton or Highfields (5 beds)",
+      "£6,859.51 (£165.01 per week) - Large standard (double bed) in Somerton or Highfields (8 beds)",
+      "£9,173.20 (£220.66 per week) - One bedroom self-contained flat (1 bed)"
+    ],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  },
+  {
+    "title": "",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/stratford-one/",
+    "imageUrl": "",
+    "priceRange": "£Infinity--Infinity per week",
+    "minPrice": null,
+    "maxPrice": null,
+    "pricingOptions": [],
+    "location": "",
+    "catering": "",
+    "bathroomType": ""
+  }
+]

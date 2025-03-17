@@ -21,15 +21,14 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   setProperties: (properties) => {
     console.log('Setting properties:', properties.length);
     set((state) => {
-      const filtered = filterProperties(
-        properties,
-        state.activeTab,
-        state.searchTerm
-      );
-      console.log('Filtered properties:', filtered.length);
+      // Don't automatically filter properties when they're set
+      // This allows the tab filtering to control what's displayed
       return {
         properties,
-        filteredProperties: filtered,
+        // Keep the existing filtered properties
+        filteredProperties: state.filteredProperties.length > 0 
+          ? state.filteredProperties 
+          : properties,
       };
     });
   },
@@ -49,15 +48,14 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   },
 
   setActiveTab: (tab) => {
+    console.log('Setting active tab:', tab);
     set((state) => {
-      const filtered = filterProperties(
-        state.properties,
-        tab,
-        state.searchTerm
-      );
+      // Only update the active tab, don't filter properties
+      // This allows the tab filtering in the component to control what's displayed
       return {
         activeTab: tab,
-        filteredProperties: filtered,
+        // Keep the existing filtered properties
+        filteredProperties: state.filteredProperties,
       };
     });
   },
@@ -136,7 +134,19 @@ function filterProperties(
         });
 
       case 'rare-finds':
-        // Implement your rare finds logic here
+        // Implement proper rare finds logic - properties with unique features
+        if (property.bathrooms && property.bathrooms >= 4) return true;
+        
+        // Check for rare amenities
+        if (property.amenities) {
+          return property.amenities.some(amenity => {
+            const a = amenity.toLowerCase();
+            return a.includes('gym') || 
+                   a.includes('swimming pool') || 
+                   a.includes('cinema room') ||
+                   a.includes('games room');
+          });
+        }
         return false;
 
       default:

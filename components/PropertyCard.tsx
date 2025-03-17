@@ -49,7 +49,11 @@ export default function PropertyCard({
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const slug = generatePropertySlug(property);
-    router.push(`/house/${slug}`, undefined, { shallow: true });
+    
+    // Use router.push with shallow routing to update the URL without a full page reload
+    router.push(`/house/${slug}`, undefined, { 
+      shallow: true,
+    });
   };
 
   const handleViewMore = (e: React.MouseEvent) => {
@@ -62,11 +66,18 @@ export default function PropertyCard({
   };
 
   const prefetchPropertyData = () => {
+    // Get the slug for this property
+    const slug = generatePropertySlug(property);
+    
     // Prefetch the property data
     queryClient.prefetchQuery({
-      queryKey: ['property', `/p/${property.id}`],
+      queryKey: ['property', slug],
       queryFn: async () => {
-        const res = await fetch(`/api/properties/${property.id}`);
+        // Use the base URL from environment variable or fallback to relative path
+        const baseUrl = typeof window !== 'undefined' && window.location.origin 
+          ? window.location.origin 
+          : '';
+        const res = await fetch(`${baseUrl}/api/properties/${property.id}`);
         if (!res.ok) throw new Error('Failed to fetch property');
         return res.json();
       },
@@ -199,6 +210,7 @@ export default function PropertyCard({
             {formatTitle(property.title)}
           </h3>
 
+          {/* Property Details */}
           <div className="grid grid-cols-3 gap-4 text-center">
             {/* Price */}
             <div className="flex flex-col items-center">

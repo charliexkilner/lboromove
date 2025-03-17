@@ -4,6 +4,7 @@ import { MinusIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { fetchExchangeRates, formatPriceWithCurrency } from '../utils/currency';
 import { useRouter } from 'next/router';
 import { Dialog } from '@headlessui/react';
+import { usePropertyStore } from '../stores/usePropertyStore';
 
 interface FilterPopoverProps {
   isOpen: boolean;
@@ -32,194 +33,207 @@ export default function FilterPopover({
   const [filters, setFilters] = useState({
     bedrooms: initialFilters?.bedrooms || 1,
     bathrooms: initialFilters?.bathrooms || 1,
-    maxPrice: initialFilters?.maxPrice || 350,
+    maxPrice: initialFilters?.maxPrice || 250,
   });
+  const [propertyCount, setPropertyCount] = useState(0);
+  const { properties } = usePropertyStore();
 
-  // Fetch exchange rates when component mounts
+  // Reset filters when the popover opens
   useEffect(() => {
-    fetchExchangeRates();
-  }, []);
+    if (isOpen) {
+      setFilters({
+        bedrooms: initialFilters?.bedrooms || 1,
+        bathrooms: initialFilters?.bathrooms || 1,
+        maxPrice: initialFilters?.maxPrice || 250,
+      });
+    }
+  }, [isOpen, initialFilters]);
+
+  // Calculate property count based on current filters
+  useEffect(() => {
+    if (properties.length > 0) {
+      const filteredCount = properties.filter(property => 
+        (filters.bedrooms === undefined || property.rooms >= filters.bedrooms) &&
+        (filters.bathrooms === undefined || property.bathrooms >= filters.bathrooms) &&
+        (filters.maxPrice === undefined || property.price <= filters.maxPrice)
+      ).length;
+      
+      setPropertyCount(filteredCount);
+    }
+  }, [filters, properties]);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({
-      ...prev,
-      [name]: parseInt(value),
-    }));
+    const value = parseInt(e.target.value);
+    setFilters({
+      ...filters,
+      maxPrice: value,
+    });
   };
 
   const handleBedroomChange = (increment: boolean) => {
-    setFilters((prev) => ({
-      ...prev,
+    setFilters({
+      ...filters,
       bedrooms: increment
-        ? Math.min(prev.bedrooms + 1, 10)
-        : Math.max(prev.bedrooms - 1, 1),
-    }));
+        ? (filters.bedrooms || 0) + 1
+        : Math.max(1, (filters.bedrooms || 0) - 1),
+    });
   };
 
   const handleBathroomChange = (increment: boolean) => {
-    setFilters((prev) => ({
-      ...prev,
+    setFilters({
+      ...filters,
       bathrooms: increment
-        ? Math.min(prev.bathrooms + 1, 5)
-        : Math.max(prev.bathrooms - 1, 1),
-    }));
+        ? (filters.bathrooms || 0) + 1
+        : Math.max(1, (filters.bathrooms || 0) - 1),
+    });
   };
 
   const handleApplyFilters = () => {
-    onFilterChange({
-      maxPrice: filters.maxPrice,
-      bedrooms: filters.bedrooms,
-      bathrooms: filters.bathrooms,
-    });
+    onFilterChange(filters);
     onClose();
   };
 
   const hasActiveFilters = () => {
     return (
-      filters.bedrooms !== 1 ||
-      filters.bathrooms !== 1 ||
-      filters.maxPrice !== 350
+      filters.bedrooms !== undefined ||
+      filters.bathrooms !== undefined ||
+      filters.maxPrice !== undefined
     );
   };
 
   const handleReset = () => {
+    const resetFilters = {
+      bedrooms: undefined,
+      bathrooms: undefined,
+      maxPrice: undefined,
+    };
     setFilters({
       bedrooms: 1,
       bathrooms: 1,
-      maxPrice: 350,
+      maxPrice: 250,
     });
-    onFilterChange({});
+    onFilterChange(resetFilters);
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      {/* The backdrop, rendered as a fixed sibling to the panel container */}
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      className="fixed inset-0 z-50 overflow-y-auto"
+    >
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true" />
 
-      {/* Full-screen container to center the panel */}
-      <div className="fixed inset-0 flex items-center justify-center p-12">
-        <Dialog.Panel className="mx-auto max-w-sm rounded-lg bg-white p-6 shadow-xl">
-          <div className="flex justify-between items-center mb-4">
-            <Dialog.Title className="text-lg font-bold">
-              Filter Properties
-            </Dialog.Title>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
+        <div className="relative mx-auto max-w-md w-full bg-white rounded-lg shadow-xl p-8">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+
+          <Dialog.Title className="text-3xl font-bold mb-8">
+            Filter Properties
+          </Dialog.Title>
+
+          {/* Price Range */}
+          <div className="mb-8">
+            <div className="flex items-center mb-2">
+              <span className="text-2xl mr-2">💰</span>
+              <h3 className="text-xl font-bold uppercase">PRICE PER WEEK</h3>
+            </div>
+            
+            <input
+              type="range"
+              min="0"
+              max="500"
+              step="10"
+              value={filters.maxPrice}
+              onChange={handlePriceChange}
+              className="w-full h-2 bg-purple-100 rounded-lg appearance-none cursor-pointer accent-purple-600"
+            />
+            
+            <div className="flex justify-between mt-2 text-gray-600">
+              <span>£0</span>
+              <span>£500+</span>
+            </div>
+            
+            <div className="text-center mt-6">
+              <span className="text-5xl font-bold text-purple-600">
+                £{filters.maxPrice}+
+              </span>
+              <p className="text-gray-500 mt-1">max price per week</p>
+            </div>
           </div>
 
-          <div className="space-y-6">
-            {/* Price Range */}
+          {/* Bedrooms and Bathrooms */}
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            {/* Bedrooms */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-3 uppercase">
-                💰 {t('filters.priceRangeTitle')}
-              </h4>
-              <div className="space-y-4">
-                <div className="px-2">
-                  <input
-                    type="range"
-                    name="maxPrice"
-                    min="0"
-                    max="350"
-                    value={filters.maxPrice}
-                    onChange={handlePriceChange}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-                  />
-                  <div className="flex justify-between text-xs text-gray-600 mt-1">
-                    <span>£0</span>
-                    <span>£350+</span>
-                  </div>
-                  <div className="text-center text-sm text-gray-700 mt-2">
-                    <span className="font-bold text-2xl">
-                      {formatPriceWithCurrency(
-                        filters.maxPrice,
-                        locale || 'en'
-                      )}
-                      {filters.maxPrice >= 350 && '+'}
-                    </span>
-                    <br />
-                    <span className="text-gray-600 lowercase">
-                      {t('filters.maxPriceLabel')}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex items-center mb-4">
+                <span className="text-2xl mr-2">🛏️</span>
+                <h3 className="text-xl font-bold uppercase">BEDROOMS</h3>
+              </div>
+              
+              <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4">
+                <button
+                  onClick={() => handleBedroomChange(false)}
+                  className="w-10 h-10 flex items-center justify-center text-2xl font-bold text-gray-700"
+                >
+                  −
+                </button>
+                <span className="text-3xl font-bold">{filters.bedrooms}</span>
+                <button
+                  onClick={() => handleBedroomChange(true)}
+                  className="w-10 h-10 flex items-center justify-center text-2xl font-bold text-gray-700"
+                >
+                  +
+                </button>
               </div>
             </div>
 
-            {/* Bedrooms and Bathrooms */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Bedrooms */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-3 uppercase">
-                  🛌 {t('filters.bedroomsTitle')}
-                </h4>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => handleBedroomChange(false)}
-                    className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <MinusIcon className="h-5 w-5 text-gray-600" />
-                  </button>
-                  <span className="text-lg font-medium w-8 text-center">
-                    {filters.bedrooms}
-                  </span>
-                  <button
-                    onClick={() => handleBedroomChange(true)}
-                    className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <PlusIcon className="h-5 w-5 text-gray-600" />
-                  </button>
-                </div>
+            {/* Bathrooms */}
+            <div>
+              <div className="flex items-center mb-4">
+                <span className="text-2xl mr-2">🚿</span>
+                <h3 className="text-xl font-bold uppercase">BATHROOMS</h3>
               </div>
-
-              {/* Bathrooms */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-3 uppercase">
-                  🚿 {t('filters.bathroomsTitle')}
-                </h4>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => handleBathroomChange(false)}
-                    className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <MinusIcon className="h-5 w-5 text-gray-600" />
-                  </button>
-                  <span className="text-lg font-medium w-8 text-center">
-                    {filters.bathrooms}
-                  </span>
-                  <button
-                    onClick={() => handleBathroomChange(true)}
-                    className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <PlusIcon className="h-5 w-5 text-gray-600" />
-                  </button>
-                </div>
+              
+              <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4">
+                <button
+                  onClick={() => handleBathroomChange(false)}
+                  className="w-10 h-10 flex items-center justify-center text-2xl font-bold text-gray-700"
+                >
+                  −
+                </button>
+                <span className="text-3xl font-bold">{filters.bathrooms}</span>
+                <button
+                  onClick={() => handleBathroomChange(true)}
+                  className="w-10 h-10 flex items-center justify-center text-2xl font-bold text-gray-700"
+                >
+                  +
+                </button>
               </div>
             </div>
-
-            {/* Reset Filters */}
-            {hasActiveFilters() && (
-              <button
-                onClick={handleReset}
-                className="w-full text-purple-600 text-sm underline hover:text-purple-700 mb-2"
-              >
-                {t('filters.resetFilters')}
-              </button>
-            )}
-
-            {/* Apply Button */}
-            <button
-              onClick={handleApplyFilters}
-              className="w-full px-6 py-3 text-base font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors duration-200"
-            >
-              {t('filters.apply')}
-            </button>
           </div>
-        </Dialog.Panel>
+
+          {/* Apply Filters Button */}
+          <button
+            onClick={handleApplyFilters}
+            className="w-full bg-purple-600 text-white py-4 rounded-lg font-medium text-lg hover:bg-purple-700 transition-colors"
+          >
+            View {propertyCount} Properties
+          </button>
+
+          {/* Reset Filters */}
+          <button
+            onClick={handleReset}
+            className="w-full text-gray-500 py-4 mt-4 font-medium hover:text-gray-700 transition-colors"
+          >
+            Reset Filters
+          </button>
+        </div>
       </div>
     </Dialog>
   );

@@ -1,17 +1,26 @@
 import { Discuession } from '../types/discussion';
 import { ArrowUpIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 interface DiscussionCardProps {
   discussion: Discuession;
 }
 
 export default function DiscussionCard({ discussion }: DiscussionCardProps) {
+  const [hasUpvoted, setHasUpvoted] = useState(false);
+  const [upvotes, setUpvotes] = useState(discussion.replyCount || 0);
+  
+  const handleUpvote = () => {
+    setHasUpvoted(!hasUpvoted);
+    setUpvotes(hasUpvoted ? upvotes - 1 : upvotes + 1);
+  };
+
   return (
-    <div className="relative w-full md:w-[300px] md:aspect-square">
-      <div className="bg-white rounded-lg border border-purple-500 p-6 flex flex-col h-auto md:absolute md:inset-0">
+    <div className="relative w-full md:w-[220px] md:aspect-square">
+      <div className="bg-white rounded-lg border border-purple-500 p-4 sm:p-6 flex flex-col h-auto md:absolute md:inset-0">
         {/* Title */}
-        <div className="mb-4 md:mb-auto">
-          <h3 className="text-2xl font-semibold text-purple-800 mb-2">
+        <div className="mb-3 md:mb-auto">
+          <h3 className="text-xl font-semibold text-purple-800 mb-2">
             {discussion.title}
           </h3>
           <a
@@ -44,7 +53,7 @@ export default function DiscussionCard({ discussion }: DiscussionCardProps) {
                 key={index}
                 src={avatar}
                 alt={`User ${index + 1}`}
-                className="w-8 h-8 rounded-full border-2 border-purple-200 object-cover object-center"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-purple-200 object-cover object-center"
               />
             ))}
           </div>
@@ -63,7 +72,7 @@ export default function DiscussionCard({ discussion }: DiscussionCardProps) {
         </div>
 
         {/* Voting Section */}
-        <div className="flex flex-col items-center w-12">
+        <div className="flex flex-col items-center w-16 mt-3">
           <button
             onClick={handleUpvote}
             className={`p-1 rounded hover:bg-gray-100 transition-colors ${

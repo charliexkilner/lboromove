@@ -117,6 +117,14 @@ model Property {
   updatedAt       DateTime @updatedAt
   isGoldenTriangle Boolean  @default(false)
   source          String?
+  
+  // Campus property specific fields
+  isOnCampus      Boolean  @default(false)
+  priceRange      String?
+  catering        String?
+  bathroomType    String?
+  pricingOptions  String[]  @default([])
+  maxPrice        Float?
 
   // Relations
   landlordId      String?
@@ -244,4 +252,20 @@ model CommentVote {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
+}
+
+model CampusProperty {
+  id             Int      @id @default(autoincrement())
+  title          String
+  url            String
+  imageUrl       String
+  priceRange     String
+  minPrice       Float
+  maxPrice       Float
+  pricingOptions String[]
+  location       String
+  catering       String
+  bathroomType   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

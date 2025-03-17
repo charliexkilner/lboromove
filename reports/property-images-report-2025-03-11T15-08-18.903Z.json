@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-03-11T15:08:18.903Z",
+  "propertiesWithMismatchedImagesCount": 3,
+  "fixedPropertiesCount": 0,
+  "propertiesWithMismatchedImages": [
+    {
+      "id": 828,
+      "title": "33 Sovereign Court",
+      "street": "33 Sovereign Court",
+      "provider": "top-lets",
+      "imageCount": 1
+    },
+    {
+      "id": 564,
+      "title": "195 Derby Road",
+      "street": "195 Derby Road Loughborough   LE11 5HJ",
+      "provider": "loc8me",
+      "imageCount": 1
+    },
+    {
+      "id": 348,
+      "title": "195 Derby Road",
+      "street": "195 Derby Road  Loughborough   LE11 5HJ",
+      "provider": "loc8me",
+      "imageCount": 7
+    }
+  ],
+  "fixedProperties": []
+}

@@ -1,0 +1,408 @@
+[
+  {
+    "title": "Butler Court",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/butler-court/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/butler-court-bedroom-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/butler-court-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/butler-court-bedroom-side-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/bc-common-room-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/bc-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/bc-post-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/ButlerCourtKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/butlercourt/ButlerCourtLaunderette960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/banners/halls/Butler%20Court%20960.jpg"
+    ],
+    "priceRange": "£124.19 per week",
+    "minPrice": 124.19,
+    "maxPrice": 124.19,
+    "pricingOptions": [
+      "£5,198.30 (£124.19 per week) - Standard (4 beds)",
+      "£8,293.46 (£198.14 per week) - Large En-Suite, 4ft bed (136 beds)",
+      "£8,515.27 (£203.44 per week) - Deluxe En-Suite  (69 beds)"
+    ],
+    "location": "East Park Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "Cayley",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/cayley/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyExterior960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyExterior960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-stnd-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-stnd-desk-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-kitchen-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-showers-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-ensuite-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-ensuite-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyNewExteriro960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyLivingRoom960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyBathroom960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/CayleyDiningHall960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-reception-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/cayley/cayley-laundrette-2-960.jpg"
+    ],
+    "priceRange": "£179.18 per week",
+    "minPrice": 179.18,
+    "maxPrice": 179.18,
+    "pricingOptions": [
+      "£7,499.96 (£179.18 per week) - Standard (86 beds)",
+      "£9,019.38 (£215.48 per week) - Standard, 4ft bed (132 beds)",
+      "£9,302.75 (£222.25 per week) - Shared en-suite (24 beds)",
+      "£9,621.28 (£229.86 per week) - En-suite (87 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "David Collett",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/david-collett/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-ft-bedroom-brighter-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-ft-bedroom-brighter-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-standard-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-washbasin-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/DavidCollettKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/dc-toilet-and-shower-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/davidcollett/DavidCollettExterior960.jpg"
+    ],
+    "priceRange": "£159.33 per week",
+    "minPrice": 159.33,
+    "maxPrice": 159.33,
+    "pricingOptions": [
+      "£6,669.10 (£159.33 per week) - Standard (211 beds)",
+      "£7,057.53 (£168.61 per week) - Standard, 4ft bed (95 beds)",
+      "£8,906.78 (£212.79 per week) - En-suite, 4ft bed (56 beds)"
+    ],
+    "location": "West Park Loughborough",
+    "catering": "Catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "Elvyn Richards",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/elvyn-richards/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/elvyn/elvyn-bedroom-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/elvyn/elvyn-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/elvyn/elvyn-ensuite-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/elvyn/elvyn-kitchen-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/elvyn/elvyn-richards-exterior-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/elvyn/elvyn-ding-hall-960.jpg"
+    ],
+    "priceRange": "£237.03 per week",
+    "minPrice": 237.03,
+    "maxPrice": 237.03,
+    "pricingOptions": [
+      "£9,921.40 (£237.03 per week) - En-suite, 4ft bed (406 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Catered",
+    "bathroomType": "All rooms en-suite"
+  },
+  {
+    "title": "Falkner Eggington",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/falkner-eggington/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-room-empty-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-room-empty-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-room-desk-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/FalknerCommonRoomII960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-reception-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/FalknerKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-kitchen-table-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/falkegg-laundrette-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/falknereggington/FalknerExterior960.jpg"
+    ],
+    "priceRange": "£117.03 per week",
+    "minPrice": 117.03,
+    "maxPrice": 117.03,
+    "pricingOptions": [
+      "£4,864.95 (£117.03 per week) - Standard, without wash hand basin (463 beds)",
+      "£5,903.01 (£116.73 per week) - Standard, without wash hand basin"
+    ],
+    "location": "Central Park Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "Shared bathrooms"
+  },
+  {
+    "title": "Harry French",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/harry-french/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-bedroom-960-2.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-bedroom-960-2.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-bedroom-960-opt2.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-bedroom-washbasin-960.png",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-post-960.png",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/hf-outside-seating-960.png",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/HarryFrenchExternalII960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/HarryFrenchKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/harryfrench/HarryFrenchBathroom960.jpg"
+    ],
+    "priceRange": "£121.28 per week",
+    "minPrice": 121.28,
+    "maxPrice": 121.28,
+    "pricingOptions": [
+      "£5,076.48 (£121.28 per week) - Small bedroom in 2 bedroom flat (1 bed)",
+      "£5,652.64 (£135.05 per week) - Standard (68 beds)",
+      "£6,322.26 (£151.04 per week) - Standard, 4ft bed (236 beds)",
+      "£7,572.20 (£180.91 per week) - Double bedroom in 2 or 3 bedroom flat (7 beds)",
+      "£9,319.69 (£222.65 per week) - Double bedroom self-contained flat (3 beds)",
+      "£5,981.92 (£117.62 per week) - Small bedroom in 2 bedroom flat",
+      "£6,852.80 (£134.75 per week) - Standard",
+      "£8,236.59 (£161.96 per week) - Single bedroom in 2 bedroom flat",
+      "£9,442.20 (£185.66 per week) - Double bedroom in 2 bedroom flat",
+      "£10,348.67 (£203.49 per week) - Studio Flat",
+      "£11,308.33 (£222.35 per week) - Double bedroom self-contained flat"
+    ],
+    "location": "East Park Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "Hazlerigg-Rutland",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/hazlerigg-rutland/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/hazleriggrutland/riggrut-bedroom-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/hazleriggrutland/riggrut-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/hazleriggrutland/riggrut-kitchen-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/hazleriggrutland/riggrut-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/hazleriggrutland/HazleriggRutlandExternal960.jpg"
+    ],
+    "priceRange": "£198.87 per week",
+    "minPrice": 198.87,
+    "maxPrice": 198.87,
+    "pricingOptions": [
+      "£8,267.23 (£198.87 per week) - En-suite, 4ft bed (196 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "All rooms en-suite"
+  },
+  {
+    "title": "John Phillips",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/john-phillips/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-bedroom-960-.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-bedroom-960-.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/hazleriggrutland/riggrut-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-kitchen-960.png",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/JohnPhillipsKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-hub-reception-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/hub-post-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-laundrette-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/johnphillips/jp-outside-960.jpg"
+    ],
+    "priceRange": "£198.57 per week",
+    "minPrice": 198.57,
+    "maxPrice": 198.57,
+    "pricingOptions": [
+      "£8,254.84 (£198.87 per week) - En-suite, 4ft bed (149 beds)",
+      "£10,041.87 (£198.57 per week) - En-suite, 4ft bed (149 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "All rooms en-suite"
+  },
+  {
+    "title": "Robert Bakewell",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/robert-bakewell/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/robertbakewell/robert-bakewell-bedroom-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/robertbakewell/robert-bakewell-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/robertbakewell/the-hub-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/robertbakewell/robert-bakewell-kitchen-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/robertbakewell/RobertBakewellBathroom960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/robertbakewell/rb-exterior-block-960.jpg"
+    ],
+    "priceRange": "£198.87 per week",
+    "minPrice": 198.87,
+    "maxPrice": 198.87,
+    "pricingOptions": [
+      "£8,295.64 (£198.87 per week) - En-suite, 4ft bed (400 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "All rooms en-suite"
+  },
+  {
+    "title": "Royce",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/royce/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-standard-bedroom-2-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-standard-bedroom-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-kitchen-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-dining-hall-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-bedroom2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-washbasin-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/RoyceExternal960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/royce/royce-exterior-960.jpg"
+    ],
+    "priceRange": "£179.18 per week",
+    "minPrice": 179.18,
+    "maxPrice": 179.18,
+    "pricingOptions": [
+      "£7,499.96 (£179.18 per week) - Standard (195 beds)",
+      "£9,302.75 (£222.25 per week) - Shared en-suite (2 beds)",
+      "£9,621.28 (£229.86 per week) - En-suite (80 beds)",
+      "£9,737.23 (£232.63 per week) - En-suite, 4ft bed (96 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "Rutherford",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/rutherford/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-common-room-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-ensuite-room-desk-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutheford-ensuite-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-standard-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-standard-washbasin-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-kitchen-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-dining-hall-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/rutherford-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/rutherford/RutherfordExterior960.jpg"
+    ],
+    "priceRange": "£179.18 per week",
+    "minPrice": 179.18,
+    "maxPrice": 179.18,
+    "pricingOptions": [
+      "£7,474.37 (£179.18 per week) - Standard (124 beds)",
+      "£9,271.00 (£222.25 per week) - Shared en-suite (50 beds)",
+      "£9,588.45 (£229.86 per week) - En-suite (91 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "Telford",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/telford/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-exterior-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-exterior-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-bedroom-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-bedroom-desk-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-bedroom-washbasin-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-kitchen-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-kitchen-dining-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-reception-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-post-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/telford/telford-laundrette-960.jpg"
+    ],
+    "priceRange": "£128.09 per week",
+    "minPrice": 128.09,
+    "maxPrice": 128.09,
+    "pricingOptions": [
+      "£5,068.90 (£128.09 per week) - Standard (529 beds)"
+    ],
+    "location": "Student Village Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "Shared bathrooms"
+  },
+  {
+    "title": "The Holt",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/the-holt/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-bedroom-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-bedroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-bedroom2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-kitchen-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-kitchen-seating-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-common-room-post-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-outside-seating-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/HoltBedroomII960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-studio-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-studio2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/HoltLaunderette960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/holt-walking-outside-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/theholt/HoltExternal960.jpg"
+    ],
+    "priceRange": "£160.60 per week",
+    "minPrice": 160.6,
+    "maxPrice": 160.6,
+    "pricingOptions": [
+      "£6,699.17 (£160.60 per week) - One bedroom, 4ft bed, in 2 bedroom bungalow (6 beds)",
+      "£6,761.24 (£162.08 per week) - En-suite (1 bed)",
+      "£7,344.70 (£176.07 per week) - En-suite, 4ft bed (237 beds)",
+      "£8,044.01 (£192.84 per week) - Large en-suite, 4ft bed (16 beds)",
+      "£8,190.88 (£196.36 per week) - Studio flat, 4ft bed (1 bed)"
+    ],
+    "location": "East Park Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "Shared or en-suite"
+  },
+  {
+    "title": "Towers",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/towers/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/towers-stnd-desk-960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/towers-stnd-desk-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/towers-common-room-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/TowersDiningExterior960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/TowersDiningPeople960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/TowersDiningHall960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/TowersKitchen960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/towers/TowersExterior960.jpg"
+    ],
+    "priceRange": "£195.01 per week",
+    "minPrice": 195.01,
+    "maxPrice": 195.01,
+    "pricingOptions": [
+      "£8,134.70 (£195.01 per week) - Standard 4ft bed (309 beds)"
+    ],
+    "location": "East Park Loughborough",
+    "catering": "Catered",
+    "bathroomType": "Shared bathrooms"
+  },
+  {
+    "title": "William Morris",
+    "url": "https://www.lboro.ac.uk/services/accommodation/our-halls/william-morris/",
+    "imageUrl": "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/WilliamMorrisGamesRoom960.jpg",
+    "images": [
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/WilliamMorrisGamesRoom960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-stnd-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-stnd-washbasin-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-kitchen-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-bathroom-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-2-stnd-3-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-2-stnd-2-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/hf-shared-bathrooms-960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/WilliamMorrisRelaxRoom960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/WilliamMorrisStudyRoom960.jpg",
+      "https://www.lboro.ac.uk/media/media/services/accommodation/images/gallery/williammorris/WilliamMorrisLaunderette960.jpg"
+    ],
+    "priceRange": "£145.96 per week",
+    "minPrice": 145.96,
+    "maxPrice": 145.96,
+    "pricingOptions": [
+      "£6,067.96 (£145.96 per week) - Standard, 4ft bed in 6-7 bed flat (179 beds)",
+      "£6,413.07 (£154.27 per week) - Standard, 4ft bed in 3-5 bed flat (113 beds)",
+      "£7,810.49 (£187.88 per week) - En-suite, 4ft bed (162 beds)",
+      "£8,625.43 (£207.48 per week) - Studio Flat (12 beds)",
+      "£6,288.83 (£151.28 per week) - Standard, 4ft bed in Somerton or Highfields (7 beds)",
+      "£6,524.64 (£156.95 per week) -  Standard (double bed) in Somerton or Highfields (5 beds)",
+      "£6,859.51 (£165.01 per week) - Large standard (double bed) in Somerton or Highfields (8 beds)",
+      "£9,173.20 (£220.66 per week) - One bedroom self-contained flat (1 bed)"
+    ],
+    "location": "East Park Loughborough",
+    "catering": "Self-catered",
+    "bathroomType": "Shared or en-suite"
+  }
+]

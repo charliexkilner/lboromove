@@ -3,6 +3,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import Navbar from '../../components/Navbar';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ChatBubbleLeftIcon,
   ArrowTrendingUpIcon,
@@ -28,6 +29,8 @@ type Post = {
   timeAgo: string;
   comments: number;
   upvotes: number;
+  imageSrc?: string;
+  imageAlt?: string;
 };
 
 const truncateText = (text: string, maxLength: number) => {
@@ -55,6 +58,7 @@ const generateDummyPosts = (): Post[] => {
       timeAgo: '2 hours ago',
       comments: 7,
       upvotes: 12,
+      imageSrc: '/queens-park.jpg',
     },
     {
       id: '2',
@@ -66,6 +70,7 @@ const generateDummyPosts = (): Post[] => {
       timeAgo: '1 day ago',
       comments: 3,
       upvotes: 5,
+      imageSrc: '/queens-park.jpg',
     },
 
     // For Sale posts
@@ -79,6 +84,8 @@ const generateDummyPosts = (): Post[] => {
       timeAgo: '5 hours ago',
       comments: 9,
       upvotes: 4,
+      imageSrc: '/queens-park.jpg',
+      imageAlt: 'IKEA desk and chair set',
     },
     {
       id: '4',
@@ -345,7 +352,7 @@ export default function Discussion() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20 pb-24">
         <div className="flex justify-between items-center mb-6">
           <div className="relative">
             <div className="sm:hidden">
@@ -413,8 +420,8 @@ export default function Discussion() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3">
             {loading ? (
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
@@ -424,55 +431,70 @@ export default function Discussion() {
                 {filteredPosts.map((post, index) => (
                   <div
                     key={index}
-                    className="relative bg-white rounded-lg shadow-sm p-6 mb-4"
+                    className="relative bg-white rounded-lg shadow-sm mb-4 flex overflow-hidden border border-gray-200"
                   >
-                    <div className="pr-12 sm:pr-16">
-                      <h2 className="text-lg font-medium mb-2">{post.title}</h2>
-                      <p className="text-gray-600 mb-4">{post.shortDesc}</p>
+                    <div
+                      onClick={() => handleUpvote(post.title)}
+                      className={`flex flex-col items-center justify-center w-16 border-r bg-gray-50 ${
+                        votes[post.title]
+                          ? 'border-purple-200 bg-purple-50 text-purple-600'
+                          : 'border-gray-200 hover:bg-gray-100 text-gray-500'
+                      } transition-colors group cursor-pointer`}
+                    >
+                      <div className="flex flex-col items-center justify-center">
+                        <ArrowUpIcon
+                          className={`h-4 w-4 sm:h-5 sm:w-5 mb-1 transition-colors ${
+                            votes[post.title]
+                              ? 'text-purple-600'
+                              : 'text-gray-400 group-hover:text-gray-500'
+                          }`}
+                        />
+                        <span
+                          className={`text-xs sm:text-sm font-medium transition-colors ${
+                            votes[post.title]
+                              ? 'text-purple-600'
+                              : 'text-gray-700 group-hover:text-gray-900'
+                          }`}
+                        >
+                          {post.upvotes + (votes[post.title] ? 1 : 0)}
+                        </span>
+                      </div>
+                    </div>
 
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mt-4">
-                        <div className="flex items-center gap-2 sm:gap-4 overflow-hidden">
-                          <div className="bg-gray-100 px-2 sm:px-3 py-1 rounded-full text-gray-600 whitespace-nowrap lowercase">
-                            {post.category}
-                          </div>
+                    <div className="flex-1 p-6">
+                      <div className="flex flex-col">
+                        <h2 className="text-lg font-bold text-gray-800">{post.title}</h2>
+                        <p className="text-gray-500 mt-2 font-medium">{post.shortDesc}</p>
+                        <div className="bg-white border border-gray-200 px-2.5 py-1 rounded-full text-gray-900 text-xs lowercase font-medium w-fit mt-4">
+                          {post.category || 'general'}
+                        </div>
 
+                        <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mt-6">
                           <span className="truncate">
                             Posted by {post.author} • {post.timeAgo}
                           </span>
-                        </div>
 
-                        <div className="flex items-center gap-1 ml-2">
-                          <ChatBubbleLeftIcon className="h-4 w-4" />
-                          <span>{post.comments}</span>
+                          <div className="flex items-center gap-1 ml-2 text-black">
+                            <ChatBubbleLeftIcon className="h-4 w-4 text-black" />
+                            <span>{post.comments}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div
-                      onClick={() => handleUpvote(post.title)}
-                      className={`flex flex-col items-center justify-center w-12 sm:w-16 h-full border-l ${
-                        votes[post.title]
-                          ? 'border-purple-200 bg-purple-50 text-purple-600'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-500'
-                      } transition-colors group cursor-pointer absolute right-0 top-0`}
-                    >
-                      <ArrowUpIcon
-                        className={`h-4 w-4 sm:h-5 sm:w-5 mb-1 transition-colors ${
-                          votes[post.title]
-                            ? 'text-purple-600'
-                            : 'text-gray-400'
-                        }`}
-                      />
-                      <span
-                        className={`text-xs sm:text-sm font-medium transition-colors ${
-                          votes[post.title]
-                            ? 'text-purple-600'
-                            : 'text-gray-700'
-                        }`}
-                      >
-                        {post.upvotes + (votes[post.title] ? 1 : 0)}
-                      </span>
-                    </div>
+                    {post.imageSrc && (
+                      <div className="w-32 sm:w-56 bg-gray-100 border-l border-gray-200">
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={post.imageSrc}
+                            alt={post.imageAlt || 'Post image'}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 128px, 224px"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -491,24 +513,24 @@ export default function Discussion() {
             )}
           </div>
 
-          <div className="hidden lg:block">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
               <h2 className="text-lg font-semibold mb-4">CATEGORIES</h2>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => handleCategoryClick(cat.id)}
-                    className={`w-full flex items-start text-left px-4 py-3 rounded-lg transition-colors ${
+                    className={`w-full flex items-start text-left px-3 py-2.5 rounded-lg transition-colors ${
                       category === cat.id
                         ? 'bg-purple-50 text-purple-600'
                         : 'hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <span className="text-2xl mr-3">{cat.icon}</span>
+                    <span className="text-xl mr-2.5">{cat.icon}</span>
                     <div className="flex flex-col items-start">
-                      <span className="font-medium uppercase">{cat.label}</span>
-                      <span className="text-sm text-gray-500">
+                      <span className="font-medium uppercase text-sm">{cat.label}</span>
+                      <span className="text-xs text-gray-500">
                         {cat.count} posts
                       </span>
                     </div>
