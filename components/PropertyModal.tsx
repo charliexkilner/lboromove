@@ -424,9 +424,18 @@ export default function PropertyModal({ slug, onClose, isCampusProperty = false 
 
                       {activeTab === 'map' && (
                         <div className="mb-8">
-                          <PropertyMap
-                            streetName={property.street || property.title}
-                          />
+                          {property.latitude && property.longitude ? (
+                            <PropertyMap
+                              properties={[property]}
+                              singlePropertyMode={true}
+                              centerLat={property.latitude}
+                              centerLng={property.longitude}
+                            />
+                          ) : (
+                            <div className="py-12 text-center">
+                              <p className="text-gray-500">Map location not available for this property.</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -88,11 +88,20 @@ interface ExtendedProperty extends Property {
 }
 
 interface PropertyMapProps {
-  onViewChange: () => void;
-  properties: Property[];
+  onViewChange?: () => void;
+  properties?: Property[];
+  singlePropertyMode?: boolean;
+  centerLat?: number;
+  centerLng?: number;
 }
 
-const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) => {
+const PropertyMap: React.FC<PropertyMapProps> = ({ 
+  onViewChange, 
+  properties = [], 
+  singlePropertyMode = false,
+  centerLat,
+  centerLng
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const [selectedProperty, setSelectedProperty] = useState<ExtendedProperty | null>(null);
@@ -137,7 +146,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-1.208, 52.7697], // Loughborough coordinates
+        center: [centerLng || -1.208, centerLat || 52.7697], // Use provided coordinates or default to Loughborough
         zoom: 12,
         attributionControl: true
       });
@@ -221,7 +230,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
 
   // Add markers in a separate effect after map is loaded
   useEffect(() => {
-    if (!mapboxgl || !map.current || !mapLoaded || markersAdded) return;
+    if (!mapboxgl || !map.current || !mapLoaded || markersAdded || !properties || properties.length === 0) return;
     
     console.log("Adding markers for", properties.length, "properties");
     
@@ -236,7 +245,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ onViewChange, properties }) =
       
       // Add new markers
       properties.forEach((property) => {
-        if (!property.latitude || !property.longitude || !map.current) return;
+        if (!property || !property.latitude || !property.longitude || !map.current) return;
         
         validProperties++;
         
