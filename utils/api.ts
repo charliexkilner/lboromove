@@ -46,7 +46,7 @@ export async function fetchAPI(url: string, options: RequestInit = {}) {
         }
 
         throw new Error(
-          `Failed to parse server response: ${parseError.message}`
+          `Failed to parse server response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
         );
       }
     } catch (error) {

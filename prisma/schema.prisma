@@ -119,7 +119,6 @@ model Property {
   source          String?
   
   // Campus property specific fields
-  isOnCampus      Boolean  @default(false)
   priceRange      String?
   catering        String?
   bathroomType    String?

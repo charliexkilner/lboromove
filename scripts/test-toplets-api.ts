@@ -50,11 +50,11 @@ async function testTopLetsApi() {
           );
         }
       } catch (error) {
-        console.log(`Error testing ${apiUrl}:`, error.message);
+        console.log(`Error testing ${apiUrl}:`, error instanceof Error ? error.message : String(error));
       }
     }
   } catch (error) {
-    console.error('Error testing Top Lets API:', error);
+    console.error("Error:", error instanceof Error ? error.message : String(error));
   }
 }
 

@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import { Loc8meScraper } from '../lib/scrapers/Loc8meScraper';
+const { PrismaClient } = require('@prisma/client');
+const { Loc8meScraper } = require('../lib/scrapers/Loc8meScraper');
 
 async function main() {
   const prisma = new PrismaClient();
@@ -16,4 +16,4 @@ async function main() {
   }
 }
 
-main();
+main(); 

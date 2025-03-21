@@ -3,7 +3,7 @@ import { useTranslation } from 'next-i18next';
 import { GetServerSideProps } from 'next/types';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { isCloseToUniversity } from '../utils/distance';
-import Navbar from '../components/Navbar';
+import Layout from '../components/Layout';
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import PropertyCard from '../components/PropertyCard';
@@ -26,6 +26,8 @@ import CampusPropertyModal from '../components/CampusPropertyModal';
 import CampusPropertyCard from '../components/CampusPropertyCard';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 // Import PropertyMap with dynamic import to prevent SSR issues
 const PropertyMap = dynamic(() => import('../components/PropertyMap'), { 
@@ -48,10 +50,78 @@ interface HomeProps {
   campusProperties: SerializedProperty[];
 }
 
+type ScrollDirection = 'up' | 'down';
+
+interface ScrollInfo {
+  isSticky: boolean;
+  direction: ScrollDirection;
+  progress: number;
+  isAtTop: boolean;
+  isScrolling: boolean;
+}
+
+// Add a custom hook for scroll behavior
+const useScrollBehavior = (threshold: number): ScrollInfo => {
+  const [scrollInfo, setScrollInfo] = useState<ScrollInfo>(() => ({
+    isSticky: false,
+    direction: 'up',
+    progress: 0,
+    isAtTop: true,
+    isScrolling: false
+  }));
+  const lastScrollY = useRef<number>(0);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const direction: ScrollDirection = currentScrollY > lastScrollY.current ? 'down' : 'up';
+      const heroSection = document.querySelector('#hero-section');
+      const heroBottom = heroSection?.getBoundingClientRect().bottom ?? 0;
+      const isAtTop = currentScrollY < 10;
+      const shouldBeSticky = heroBottom < threshold;
+      
+      // Calculate scroll progress for smooth transitions
+      const progress = Math.min(1, Math.max(0, (currentScrollY - (heroBottom - threshold)) / 100));
+
+      setScrollInfo({
+        isSticky: shouldBeSticky,
+        direction,
+        progress,
+        isAtTop,
+        isScrolling: true
+      });
+
+      lastScrollY.current = currentScrollY;
+
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+
+      scrollTimeout.current = setTimeout(() => {
+        setScrollInfo(prev => ({
+          ...prev,
+          isScrolling: false
+        }));
+      }, 150);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+    };
+  }, [threshold]);
+
+  return scrollInfo;
+};
+
 export default function Home({ campusProperties = [] }: HomeProps) {
   const { t } = useTranslation('common');
   const router = useRouter();
-  const { locale } = router;
+  const { locale, pathname } = router;
   const [filters, setFilters] = useState<{
     bedrooms?: number;
     bathrooms?: number;
@@ -68,16 +138,23 @@ export default function Home({ campusProperties = [] }: HomeProps) {
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
-  const [localFilteredProperties, setLocalFilteredProperties] = useState<
-    Property[]
-  >([]);
+  const [localFilteredProperties, setLocalFilteredProperties] = useState<Property[]>([]);
   const [showMap, setShowMap] = useState(false);
-  
-  // Add scroll position state
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [isSticky, setIsSticky] = useState(false);
   const heroSectionRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Use the scroll behavior hook
+  const scrollInfo = useScrollBehavior(80);
+  const { isSticky, direction, progress, isAtTop } = scrollInfo;
+  
+  // Handle window resize for mobile detection
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const isCurrentlyMobile = windowWidth < 768;
 
   const {
     properties,
@@ -86,69 +163,6 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     setActiveTab,
     activeTab,
   } = usePropertyStore();
-
-  // Add debounce function
-  const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout;
-    return function executedFunction(...args: any[]) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  };
-
-  // Handle scroll events with optimizations
-  const handleScroll = useCallback(() => {
-    const position = window.pageYOffset;
-    setScrollPosition(position);
-    
-    if (heroSectionRef.current) {
-      const heroBottom = heroSectionRef.current.offsetTop + heroSectionRef.current.clientHeight;
-      // Only update isSticky state if it actually changes
-      const shouldBeSticky = position > heroBottom - 80;
-      if (shouldBeSticky !== isSticky) {
-        setIsSticky(shouldBeSticky);
-      }
-    }
-  }, [isSticky]);
-  
-  // Optimized scroll handler for map view
-  const debouncedHandleScroll = useCallback(
-    debounce(() => {
-      if (showMap) {
-        // Use more aggressive debouncing for map view
-        const position = window.pageYOffset;
-        
-        // Only update scroll position if it's changed significantly to reduce rerenders
-        if (Math.abs(position - scrollPosition) > 5) {
-          setScrollPosition(position);
-        }
-        
-        if (heroSectionRef.current) {
-          const heroBottom = heroSectionRef.current.offsetTop + heroSectionRef.current.clientHeight;
-          // Only update isSticky state if it actually changes
-          const shouldBeSticky = position > heroBottom - 80;
-          if (shouldBeSticky !== isSticky) {
-            setIsSticky(shouldBeSticky);
-          }
-        }
-      } else {
-        handleScroll();
-      }
-    }, showMap ? 20 : 0),
-    [handleScroll, showMap, scrollPosition, isSticky]
-  );
-
-  // Add scroll event listener with the optimized handler
-  useEffect(() => {
-    window.addEventListener('scroll', debouncedHandleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', debouncedHandleScroll);
-    };
-  }, [debouncedHandleScroll]);
 
   const {
     data,
@@ -630,21 +644,72 @@ export default function Home({ campusProperties = [] }: HomeProps) {
 
   // Function to handle map button click
   const handleViewToggle = () => {
-    setShowMap(!showMap);
-    console.log('Toggling between map and list view');
+    // If already showing the view user wants, do nothing
+    const targetView = !showMap;
+    console.log(`Toggling view from ${showMap ? 'map' : 'list'} to ${targetView ? 'map' : 'list'}`);
     
-    // Reset any performance optimizations that might be affecting map display
-    if (!showMap) {
-      // Wait for the state to update before attempting to resize the map
-      setTimeout(() => {
-        const mapElement = document.querySelector('.mapboxgl-map');
-        if (mapElement) {
-          // Force a resize event on the map
-          window.dispatchEvent(new Event('resize'));
-          console.log('Triggered window resize for map');
+    // When switching views, ensure smooth transition
+    const performViewTransition = async () => {
+      try {
+        // First, update the view state
+        setShowMap(targetView);
+        
+        if (!targetView) { // Switching to list view
+          // Force immediate re-render of properties to ensure fresh image loading
+          const timestamp = Date.now();
+          const propertiesToShow = localFilteredProperties.length > 0 
+            ? localFilteredProperties 
+            : properties;
+          
+          // Create new property objects with fresh keys
+          const updatedProperties = propertiesToShow.map(property => ({
+            ...property,
+            _viewKey: timestamp, // Add a unique key for this view transition
+            images: Array.isArray(property.images) 
+              ? [...property.images] 
+              : property.images
+          }));
+          
+          // Update properties state with new references
+          setProperties(updatedProperties);
+          
+          // After a short delay, start preloading images
+          setTimeout(() => {
+            updatedProperties.slice(0, 12).forEach(property => {
+              if (property.images && Array.isArray(property.images)) {
+                property.images.slice(0, 2).forEach(imgUrl => {
+                  if (typeof imgUrl === 'string' && imgUrl) {
+                    const img = new window.Image();
+                    img.src = imgUrl;
+                  }
+                });
+              }
+            });
+          }, 50);
+          
+          // Ensure smooth scroll position
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: window.scrollY,
+              behavior: 'auto'
+            });
+          });
+        } else { // Switching to map view
+          // When switching to map view, ensure the map renders properly
+          setTimeout(() => {
+            const mapElement = document.querySelector('.mapboxgl-map');
+            if (mapElement) {
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 300);
         }
-      }, 300);
-    }
+      } catch (error) {
+        console.error('Error during view transition:', error);
+      }
+    };
+    
+    // Execute the view transition
+    performViewTransition();
   };
 
   // Floating Button Component to toggle between map and list view
@@ -672,116 +737,95 @@ export default function Home({ campusProperties = [] }: HomeProps) {
   const renderTabs = () => {
     return (
       <div 
-        className={`relative flex items-center ${
-          isSticky ? 'bg-white/70 backdrop-filter backdrop-blur-lg' : 'bg-white'
-        }`}
+        className="relative w-full border-b border-gray-200/50"
       >
-        <div
-          ref={scrollContainerRef}
-          className="flex space-x-4 overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-8 py-3"
-        >
-          {[
-            {
-              id: 'all-houses',
-              icon: '🏠',
-              label: t('tabs.allHouses'),
-            },
-            {
-              id: 'golden-triangle',
-              icon: '🏆',
-              label: t('tabs.goldenTriangle'),
-            },
-            {
-              id: 'great-value',
-              icon: '💰',
-              label: t('tabs.greatValue'),
-            },
-            {
-              id: 'recently-added',
-              icon: '🆕',
-              label: 'RECENTLY ADDED',
-            },
-            {
-              id: 'near-campus',
-              icon: '🎓',
-              label: t('tabs.nearCampus'),
-            },
-            {
-              id: 'on-campus',
-              icon: '📚',
-              label: 'ON CAMPUS',
-            },
-            {
-              id: 'driveway-parking',
-              icon: '🚗',
-              label: 'DRIVEWAY PARKING',
-            },
-            {
-              id: 'rare-finds',
-              icon: '✨',
-              label: t('tabs.rareFinds'),
-            },
-            {
-              id: 'solo-living',
-              icon: '🏃',
-              label: t('tabs.soloLiving'),
-            },
-            {
-              id: 'large-houses',
-              icon: '🏰',
-              label: 'Large Houses',
-            },
-          ].map((tab, index, array) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={`group relative inline-flex flex-col items-center px-1 pt-3 pb-2.5
-                min-w-[120px] ${
-                  index === array.length - 1 ? 'mr-8' : ''
-                } ${
-                activeTab === tab.id
-                  ? 'text-purple-600 font-bold'
-                  : 'text-gray-500 hover:text-gray-700 font-medium'
-              }
-              `}
-            >
-              <span className="text-2xl mb-1.5">{tab.icon}</span>
-              <span className="text-xs whitespace-nowrap px-2 uppercase tracking-tight">
-                {tab.label}
-              </span>
-              {activeTab === tab.id && (
-                <span className="text-xs text-gray-500 mt-0.5 px-2 normal-case">
-                  {getTabCount(tab.id)} {tab.id === 'all-houses' ? 'houses' : 'properties'}
-                </span>
-              )}
-              {activeTab === tab.id ? (
-                <span className="absolute bottom-0 inset-x-0 h-0.5 bg-purple-600" />
-              ) : (
-                <span className="absolute bottom-0 inset-x-0 h-0.5 bg-transparent group-hover:bg-gray-300 transition-colors" />
-              )}
-            </button>
-          ))}
-        </div>
-        {/* Scroll Indicator with glassmorphic effect */}
-        <div className="absolute right-0 top-0 bottom-0 flex items-center bg-gradient-to-l from-white/70 via-white/50 to-transparent backdrop-blur-sm pl-8 pr-2">
-          <button
-            onClick={() => scroll('right')}
-            className="p-2 rounded-full hover:bg-white/80 bg-white/50 shadow-sm backdrop-blur-sm"
+        <div className="max-w-7xl mx-auto">
+          <div
+            ref={scrollContainerRef}
+            className="flex space-x-4 overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-8 py-3"
           >
-            <svg
-              className="w-6 h-6 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+            {[
+              {
+                id: 'all-houses',
+                icon: '🏠',
+                label: t('tabs.allHouses'),
+              },
+              {
+                id: 'golden-triangle',
+                icon: '🏆',
+                label: t('tabs.goldenTriangle'),
+              },
+              {
+                id: 'great-value',
+                icon: '💰',
+                label: t('tabs.greatValue'),
+              },
+              {
+                id: 'recently-added',
+                icon: '🆕',
+                label: 'RECENTLY ADDED',
+              },
+              {
+                id: 'near-campus',
+                icon: '🎓',
+                label: t('tabs.nearCampus'),
+              },
+              {
+                id: 'on-campus',
+                icon: '📚',
+                label: 'ON CAMPUS',
+              },
+              {
+                id: 'driveway-parking',
+                icon: '🚗',
+                label: 'DRIVEWAY PARKING',
+              },
+              {
+                id: 'rare-finds',
+                icon: '✨',
+                label: t('tabs.rareFinds'),
+              },
+              {
+                id: 'solo-living',
+                icon: '🏃',
+                label: t('tabs.soloLiving'),
+              },
+              {
+                id: 'large-houses',
+                icon: '🏰',
+                label: 'Large Houses',
+              },
+            ].map((tab, index, array) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`group relative inline-flex flex-col items-center px-1 pt-3 pb-2.5
+                  min-w-[120px] ${
+                    index === array.length - 1 ? 'mr-8' : ''
+                  } ${
+                  activeTab === tab.id
+                    ? 'text-purple-600 font-bold'
+                    : 'text-gray-500 hover:text-gray-700 font-medium'
+                }
+                `}
+              >
+                <span className="text-2xl mb-1.5">{tab.icon}</span>
+                <span className="text-xs whitespace-nowrap px-2 uppercase tracking-tight">
+                  {tab.label}
+                </span>
+                {activeTab === tab.id && (
+                  <span className="text-xs text-gray-500 mt-0.5 px-2 normal-case">
+                    {getTabCount(tab.id)} {tab.id === 'all-houses' ? 'houses' : 'properties'}
+                  </span>
+                )}
+                {activeTab === tab.id ? (
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-purple-600" />
+                ) : (
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-transparent group-hover:bg-gray-300 transition-colors" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -789,9 +833,8 @@ export default function Home({ campusProperties = [] }: HomeProps) {
 
   if (isLoading) {
     return (
-      <ErrorBoundary>
+      <Layout>
         <div className="min-h-screen bg-gray-50">
-          <Navbar />
           {/* Hero Section */}
           <div className="bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
@@ -823,80 +866,34 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               <p className="text-xl text-gray-600">Loading properties...</p>
             </div>
           </main>
-
-          <FloatingViewToggleButton />
-          {renderPropertyModal()}
         </div>
-      </ErrorBoundary>
+      </Layout>
     );
   }
 
   return (
-    <ErrorBoundary>
+    <Layout>
       <div className="min-h-screen bg-gray-50">
-        {/* Sticky header that appears when scrolling */}
-        <div 
-          className={`fixed top-0 left-0 right-0 z-[40] transition-transform duration-300 transform will-change-transform ${
-            isSticky ? 'translate-y-0' : '-translate-y-full'
-          } ${isSticky ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-          style={{ 
-            transitionProperty: 'transform, opacity',
-            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
+        {/* Hero Section */}
+        <section 
+          id="hero-section"
+          className="bg-white relative z-30"
         >
-          <div className="bg-white/70 backdrop-filter backdrop-blur-lg shadow-md border-b border-gray-200/50">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center py-2 px-4 sm:px-6 lg:px-8">
-                {/* Logo on left */}
-                <div className="mr-4">
-                  <span className="text-xl font-bold text-purple-600">LboroMove</span>
-                </div>
-                
-                {/* Compact SearchFilterBar in the middle */}
-                <div className="flex-grow max-w-xl mx-auto">
-                  <SearchFilterBar 
-                    initialPrice={filters.maxPrice}
-                    initialBedrooms={filters.bedrooms}
-                    onFilterChange={handleFilterChange}
-                    isCompact={true}
-                  />
-                </div>
-                
-                {/* Toggle Map/List View Button */}
-                <div className="ml-2 md:ml-4 flex-shrink-0">
-                  <button
-                    onClick={handleViewToggle}
-                    className="flex items-center gap-1 px-2 py-1.5 sm:px-3 bg-white/70 backdrop-blur-sm rounded-lg border border-gray-200/70 hover:bg-white/90 transition-colors shadow-sm"
-                  >
-                    {showMap ? (
-                      <>
-                        <span className="text-lg">📋</span>
-                        <span className="font-medium text-xs text-black uppercase tracking-wide hidden sm:inline">List</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-lg">🗺️</span>
-                        <span className="font-medium text-xs text-black uppercase tracking-wide hidden sm:inline">Map</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Tabs in sticky header */}
-              <div ref={tabsRef} className="border-t border-gray-100/50">
-                {renderTabs()}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Original Navbar */}
-        <Navbar />
-        
-        {/* Hero Section with SearchFilterBar */}
-        <div className="bg-white" ref={heroSectionRef}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
+          <motion.div 
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8"
+            animate={{ 
+              opacity: isSticky ? 0 : 1,
+              y: isSticky ? -20 : 0
+            }}
+            transition={{ 
+              type: "spring",
+              stiffness: 200,
+              damping: 30,
+              mass: 0.5,
+              duration: 0.3
+            }}
+            layout="position"
+          >
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl tracking-tight">
                 {t('hero.title')}
@@ -906,45 +903,196 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               </p>
               
               {/* SearchFilterBar */}
-              <div className="mt-8 mb-4">
+              <motion.div 
+                className="mt-8 mb-4"
+                layout="position"
+                layoutId="search-bar"
+              >
                 <SearchFilterBar 
                   initialPrice={filters.maxPrice}
-                  initialBedrooms={filters.bedrooms}
+                  initialBedrooms={undefined}
                   onFilterChange={handleFilterChange}
                 />
+              </motion.div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Single Top Navbar */}
+        <motion.nav
+          className="fixed top-0 left-0 right-0 z-[998] will-change-transform"
+          animate={{ 
+            y: 0,
+            opacity: 1
+          }}
+          transition={{ 
+            type: "spring",
+            stiffness: 200,
+            damping: 30
+          }}
+        >
+          <div className="bg-white/70 backdrop-filter backdrop-blur-lg border-b w-full">
+            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+              {/* Logo - Hidden on mobile when sticky */}
+              <div className={`md:w-48 ${isSticky ? 'hidden md:block' : ''}`}>
+                <Link href="/" className="flex items-center">
+                  <span className="text-2xl font-bold text-purple-600">
+                    LBOROMOVE
+                  </span>
+                </Link>
+              </div>
+
+              {/* Navigation Links or Search Bar */}
+              <div className="flex-1 flex justify-center">
+                {isSticky ? (
+                  <div className="w-full max-w-md mx-auto">
+                    <div className="flex items-center bg-white rounded-full shadow-sm border border-gray-200">
+                      <div className="flex-1 flex items-center divide-x divide-gray-200">
+                        <div className="flex items-center px-3 py-2">
+                          <span className="text-base mr-2">🛏️</span>
+                          <select
+                            value={filters.bedrooms || ''}
+                            onChange={(e) => handleFilterChange({ ...filters, bedrooms: e.target.value ? parseInt(e.target.value) : undefined })}
+                            className="w-24 bg-transparent border-none focus:ring-0 text-gray-900 text-sm font-medium"
+                          >
+                            <option value="">Any beds</option>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                              <option key={num} value={num}>{num} {num === 1 ? 'bed' : 'beds'}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center px-3 py-2">
+                          <span className="text-base mr-2">💰</span>
+                          <select
+                            value={filters.maxPrice || ''}
+                            onChange={(e) => handleFilterChange({ ...filters, maxPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+                            className="w-24 bg-transparent border-none focus:ring-0 text-gray-900 text-sm font-medium"
+                          >
+                            <option value="">Any price</option>
+                            <option value="95">Up to £95</option>
+                            <option value="115">Up to £115</option>
+                            <option value="135">Up to £135</option>
+                            <option value="155">Up to £155</option>
+                            <option value="175">£155+</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleFilterChange(filters)}
+                        className="flex items-center justify-center w-10 h-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full m-1 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="hidden md:flex space-x-8">
+                    <Link
+                      href="/"
+                      className={`px-1 py-2 border-b-2 font-medium ${
+                        pathname === '/'
+                          ? 'border-purple-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      HOUSES
+                    </Link>
+                    <Link
+                      href="/discussion"
+                      className={`px-1 py-2 border-b-2 font-medium ${
+                        pathname === '/discussion'
+                          ? 'border-purple-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      DISCUSSION
+                    </Link>
+                    <Link
+                      href="/tools"
+                      className={`px-1 py-2 border-b-2 font-medium ${
+                        pathname === '/tools'
+                          ? 'border-purple-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      TOOLS
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Language Selector - Hidden on mobile when sticky */}
+              <div className={`md:w-48 flex justify-end items-center gap-3 ${isSticky ? 'hidden md:flex' : ''}`}>
+                <select
+                  value={locale}
+                  onChange={(e) => {
+                    router.push(router.pathname, router.asPath, {
+                      locale: e.target.value,
+                    });
+                  }}
+                  className="border border-gray-300 rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="en">🇬🇧 English</option>
+                  <option value="hi">🇮🇳 हिंदी</option>
+                  <option value="zh">🇨🇳 中文</option>
+                </select>
               </div>
             </div>
           </div>
-        </div>
+
+          {/* Filter Tabs - Only show when sticky */}
+          {isSticky && (
+            <motion.div 
+              className="bg-white border-t border-gray-100/50"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              {renderTabs()}
+            </motion.div>
+          )}
+        </motion.nav>
 
         {/* Main Content */}
-        <main 
-          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 transition-all duration-300 ${isSticky ? 'mt-10 sm:mt-12' : ''}`}
+        <motion.main 
+          className={`${isSticky ? 'mt-32' : ''} bg-transparent will-change-transform`}
           style={{ 
-            contain: showMap ? 'paint layout' : 'none',
-            willChange: showMap ? 'transform' : 'auto'
-          }}  
+            position: 'relative',
+            zIndex: 20
+          }}
+          layout="position"
         >
-          {/* Tab Navigation - Original location that will be replaced by sticky tabs when scrolling */}
-          <div className={`relative -mx-4 sm:-mx-6 lg:-mx-8 ${isSticky ? 'invisible h-0 overflow-hidden' : 'visible'}`}>
-            {renderTabs()}
-          </div>
+          {/* Tab Navigation - Only show when not sticky */}
+          {!isSticky && (
+            <div className="relative w-full">
+              {renderTabs()}
+            </div>
+          )}
 
           {/* Property Grid or Map View */}
-          <div className={`${isSticky ? 'pt-2' : 'pt-6'} transition-padding duration-200`}>
+          <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${
+            isSticky ? 'pt-4' : 'pt-6'
+          } pb-16 md:pb-8 transition-all duration-200 bg-transparent`}>
             {showMap ? (
               <div 
                 id="map-container"
-                className="max-w-full mx-auto h-[80vh]" 
+                className="w-full mx-auto" 
                 style={{
                   position: 'relative',
+                  height: 'calc(100vh - 200px)',
                   minHeight: '600px',
                   display: 'block',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  transform: 'translateZ(0)',
+                  willChange: 'transform',
+                  backfaceVisibility: 'hidden',
+                  contain: 'layout paint size'
                 }}
               >
                 <PropertyMap 
-                  key={`map-view-${showMap}-${properties.length}`}
+                  key={`map-view-${showMap}-${localFilteredProperties.length}-${Date.now()}`}
                   properties={localFilteredProperties.length > 0 ? localFilteredProperties : properties} 
                   onViewChange={handleViewToggle} 
                 />
@@ -1017,13 +1165,40 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               </div>
             )}
           </div>
-        </main>
+        </motion.main>
 
-        {/* Show the floating view toggle button */}
-        <FloatingViewToggleButton />
+        {/* Floating Map Toggle Button - Repositioned based on bottom navbar visibility */}
+        <motion.div
+          className="fixed z-[90] left-1/2 transform -translate-x-1/2"
+          animate={{ 
+            bottom: isCurrentlyMobile ? (direction === 'down' && !isAtTop ? 20 : 88) : 20,
+            scale: isCurrentlyMobile && direction === 'down' && !isAtTop ? 0.95 : 1
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          <button
+            onClick={handleViewToggle}
+            className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-lg rounded-full shadow-lg border border-gray-200/50 hover:bg-white/95 transition-all"
+            aria-label={showMap ? "Switch to list view" : "Switch to map view"}
+          >
+            {showMap ? (
+              <>
+                <span className="text-lg">📋</span>
+                <span className="font-medium text-sm text-black uppercase tracking-wide">List</span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg">🗺️</span>
+                <span className="font-medium text-sm text-black uppercase tracking-wide">Map</span>
+              </>
+            )}
+          </button>
+        </motion.div>
+
+        {/* Property Modal */}
         {renderPropertyModal()}
       </div>
-    </ErrorBoundary>
+    </Layout>
   );
 }
 

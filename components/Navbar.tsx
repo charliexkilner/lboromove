@@ -12,6 +12,28 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Replace with your auth state
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < lastScrollY || currentScrollY < 10) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 10) {
+        setIsVisible(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   useEffect(() => {
     // Prefetch all main navigation routes
@@ -54,7 +76,7 @@ export default function Navbar() {
   return (
     <>
       {/* Top Navigation */}
-      <nav className="bg-white/70 backdrop-filter backdrop-blur-lg border-b fixed top-0 w-full z-50">
+      <nav className="bg-white/70 backdrop-filter backdrop-blur-lg border-b fixed top-0 w-full z-[998]">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between md:justify-around">
           {/* Logo */}
           <div className="md:w-48">
@@ -130,57 +152,45 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Bottom Navigation for Mobile */}
-      <nav className="fixed bottom-0 w-full bg-white/70 backdrop-filter backdrop-blur-lg border-t z-50 md:hidden">
-        <div className="flex justify-around py-2">
+      {/* Auth Modal */}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+
+      {/* Mobile Bottom Navigation */}
+      <nav 
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/70 backdrop-filter backdrop-blur-lg border-t z-[998] transition-transform duration-300 ${
+          isVisible ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div className="flex justify-around items-center h-[72px]">
           <Link
             href="/"
-            className={`flex flex-col items-center p-2 ${
+            className={`flex flex-col items-center justify-center w-full h-full ${
               pathname === '/' ? 'text-purple-600' : 'text-gray-500'
             }`}
           >
-            <Home size={24} />
-            <span className="text-xs mt-1">Houses</span>
+            <Home className="w-6 h-6" />
+            <span className="text-xs mt-1">HOUSES</span>
           </Link>
           <Link
             href="/discussion"
-            className={`flex flex-col items-center p-2 ${
+            className={`flex flex-col items-center justify-center w-full h-full ${
               pathname === '/discussion' ? 'text-purple-600' : 'text-gray-500'
             }`}
           >
-            <MessageCircle size={24} />
-            <span className="text-xs mt-1">Discussion</span>
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-xs mt-1">DISCUSSION</span>
           </Link>
           <Link
             href="/tools"
-            className={`flex flex-col items-center p-2 ${
+            className={`flex flex-col items-center justify-center w-full h-full ${
               pathname === '/tools' ? 'text-purple-600' : 'text-gray-500'
             }`}
           >
-            <Tool size={24} />
-            <span className="text-xs mt-1">Tools</span>
+            <Tool className="w-6 h-6" />
+            <span className="text-xs mt-1">TOOLS</span>
           </Link>
-          <button
-            onClick={() => !isAuthenticated && setShowAuthModal(true)}
-            className={`flex flex-col items-center p-2 ${
-              pathname === '/profile' ? 'text-purple-600' : 'text-gray-500'
-            }`}
-          >
-            <div className="w-6 h-6 rounded-full overflow-hidden relative">
-              <Image
-                src={defaultAvatar}
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <span className="text-xs mt-1">Account</span>
-          </button>
         </div>
       </nav>
-
-      {/* Auth Modal */}
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </>
   );
 }

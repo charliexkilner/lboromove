@@ -6,6 +6,13 @@ import ChangelogCard from '../components/ChangelogCard';
 export default function Changelog() {
   const changes = [
     {
+      date: 'March 20 2025',
+      title: 'To-Do',
+      icon: '✔️',
+      description: `Make sure properties are still loaded behind the property modal so that if the user licks exit out of the property modal they are still loaded and at the same bit on the page.
+      `,
+    },
+    {
       date: 'March 6 2025',
       title: 'To-Do',
       icon: '🧠',

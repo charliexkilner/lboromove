@@ -33,7 +33,7 @@ async function testTopLets() {
     // Find all available properties
     const availableProperties: Array<{ title: string; link: string }> = [];
 
-    $('.property-card, .property, .property-item').each((_, card: any) => {
+    $('.property-card, .property, .property-item').each((index: number, card: any) => {
       const title = $(card).find('h2, .property-title').text().trim();
       const status = $(card)
         .find('.property-status, .status, .availability')

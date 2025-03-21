@@ -82,6 +82,12 @@ async function updateTopLetsPhotos() {
       );
 
       try {
+        // Skip properties without a URL
+        if (!property.url) {
+          console.log(`Skipping property ID ${property.id} (no URL)`);
+          continue;
+        }
+        
         // Fetch the property page
         const response = await fetch(property.url);
         const html = await response.text();

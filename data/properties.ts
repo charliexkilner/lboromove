@@ -9,7 +9,32 @@ interface Amenity {
   icon: string;
 }
 
-export const properties: Property[] = [
+// Use a mock property type to avoid Prisma type errors
+interface MockProperty {
+  id: number;
+  title: string;
+  price: number;
+  rooms: number;
+  bathrooms: number;
+  images: string[];
+  location: string;
+  description: string;
+  amenities: string[];
+  scrapedFrom: string;
+  externalId: string;
+  hash: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isGoldenTriangle: boolean;
+  url: string;
+  keyFeatures: any[];
+  landlordId: null;
+  latitude: null;
+  longitude: null;
+  street: null;
+}
+
+export const properties: MockProperty[] = [
   {
     id: 1,
     title: '32 Royland Road',

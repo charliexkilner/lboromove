@@ -11,6 +11,7 @@ interface CampusProperty {
   title: string;
   url: string;
   imageUrl: string;
+  images?: string[];
   priceRange: string;
   minPrice: number;
   maxPrice: number;

@@ -65,10 +65,20 @@ async function updateSpecificTopLetsProperties() {
       `Found ${propertiesWithDuplicates.length} properties to update`
     );
 
-    // Extract URLs for the scraper
-    const urlsToScrape = propertiesWithDuplicates
+    // Get all Top Lets URLs that need updating
+    const urlsToScrape = (await prisma.property.findMany({
+      where: {
+        OR: [
+          { externalId: { contains: 'top-lets' } },
+          { url: { contains: 'top-lets' } },
+        ],
+      },
+      select: {
+        url: true,
+      },
+    }))
       .map((p) => p.url)
-      .filter(Boolean);
+      .filter((url): url is string => url !== null && url !== undefined);
 
     // Initialize the scraper
     const scraper = new TopLetsScraper(prisma);

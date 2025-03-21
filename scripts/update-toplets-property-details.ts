@@ -201,7 +201,8 @@ async function updateTopLetsPropertyDetails() {
             `Updated ${property.title}: ${bedrooms} bedrooms, ${bathrooms} bathrooms`
           );
         } catch (updateError) {
-          if (updateError.code === 'P2002') {
+          // Check if it's a Prisma error with a code property
+          if (updateError && typeof updateError === 'object' && 'code' in updateError && updateError.code === 'P2002') {
             // Handle unique constraint violation by using a different approach
             console.log(
               `Unique constraint error for ${property.title}, trying alternative update method`

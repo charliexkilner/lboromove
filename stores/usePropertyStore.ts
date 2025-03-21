@@ -19,16 +19,16 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
   activeTab: 'all-houses',
 
   setProperties: (properties) => {
-    console.log('Setting properties:', properties.length);
+    console.log('Setting properties:', properties?.length || 0);
+    // Ensure properties is always an array
+    const validProperties = Array.isArray(properties) ? properties : [];
     set((state) => {
-      // Don't automatically filter properties when they're set
-      // This allows the tab filtering to control what's displayed
       return {
-        properties,
-        // Keep the existing filtered properties
+        properties: validProperties,
+        // Keep the existing filtered properties or initialize with valid properties
         filteredProperties: state.filteredProperties.length > 0 
           ? state.filteredProperties 
-          : properties,
+          : validProperties,
       };
     });
   },

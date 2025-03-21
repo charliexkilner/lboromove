@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { X, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PhotoIcon } from '@heroicons/react/24/outline';
+import FallbackImage from './FallbackImage';
 
 interface CampusPropertyModalProps {
   property: {
@@ -9,6 +10,7 @@ interface CampusPropertyModalProps {
     title: string;
     url: string;
     imageUrl: string;
+    images?: string[];
     priceRange: string;
     pricingOptions: string[];
     location: string;
@@ -23,6 +25,26 @@ const DEFAULT_IMAGE =
 
 const CampusPropertyModal: React.FC<CampusPropertyModalProps> = ({ property, onClose }) => {
   const [copied, setCopied] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Process and validate images
+  const images = useMemo(() => {
+    // Get all available images with proper fallback
+    const imageArray = property.images && property.images.length > 0 
+      ? [...property.images] 
+      : property.imageUrl ? [property.imageUrl] : [];
+      
+    // Filter out any invalid URLs
+    const validImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+    
+    // Return the valid images or a default if none
+    return validImages.length > 0 ? validImages : [DEFAULT_IMAGE];
+  }, [property.images, property.imageUrl]);
+
+  // Reset current image index when property changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [property.id]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(property.url);
@@ -30,8 +52,18 @@ const CampusPropertyModal: React.FC<CampusPropertyModalProps> = ({ property, onC
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = DEFAULT_IMAGE;
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (images.length > 1) {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    }
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (images.length > 1) {
+      setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+    }
   };
 
   return (
@@ -64,19 +96,52 @@ const CampusPropertyModal: React.FC<CampusPropertyModalProps> = ({ property, onC
         </div>
         
         <div className="overflow-y-auto flex-grow">
-          {/* Property image */}
+          {/* Property image carousel */}
           <div className="relative h-64 w-full">
-            {property.imageUrl ? (
-              <Image
-                src={property.imageUrl}
-                alt={property.title}
-                fill
-                className="object-cover"
-                onError={handleImageError}
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <PhotoIcon className="h-12 w-12 text-gray-400" />
+            <FallbackImage
+              src={images[currentImageIndex]}
+              alt={property.title}
+              fill
+              className="object-cover"
+              fallbackSrc={DEFAULT_IMAGE}
+            />
+            
+            {/* Image navigation controls - only show if there are multiple images */}
+            {images.length > 1 && (
+              <div className="absolute inset-0 flex items-center justify-between">
+                <button
+                  onClick={prevImage}
+                  className="p-2 ml-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="p-2 mr-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+            
+            {/* Image indicator dots */}
+            {images.length > 1 && (
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+                {images.slice(0, 5).map((_, idx) => (
+                  <button
+                    key={idx}
+                    className={`w-2 h-2 rounded-full ${
+                      currentImageIndex === idx ? 'bg-white' : 'bg-white/60'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(idx);
+                    }}
+                  />
+                ))}
+                {images.length > 5 && (
+                  <span className="text-xs text-white">+{images.length - 5}</span>
+                )}
               </div>
             )}
           </div>

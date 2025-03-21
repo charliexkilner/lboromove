@@ -1,8 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
-import type { BaseScraper as BaseScraperType } from './BaseScraper';
-
-const { default: fetch } = require('cross-fetch');
-const { BaseScraper } = require('./BaseScraper');
+import { BaseScraper } from './BaseScraper';
+import fetch from 'cross-fetch';
 
 interface Loc8meProperty {
   id: number;
@@ -34,7 +32,7 @@ interface Loc8meApiResponse {
 class Loc8meScraper extends BaseScraper {
   private readonly baseUrl = 'https://loc8me.co.uk/wp-json/api/v1/properties';
 
-  constructor(prisma: typeof PrismaClient) {
+  constructor(prisma: PrismaClient) {
     super(prisma, 'loc8me');
   }
 
@@ -55,49 +53,162 @@ class Loc8meScraper extends BaseScraper {
   private async fetchProperties(): Promise<Loc8meProperty[]> {
     let allProperties: Loc8meProperty[] = [];
     let page = 1;
+    const MAX_RETRIES = 3;
 
     while (true) {
-      const response = await fetch(
-        `${this.baseUrl}?__v_isShallow=false&__v_isRef=true&branch=loughborough&paged=${page}`
-      );
-      const data = (await response.json()) as Loc8meApiResponse;
-
-      if (!data.properties || !Array.isArray(data.properties)) {
-        throw new Error('Invalid API response from Loc8me');
+      let success = false;
+      let apiResponse: Loc8meApiResponse | null = null;
+      
+      // Retry logic for the main page request
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`Fetching Loc8me properties page ${page} (attempt ${attempt}/${MAX_RETRIES})`);
+          
+          // Add a random delay before fetch to mimic more human-like behavior
+          const randomDelay = Math.floor(Math.random() * 2000) + 1000; // 1-3 seconds
+          await new Promise(resolve => setTimeout(resolve, randomDelay));
+          
+          // Use AbortController for timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+          
+          const response = await fetch(
+            `${this.baseUrl}?__v_isShallow=false&__v_isRef=true&branch=loughborough&paged=${page}`,
+            {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Referer': 'https://loc8me.co.uk/properties/',
+              },
+              signal: controller.signal
+            }
+          );
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch Loc8me API: HTTP ${response.status}`);
+          }
+          
+          const data = await response.json() as Loc8meApiResponse;
+          
+          if (!data.properties || !Array.isArray(data.properties)) {
+            throw new Error('Invalid API response from Loc8me');
+          }
+          
+          apiResponse = data;
+          success = true;
+          break; // Exit retry loop if successful
+          
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`Error fetching Loc8me page ${page} (attempt ${attempt}/${MAX_RETRIES}):`, errorMessage);
+          
+          // Check if it's an abort error
+          const isAbortError = error instanceof Error && 
+                             (error.name === 'AbortError' || 
+                              errorMessage.includes('abort') || 
+                              errorMessage.includes('Abort'));
+          
+          if (attempt < MAX_RETRIES) {
+            // Wait longer between retries with a random component
+            const baseWaitTime = attempt * 5000; // 5s, 10s, 15s base
+            const randomTime = Math.floor(Math.random() * 3000); // 0-3s random
+            const waitTime = baseWaitTime + randomTime;
+            
+            console.log(`Waiting ${waitTime}ms before retry${isAbortError ? ' (abort detected)' : ''}...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+        }
+      }
+      
+      if (!success || !apiResponse) {
+        console.error(`Failed to fetch Loc8me page ${page} after ${MAX_RETRIES} attempts, stopping.`);
+        break;
       }
 
       // Fetch detailed information for each property
       const detailedProperties = await Promise.all(
-        data.properties.map(async (property) => {
-          try {
-            const detailResponse = await fetch(
-              `${this.baseUrl}/${property.id}?__v_isShallow=false&__v_isRef=true`
-            );
-            const detailData = (await detailResponse.json()) as any;
-            return {
-              ...property,
-              about: detailData?.about || '',
-              key_features: detailData?.key_features || [],
-            };
-          } catch (error) {
-            console.error(
-              `Failed to fetch details for property ${property.id}:`,
-              error
-            );
-            return property;
+        apiResponse.properties.map(async (property) => {
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              // Add a random delay before fetch
+              const randomDelay = Math.floor(Math.random() * 2000) + 1000;
+              await new Promise(resolve => setTimeout(resolve, randomDelay));
+              
+              // Use AbortController for timeout
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 60000);
+              
+              console.log(`Fetching details for property ID ${property.id} (attempt ${attempt}/${MAX_RETRIES})`);
+              
+              const detailResponse = await fetch(
+                `${this.baseUrl}/${property.id}?__v_isShallow=false&__v_isRef=true`,
+                {
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                    'Accept': 'application/json',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Referer': `https://loc8me.co.uk/properties/${property.id}`,
+                  },
+                  signal: controller.signal
+                }
+              );
+              
+              clearTimeout(timeoutId);
+              
+              if (!detailResponse.ok) {
+                throw new Error(`Failed to fetch property details: HTTP ${detailResponse.status}`);
+              }
+              
+              const detailData = await detailResponse.json() as any;
+              
+              return {
+                ...property,
+                about: detailData?.about || '',
+                key_features: detailData?.key_features || [],
+              };
+              
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              console.error(
+                `Failed to fetch details for property ${property.id} (attempt ${attempt}/${MAX_RETRIES}):`,
+                errorMessage
+              );
+              
+              if (attempt < MAX_RETRIES) {
+                const waitTime = attempt * 3000 + Math.floor(Math.random() * 2000);
+                console.log(`Waiting ${waitTime}ms before retrying property ${property.id}...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+              }
+            }
           }
+          
+          // If all attempts failed, return the property without detailed info
+          console.warn(`Could not fetch details for property ${property.id} after ${MAX_RETRIES} attempts`);
+          return property;
         })
       );
 
       allProperties = [...allProperties, ...detailedProperties];
       console.log(
-        `Fetched page ${page} with ${data.properties.length} properties`
+        `Fetched page ${page} with ${apiResponse.properties.length} properties`
       );
 
-      if (page >= data.pagination.max_num_pages) {
+      if (page >= apiResponse.pagination.max_num_pages) {
         break;
       }
       page++;
+      
+      // Add a pause between pages to avoid rate limiting
+      const pagePauseTime = 5000 + Math.floor(Math.random() * 3000);
+      console.log(`Pausing for ${pagePauseTime}ms before fetching the next page...`);
+      await new Promise(resolve => setTimeout(resolve, pagePauseTime));
     }
 
     return allProperties;
@@ -171,4 +282,4 @@ class Loc8meScraper extends BaseScraper {
   }
 }
 
-module.exports = { Loc8meScraper };
+export { Loc8meScraper };

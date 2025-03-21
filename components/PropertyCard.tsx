@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import { useState } from 'react';
-import { Property } from '@prisma/client';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Property, Prisma } from '@prisma/client';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import { Heart, ChevronLeft, ChevronRight } from 'react-feather';
@@ -11,9 +11,19 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 import { useProtectedAction } from '@/hooks/useProtectedAction';
 import { generatePropertySlug } from '@/utils/url';
+import FallbackImage from './FallbackImage';
+
+type PropertyWithOptionalFields = Prisma.PropertyGetPayload<{}> & {
+  propertyType?: string;
+  furnished?: boolean;
+  available?: boolean;
+  imageUrl?: string;
+  slug?: string;
+  _imageKey?: number;
+};
 
 interface PropertyCardProps {
-  property: Property;
+  property: PropertyWithOptionalFields;
   onMouseEnter?: () => void;
 }
 
@@ -34,11 +44,75 @@ export default function PropertyCard({
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const runProtectedAction = useProtectedAction();
 
-  const images = Array.isArray(property.images)
-    ? property.images
-    : [property.images?.[0] || DEFAULT_IMAGE];
+  // Ensure we have a valid array of images or use a fallback
+  const images = useMemo(() => {
+    if (!property.images) return [DEFAULT_IMAGE];
+    
+    const validImages = Array.isArray(property.images) 
+      ? property.images.filter(img => typeof img === 'string' && img)
+      : [property.images].filter(Boolean);
+    
+    return validImages.length > 0 ? validImages : [DEFAULT_IMAGE];
+  }, [property.images]);
+
+  // Get visible images (limit to 6)
+  const visibleImages = useMemo(() => {
+    return images.slice(0, 6);
+  }, [images]);
+
+  // Reset image index when property changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [property.id]);
+
+  // Preload images
+  useEffect(() => {
+    if (!images.length) return;
+    
+    const preloadImages = async () => {
+      const imagesToLoad = images.slice(0, 2); // Preload first two images
+      
+      for (const imgUrl of imagesToLoad) {
+        if (typeof imgUrl === 'string' && !Array.from(loadedImages).includes(imgUrl)) {
+          try {
+            const img = new window.Image();
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+              img.src = imgUrl;
+            });
+            setLoadedImages(prev => new Set([...Array.from(prev), imgUrl]));
+          } catch (error) {
+            console.error('Failed to preload image:', imgUrl);
+          }
+        }
+      }
+    };
+
+    preloadImages();
+  }, [images, loadedImages]);
+
+  // Handle image navigation
+  const navigateImage = (direction: 'next' | 'prev') => {
+    setIsTransitioning(true);
+    const newIndex = direction === 'next'
+      ? (currentImageIndex + 1) % visibleImages.length
+      : (currentImageIndex - 1 + visibleImages.length) % visibleImages.length;
+    
+    // Preload the next image in sequence if within visible range
+    if (newIndex < 5) {
+      const nextImage = new window.Image();
+      nextImage.src = visibleImages[(newIndex + 1) % visibleImages.length];
+    }
+    
+    setCurrentImageIndex(newIndex);
+    setTimeout(() => setIsTransitioning(false), 300);
+  };
 
   const handleImageError = (
     e: React.SyntheticEvent<HTMLImageElement, Event>
@@ -104,12 +178,20 @@ export default function PropertyCard({
         onMouseEnter={() => {
           onMouseEnter?.();
           prefetchPropertyData();
+          // Preload next image on hover
+          if (images.length > currentImageIndex + 1) {
+            const nextImg = new window.Image();
+            nextImg.src = images[currentImageIndex + 1];
+          }
         }}
       >
         {/* Image Gallery */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div 
+          ref={imageContainerRef}
+          className="relative aspect-[4/3] overflow-hidden bg-gray-100"
+        >
           <div className="relative w-full h-full">
-            {property.images && property.images.length > 0 ? (
+            {images.length > 0 && (
               <>
                 {/* Favorite Button */}
                 <button
@@ -124,82 +206,90 @@ export default function PropertyCard({
                   />
                 </button>
 
-                <Image
-                  src={property.images[currentImageIndex]}
-                  alt={`${property.title} property image ${
-                    currentImageIndex + 1
-                  }`}
+                <FallbackImage
+                  key={`${property.id}-${currentImageIndex}-${visibleImages[currentImageIndex]}`}
+                  src={visibleImages[currentImageIndex]}
+                  alt={`${property.title} property image ${currentImageIndex + 1}`}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover"
-                  priority={currentImageIndex < 4}
+                  className={`object-cover transition-opacity duration-300 ${
+                    isTransitioning ? 'opacity-0' : 'opacity-100'
+                  }`}
+                  priority={currentImageIndex === 0}
+                  fallbackSrc={DEFAULT_IMAGE}
                 />
 
-                {/* Navigation Dots - Only show on hover and when not showing view property overlay */}
-                {currentImageIndex < 5 && (
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {property.images.slice(0, 6).map((_, idx) => (
+                {/* Navigation Dots - Always Visible */}
+                {visibleImages.length > 1 && (
+                  <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
+                    {visibleImages.map((_, index) => (
                       <button
-                        key={idx}
-                        className={`w-2 h-2 rounded-full ${
-                          currentImageIndex === idx ? 'bg-white' : 'bg-white/60'
-                        }`}
+                        key={index}
                         onClick={(e) => {
                           e.preventDefault();
-                          e.stopPropagation();
-                          setCurrentImageIndex(idx);
+                          setCurrentImageIndex(index);
                         }}
+                        className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                          currentImageIndex === index
+                            ? 'bg-white scale-110'
+                            : 'bg-white/60 hover:bg-white/80'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
                       />
                     ))}
                   </div>
                 )}
 
-                {/* Left/Right Navigation Arrows - Only show on hover and when not showing view property overlay */}
-                {currentImageIndex < 5 && (
-                  <div className="absolute inset-0 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Navigation Arrows - Visible on Hover */}
+                {visibleImages.length > 1 && currentImageIndex < 5 && (
+                  <div 
+                    className="absolute inset-0 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-hidden="true"
+                  >
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setCurrentImageIndex((prev) =>
-                          prev === 0 ? property.images.length - 1 : prev - 1
-                        );
+                        navigateImage('prev');
                       }}
-                      className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      className="ml-2 p-2 rounded-full bg-white/90 text-gray-800 hover:bg-white transition-colors transform -translate-x-2 group-hover:translate-x-0 transition-all duration-200"
+                      aria-label="Previous image"
                     >
-                      <ChevronLeftIcon className="w-5 h-5" />
+                      <ChevronLeft size={16} />
                     </button>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setCurrentImageIndex((prev) =>
-                          prev === property.images.length - 1 ? 0 : prev + 1
-                        );
+                        navigateImage('next');
                       }}
-                      className="p-1 m-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      className="mr-2 p-2 rounded-full bg-white/90 text-gray-800 hover:bg-white transition-colors transform translate-x-2 group-hover:translate-x-0 transition-all duration-200"
+                      aria-label="Next image"
                     >
-                      <ChevronRightIcon className="w-5 h-5" />
+                      <ChevronRight size={16} />
                     </button>
                   </div>
                 )}
 
                 {/* View More Photos Overlay */}
-                {property.images.length > 6 && currentImageIndex === 5 && (
+                {images.length > 6 && currentImageIndex === 5 && (
                   <div
-                    className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300"
                     onClick={handleViewMore}
                   >
-                    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <button 
+                      className="px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleViewMore(e);
+                      }}
+                    >
                       View Property
                     </button>
                   </div>
                 )}
               </>
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <PhotoIcon className="w-12 h-12 text-gray-400" />
-              </div>
             )}
           </div>
         </div>

@@ -168,7 +168,7 @@ async function updateTopLetsWalkingDistances() {
 }
 
 // Function to get walking distance between two points
-async function getWalkingDistance(start, end) {
+async function getWalkingDistance(start: number[], end: number[]): Promise<number> {
   try {
     const url = `https://api.openrouteservice.org/v2/directions/foot-walking?api_key=${ORS_API_KEY}&start=${start.join(
       ','

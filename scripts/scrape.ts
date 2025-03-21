@@ -1,8 +1,15 @@
 import { ScrapingManager } from '../lib/ScrapingManager';
+import { PrismaClient } from '@prisma/client';
 
 async function main() {
-  const manager = new ScrapingManager();
-  await manager.scrapeAll();
+  const prisma = new PrismaClient();
+  const manager = new ScrapingManager(prisma);
+  
+  try {
+    await manager.scrapeAll();
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 main()

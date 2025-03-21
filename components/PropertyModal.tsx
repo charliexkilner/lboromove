@@ -1,11 +1,12 @@
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useMemo, useEffect } from 'react';
 import {
   XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   HeartIcon,
   ClipboardIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +17,7 @@ import FullScreenGallery from './FullScreenGallery';
 import { calculateWalkingTime } from '../utils/distance';
 import { getPropertyIdFromSlug } from '@/utils/url';
 import PropertyMap from './PropertyMap';
+import FallbackImage from './FallbackImage';
 
 // Update the amenity icons mapping
 const AMENITY_ICONS: Record<string, string> = {
@@ -36,9 +38,10 @@ interface PropertyModalProps {
   slug: string;
   onClose: () => void;
   isCampusProperty?: boolean;
+  isMobile?: boolean;
 }
 
-export default function PropertyModal({ slug, onClose, isCampusProperty = false }: PropertyModalProps) {
+export default function PropertyModal({ slug, onClose, isCampusProperty = false, isMobile = false }: PropertyModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('about');
   const [isFavorite, setIsFavorite] = useState(false);
@@ -65,24 +68,32 @@ export default function PropertyModal({ slug, onClose, isCampusProperty = false 
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const nextImage = () => {
-    if (property?.images) {
-      setCurrentImageIndex((prev) =>
-        prev === property.images.length - 1 ? 0 : prev + 1
-      );
+  // Process the images - ensure we have valid images
+  const processedImages = useMemo(() => {
+    if (!property) return [];
+    
+    const images = Array.isArray(property.images) ? property.images : [property.images];
+    return images.filter((img: string) => img && typeof img === 'string');
+  }, [property]);
+
+  // Ensure current image index is valid
+  useEffect(() => {
+    if (processedImages.length > 0 && currentImageIndex >= processedImages.length) {
+      setCurrentImageIndex(0);
     }
-  };
+  }, [processedImages.length, currentImageIndex]);
 
   const prevImage = () => {
-    if (property?.images) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? property.images.length - 1 : prev - 1
-      );
-    }
+    if (!property || !processedImages.length) return;
+    setCurrentImageIndex((prev) => (prev === 0 ? processedImages.length - 1 : prev - 1));
   };
 
-  const openGallery = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const nextImage = () => {
+    if (!property || !processedImages.length) return;
+    setCurrentImageIndex((prev) => (prev === processedImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const openGallery = () => {
     setIsGalleryOpen(true);
   };
 
@@ -177,7 +188,12 @@ export default function PropertyModal({ slug, onClose, isCampusProperty = false 
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full max-w-6xl">
+              <Dialog.Panel
+                className={`
+                  fixed inset-x-0 overflow-hidden bg-white shadow-xl transform transition-all
+                  ${isMobile ? 'bottom-0 rounded-t-xl rounded-b-xl max-h-[90vh]' : 'rounded-lg max-w-3xl mx-auto my-8'}
+                `}
+              >
                 <div className="absolute right-0 top-0 pr-4 pt-4 z-10">
                   <button
                     type="button"
@@ -197,42 +213,47 @@ export default function PropertyModal({ slug, onClose, isCampusProperty = false 
                   <div className="flex flex-col md:flex-row h-[90vh] md:h-[80vh]">
                     {/* Image Gallery - Full width on mobile, right side on desktop */}
                     <div className="md:hidden w-full h-72 relative mb-4">
-                      <Image
-                        src={property.images[currentImageIndex]}
-                        alt={property.title}
-                        fill
-                        className="object-cover cursor-pointer"
-                        onClick={openGallery}
-                      />
-                      {property.images.length > 1 && (
-                        <>
+                      {processedImages.length > 0 ? (
+                        <div 
+                          className="w-full h-full cursor-pointer" 
+                          onClick={openGallery}
+                        >
+                          <FallbackImage
+                            src={processedImages[currentImageIndex]}
+                            alt={property.title}
+                            fill
+                            className="object-cover"
+                            fallbackSrc="/images/property-placeholder.jpg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <PhotoIcon className="h-12 w-12 text-gray-400" />
+                        </div>
+                      )}
+
+                      {/* Image navigation controls */}
+                      {processedImages.length > 1 && (
+                        <div className="absolute inset-0 flex items-center justify-between">
                           <button
-                            onClick={prevImage}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              prevImage();
+                            }}
+                            className="ml-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
                           >
-                            <ChevronLeftIcon className="h-6 w-6" />
+                            <ChevronLeftIcon className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={nextImage}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              nextImage();
+                            }}
+                            className="mr-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
                           >
-                            <ChevronRightIcon className="h-6 w-6" />
+                            <ChevronRightIcon className="h-5 w-5" />
                           </button>
-                          {/* Image dots for mobile */}
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-1">
-                            {property.images.map((_: string, index: number) => (
-                              <button
-                                key={index}
-                                onClick={() => setCurrentImageIndex(index)}
-                                className={`w-2 h-2 rounded-full transition-colors ${
-                                  currentImageIndex === index
-                                    ? 'bg-white'
-                                    : 'bg-white/50'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </>
+                        </div>
                       )}
                     </div>
 
@@ -442,47 +463,61 @@ export default function PropertyModal({ slug, onClose, isCampusProperty = false 
 
                     {/* Right Image Gallery - Desktop only */}
                     <div className="hidden md:block md:w-1/2 relative">
-                      <div className="h-full relative">
-                        <Image
-                          src={property.images[currentImageIndex]}
-                          alt={property.title}
-                          fill
-                          className="object-cover rounded-r-lg cursor-pointer"
-                          onClick={openGallery}
-                        />
-                        {property.images.length > 1 && (
-                          <>
-                            <button
-                              onClick={prevImage}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-                            >
-                              <ChevronLeftIcon className="h-6 w-6" />
-                            </button>
-                            <button
-                              onClick={nextImage}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-                            >
-                              <ChevronRightIcon className="h-6 w-6" />
-                            </button>
-                            {/* Image dots for desktop */}
-                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-1 max-w-[90%]">
-                              {property.images.map(
-                                (_: string, index: number) => (
-                                  <button
-                                    key={index}
-                                    onClick={() => setCurrentImageIndex(index)}
-                                    className={`w-2 h-2 rounded-full transition-colors ${
-                                      currentImageIndex === index
-                                        ? 'bg-white'
-                                        : 'bg-white/50'
-                                    }`}
-                                  />
-                                )
-                              )}
+                      {processedImages.length > 0 ? (
+                        <>
+                          <div 
+                            className="w-full h-full cursor-pointer" 
+                            onClick={openGallery}
+                          >
+                            <FallbackImage
+                              src={processedImages[currentImageIndex]}
+                              alt={property.title}
+                              fill
+                              className="object-cover"
+                              fallbackSrc="/images/property-placeholder.jpg"
+                            />
+                          </div>
+
+                          {/* Image navigation controls */}
+                          {processedImages.length > 1 && (
+                            <div className="absolute inset-0 flex items-center justify-between">
+                              <button
+                                onClick={prevImage}
+                                className="ml-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                              >
+                                <ChevronLeftIcon className="h-6 w-6" />
+                              </button>
+                              <button
+                                onClick={nextImage}
+                                className="mr-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                              >
+                                <ChevronRightIcon className="h-6 w-6" />
+                              </button>
                             </div>
-                          </>
-                        )}
-                      </div>
+                          )}
+
+                          {/* Image indicators */}
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-1 max-w-[90%]">
+                            {processedImages.map(
+                              (_: string, index: number) => (
+                                <button
+                                  key={index}
+                                  onClick={() => setCurrentImageIndex(index)}
+                                  className={`w-2 h-2 rounded-full transition-colors ${
+                                    currentImageIndex === index
+                                      ? 'bg-white'
+                                      : 'bg-white/50'
+                                  }`}
+                                />
+                              )
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <PhotoIcon className="h-20 w-20 text-gray-400" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -494,7 +529,7 @@ export default function PropertyModal({ slug, onClose, isCampusProperty = false 
                 {/* Add FullScreenGallery */}
                 {isGalleryOpen && property && (
                   <FullScreenGallery
-                    images={property.images}
+                    images={processedImages}
                     initialIndex={currentImageIndex}
                     onClose={() => setIsGalleryOpen(false)}
                   />

@@ -49,9 +49,9 @@ async function fixTopLetsWalkingTimes() {
 
       // Calculate reasonable walking times based on a walking speed of 5km/h
       const reasonableCampusDistance =
-        property.distanceToCampus > 7.5 ? 3.0 : property.distanceToCampus;
+        property.distanceToCampus && property.distanceToCampus > 7.5 ? 3.0 : property.distanceToCampus || 0;
       const reasonableTownDistance =
-        property.distanceToTown > 7.5 ? 2.5 : property.distanceToTown;
+        property.distanceToTown && property.distanceToTown > 7.5 ? 2.5 : property.distanceToTown || 0;
 
       // Update the property with reasonable distances
       await prisma.property.update({

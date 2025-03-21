@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma) as any,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_ID!,
@@ -55,7 +55,7 @@ export const authOptions: NextAuthOptions = {
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
-          user.password
+          (user as any).password
         );
 
         if (!isPasswordValid) {
@@ -89,10 +89,10 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
-        token.studyYear = user.studyYear;
-        token.isVerifiedLandlord = user.isVerifiedLandlord;
+        token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
+        token.studyYear = (user as any).studyYear;
+        token.isVerifiedLandlord = (user as any).isVerifiedLandlord;
       }
       return token;
     },

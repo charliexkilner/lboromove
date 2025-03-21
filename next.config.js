@@ -5,20 +5,51 @@ const nextConfig = {
   reactStrictMode: true,
   i18n,
   images: {
-    domains: [
-      'resource.rentcafe.com', 
-      'firebasestorage.googleapis.com', 
-      'images.rentals.com',
-      'cdn.profoto.com',
-      'www.lboro.ac.uk',
-      'lboro.ac.uk'
-    ],
+    domains: ['lboro.ac.uk', 'loc8me.co.uk', 'top-lets.co.uk'],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'resource.rentcafe.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.rentals.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.lboro.ac.uk',
+      },
+      {
+        protocol: 'https',
+        hostname: 'loc8me.co.uk',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.loc8me.co.uk',
+      },
+      {
+        protocol: 'https',
+        hostname: 'top-lets.co.uk',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.top-lets.co.uk',
+      },
       {
         protocol: 'https',
         hostname: '**',
       },
     ],
+    minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+    formats: ['image/webp'],
+    dangerouslyAllowSVG: true,
+    unoptimized: true,  // Skip optimization for external images that are causing issues
   },
   // Optimize the build for Vercel
   swcMinify: true,

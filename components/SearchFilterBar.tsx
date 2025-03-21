@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
+import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SearchFilterBarProps {
   initialPrice?: number;
@@ -10,27 +11,34 @@ interface SearchFilterBarProps {
   isCompact?: boolean;
 }
 
-export default function SearchFilterBar({
+const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   initialPrice,
   initialBedrooms,
   onFilterChange,
   filteredPropertyCount,
   isCompact = false
-}: SearchFilterBarProps) {
-  // Use high default values that won't filter out properties
+}) => {
   const [priceRange, setPriceRange] = useState<number>(initialPrice !== undefined ? initialPrice : 500);
-  const [bedrooms, setBedrooms] = useState<number>(initialBedrooms !== undefined ? initialBedrooms : 1);
+  const [bedrooms, setBedrooms] = useState<number | undefined>(initialBedrooms);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isBedroomsOpen, setIsBedroomsOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const priceRef = useRef<HTMLDivElement>(null);
   const bedroomsRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
   
-  // Track if filters have been changed from default
-  const isDefaultFilters = priceRange === 500 && bedrooms === 1;
+  const isDefaultFilters = priceRange === 500 && bedrooms === undefined;
 
-  // Handle click outside to close popovers
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (isPriceOpen && priceRef.current && !priceRef.current.contains(event.target as Node)) {
@@ -48,62 +56,58 @@ export default function SearchFilterBar({
   }, [isPriceOpen, isBedroomsOpen]);
 
   const incrementBedrooms = () => {
-    const newValue = Math.min(bedrooms + 1, 8);
+    const newValue = bedrooms === undefined ? 1 : Math.min(bedrooms + 1, 8);
     setBedrooms(newValue);
-    // Don't apply filter here, wait for search button click
   };
 
   const decrementBedrooms = () => {
-    const newValue = Math.max(bedrooms - 1, 1);
+    const newValue = bedrooms === undefined ? undefined : Math.max(bedrooms - 1, 1);
     setBedrooms(newValue);
-    // Don't apply filter here, wait for search button click
   };
 
   const handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(event.target.value);
     setPriceRange(newValue);
-    // Don't apply filter here, wait for search button click
   };
 
   const handleSearch = () => {
-    // Apply filters explicitly when search button is clicked
     onFilterChange({ 
       bedrooms: bedrooms, 
-      maxPrice: priceRange === 500 ? undefined : priceRange // Don't filter if at max value
+      maxPrice: priceRange === 500 ? undefined : priceRange
     });
-    // Close any open popovers and modal
     setIsPriceOpen(false);
     setIsBedroomsOpen(false);
-    setIsModalOpen(false);
+    setShowModal(false);
   };
 
-  // Handle price button click
   const handlePriceButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent default behavior
-    e.stopPropagation(); // Prevent event bubbling
+    e.preventDefault();
+    e.stopPropagation();
     setIsPriceOpen(!isPriceOpen);
     setIsBedroomsOpen(false);
   };
 
-  // Handle bedrooms button click
   const handleBedroomsButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent default behavior
-    e.stopPropagation(); // Prevent event bubbling
+    e.preventDefault();
+    e.stopPropagation();
     setIsBedroomsOpen(!isBedroomsOpen);
     setIsPriceOpen(false);
   };
 
-  // Toggle mobile filter modal
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
+  const handleFilterClick = () => {
+    if (isMobile) {
+      setShowModal(true);
+    }
   };
 
-  // Close modal
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const handleApplyFilters = () => {
+    onFilterChange({ 
+      bedrooms: bedrooms, 
+      maxPrice: priceRange === 500 ? undefined : priceRange
+    });
+    setShowModal(false);
   };
 
-  // Get button text based on filter state
   const getButtonText = () => {
     if (!isDefaultFilters && filteredPropertyCount !== undefined) {
       return `View ${filteredPropertyCount} ${filteredPropertyCount === 1 ? 'property' : 'properties'}`;
@@ -111,7 +115,6 @@ export default function SearchFilterBar({
     return "View properties";
   };
 
-  // Price filter component - can be reused in desktop and mobile views
   const PriceFilter = () => (
     <div className="space-y-6">
       <div className="flex flex-col items-center text-center">
@@ -158,7 +161,6 @@ export default function SearchFilterBar({
     </div>
   );
 
-  // Bedrooms filter component - can be reused in desktop and mobile views
   const BedroomsFilter = () => (
     <div className="space-y-4">
       <h3 className="font-medium uppercase tracking-wide text-center">NUMBER OF BEDROOMS</h3>
@@ -171,7 +173,7 @@ export default function SearchFilterBar({
         >
           −
         </button>
-        <span className="text-3xl font-semibold">{bedrooms}</span>
+        <span className="text-3xl font-semibold">{bedrooms === undefined ? "Any beds" : `${bedrooms} bed${bedrooms === 1 ? '' : 's'}`}</span>
         <button
           type="button"
           onClick={incrementBedrooms}
@@ -184,24 +186,22 @@ export default function SearchFilterBar({
     </div>
   );
 
-  // Render compact version for sticky header
   if (isCompact) {
     return (
-      <div className="w-full">
-        <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-full border border-gray-200 shadow-sm p-1">
-          {/* Compact Bedrooms Button */}
+      <div className="w-full flex justify-center">
+        <div className="flex items-center gap-2 bg-white/70 backdrop-filter backdrop-blur-lg rounded-full border border-gray-200 shadow-sm p-1.5 max-w-fit">
           <div className="relative" ref={bedroomsRef}>
             <button
               type="button"
-              className={`px-2 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium flex items-center gap-1 ${isBedroomsOpen ? 'bg-purple-100 text-purple-800' : 'hover:bg-gray-100'}`}
+              className={`px-3 py-2 md:py-1.5 rounded-full text-[13px] font-medium flex items-center gap-2 min-w-[110px] ${isBedroomsOpen ? 'bg-purple-100 text-purple-800' : 'hover:bg-gray-50/70'}`}
               onClick={handleBedroomsButtonClick}
             >
-              <span className="text-xs">🛏️</span>
-              <span>{bedrooms === 1 ? "1 bed" : `${bedrooms} beds`}</span>
+              <span className="text-sm">🛏️</span>
+              <span>{bedrooms === undefined ? "Any beds" : `${bedrooms} bed${bedrooms === 1 ? '' : 's'}`}</span>
             </button>
             
             {isBedroomsOpen && (
-              <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white rounded-xl shadow-lg z-[9999] border">
+              <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
                 <BedroomsFilter />
                 <button
                   onClick={handleSearch}
@@ -213,22 +213,20 @@ export default function SearchFilterBar({
             )}
           </div>
           
-          {/* Divider */}
           <div className="h-5 border-l border-gray-200"></div>
           
-          {/* Compact Price Button */}
           <div className="relative" ref={priceRef}>
             <button
               type="button"
-              className={`px-2 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium flex items-center gap-1 ${isPriceOpen ? 'bg-purple-100 text-purple-800' : 'hover:bg-gray-100'}`}
+              className={`px-3 py-2 md:py-1.5 rounded-full text-[13px] font-medium flex items-center gap-2 min-w-[110px] ${isPriceOpen ? 'bg-purple-100 text-purple-800' : 'hover:bg-gray-50/70'}`}
               onClick={handlePriceButtonClick}
             >
-              <span className="text-xs">💰</span>
-              <span className="truncate max-w-[60px] sm:max-w-none">{priceRange === 500 ? "Any price" : `£${priceRange}/w`}</span>
+              <span className="text-sm">💰</span>
+              <span>{priceRange === 500 ? "Any price" : `£${priceRange}/w`}</span>
             </button>
             
             {isPriceOpen && (
-              <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white rounded-xl shadow-lg z-[9999] border">
+              <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
                 <PriceFilter />
                 <button
                   onClick={handleSearch}
@@ -240,10 +238,9 @@ export default function SearchFilterBar({
             )}
           </div>
           
-          {/* Search Button */}
           <button
             type="button"
-            className="ml-auto bg-purple-600 hover:bg-purple-700 transition-colors text-white p-2 rounded-full"
+            className="ml-1 bg-purple-600 hover:bg-purple-700 transition-colors text-white p-2.5 rounded-full"
             aria-label="Search properties"
             onClick={handleSearch}
           >
@@ -270,13 +267,11 @@ export default function SearchFilterBar({
 
   return (
     <div className="w-full max-w-3xl mx-auto">
-      {/* Desktop Filter Bar - Hidden on small screens */}
-      <div className="hidden sm:flex items-stretch rounded-2xl border shadow-sm bg-white overflow-visible">
-        {/* Price */}
+      <div className="hidden sm:flex items-stretch rounded-2xl border shadow-sm bg-white/70 backdrop-filter backdrop-blur-lg overflow-visible">
         <div className="relative flex-1" ref={priceRef}>
           <button
             type="button"
-            className="flex items-center px-6 py-4 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50 transition-colors rounded-l-2xl"
+            className="flex items-center px-6 py-4 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50/70 transition-colors rounded-l-2xl"
             aria-label="Select price range"
             onClick={handlePriceButtonClick}
           >
@@ -288,17 +283,16 @@ export default function SearchFilterBar({
           </button>
           
           {isPriceOpen && (
-            <div className="absolute top-full left-0 mt-2 w-80 p-6 bg-white rounded-xl shadow-lg z-[9999] border">
+            <div className="absolute top-full left-0 mt-2 w-80 p-6 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
               <PriceFilter />
             </div>
           )}
         </div>
 
-        {/* Bedrooms */}
         <div className="relative flex-1" ref={bedroomsRef}>
           <button
             type="button"
-            className="flex items-center px-6 py-4 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50 transition-colors"
+            className="flex items-center px-6 py-4 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50/70 transition-colors"
             aria-label="Select number of bedrooms"
             onClick={handleBedroomsButtonClick}
           >
@@ -306,19 +300,18 @@ export default function SearchFilterBar({
             <div className="overflow-hidden">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">BEDROOMS</p>
               <p className="text-gray-600">
-                {bedrooms === 1 ? "1 bedroom" : `${bedrooms} bedrooms`}
+                {bedrooms === undefined ? "Any beds" : `${bedrooms} bedroom${bedrooms === 1 ? '' : 's'}`}
               </p>
             </div>
           </button>
           
           {isBedroomsOpen && (
-            <div className="absolute top-full left-0 mt-2 w-80 p-6 bg-white rounded-xl shadow-lg z-[9999] border">
+            <div className="absolute top-full left-0 mt-2 w-80 p-6 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
               <BedroomsFilter />
             </div>
           )}
         </div>
 
-        {/* Search Button */}
         <button
           type="button"
           className="bg-purple-600 hover:bg-purple-700 transition-colors px-8 flex items-center justify-center rounded-r-2xl"
@@ -343,11 +336,10 @@ export default function SearchFilterBar({
         </button>
       </div>
       
-      {/* Mobile Filter Button - Visible only on small screens */}
       <div className="sm:hidden">
         <button
           type="button"
-          onClick={toggleModal}
+          onClick={handleFilterClick}
           className="mx-auto flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-full shadow-md hover:bg-purple-700 transition-colors"
         >
           <AdjustmentsHorizontalIcon className="w-5 h-5 mr-2" />
@@ -355,60 +347,48 @@ export default function SearchFilterBar({
         </button>
       </div>
 
-      {/* Mobile Filter Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 sm:hidden">
-          <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Filter Properties</h2>
-              <button 
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-6 w-6" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="absolute bottom-0 left-0 right-0 bg-white/70 backdrop-filter backdrop-blur-lg rounded-t-xl p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 mb-4 text-center">PRICE</h3>
+                  <PriceFilter />
+                </div>
+                
+                <hr className="border-gray-200" />
+                
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 mb-4 text-center">BEDROOMS</h3>
+                  <BedroomsFilter />
+                </div>
+                
+                <button
+                  onClick={handleApplyFilters}
+                  className="w-full py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-lg"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M6 18L18 6M6 6l12 12" 
-                  />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="space-y-8">
-              {/* Price Section */}
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 mb-4 text-center">PRICE</h3>
-                <PriceFilter />
+                  {getButtonText()}
+                </button>
               </div>
-              
-              {/* Divider */}
-              <hr className="border-gray-200" />
-              
-              {/* Bedrooms Section */}
-              <div>
-                <BedroomsFilter />
-              </div>
-              
-              {/* View Properties Button */}
-              <button
-                type="button"
-                onClick={handleSearch}
-                className="w-full py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-lg"
-              >
-                {getButtonText()}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-} 
+};
+
+export default SearchFilterBar; 

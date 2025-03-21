@@ -316,9 +316,18 @@ export default function PropertyPage({
 
         {activeTab === 'map' && (
           <div className="mb-8">
-            <PropertyMap
-              streetName={propertyData?.title?.replace(' Street', '') ?? ''}
-            />
+            {propertyData?.latitude && propertyData?.longitude ? (
+              <PropertyMap
+                properties={propertyData ? [propertyData] : []}
+                singlePropertyMode={true}
+                centerLat={propertyData?.latitude}
+                centerLng={propertyData?.longitude}
+              />
+            ) : (
+              <div className="py-12 text-center">
+                <p className="text-gray-500">Map location not available for this property.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
