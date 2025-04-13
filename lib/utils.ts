@@ -1,11 +1,6 @@
-export const delay = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 
-export const parsePrice = (priceString: string): number => {
-  const matches = priceString.match(/\d+/g);
-  return matches ? parseInt(matches.join('')) : 0;
-};
-
-export const cleanText = (text: string): string => {
-  return text.replace(/\s+/g, ' ').trim();
-};
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}

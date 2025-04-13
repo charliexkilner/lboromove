@@ -5,6 +5,7 @@ import { fetchExchangeRates, formatPriceWithCurrency } from '../utils/currency';
 import { useRouter } from 'next/router';
 import { Dialog } from '@headlessui/react';
 import { usePropertyStore } from '../stores/usePropertyStore';
+import { Slider } from "@/components/ui/slider";
 
 interface FilterPopoverProps {
   isOpen: boolean;
@@ -62,11 +63,10 @@ export default function FilterPopover({
     }
   }, [filters, properties]);
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
+  const handlePriceChange = (value: number[]) => {
     setFilters({
       ...filters,
-      maxPrice: value,
+      maxPrice: value[0],
     });
   };
 
@@ -144,19 +144,20 @@ export default function FilterPopover({
               <h3 className="text-xl font-bold uppercase">PRICE PER WEEK</h3>
             </div>
             
-            <input
-              type="range"
-              min="0"
-              max="500"
-              step="10"
-              value={filters.maxPrice}
-              onChange={handlePriceChange}
-              className="w-full h-2 bg-purple-100 rounded-lg appearance-none cursor-pointer accent-purple-600"
-            />
-            
-            <div className="flex justify-between mt-2 text-gray-600">
-              <span>£0</span>
-              <span>£500+</span>
+            <div className="py-4">
+              <Slider
+                value={[filters.maxPrice]}
+                min={0}
+                max={500}
+                step={10}
+                onValueChange={handlePriceChange}
+                className="w-full"
+              />
+              
+              <div className="flex justify-between mt-2 text-gray-600">
+                <span>£0</span>
+                <span>£500+</span>
+              </div>
             </div>
             
             <div className="text-center mt-6">

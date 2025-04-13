@@ -25,6 +25,7 @@ type PropertyWithOptionalFields = Prisma.PropertyGetPayload<{}> & {
 interface PropertyCardProps {
   property: PropertyWithOptionalFields;
   onMouseEnter?: () => void;
+  onSelect?: () => void;
 }
 
 const DEFAULT_IMAGE =
@@ -36,6 +37,7 @@ const LBOROMOVE_PURPLE = '#4F46E5';
 export default function PropertyCard({
   property,
   onMouseEnter,
+  onSelect,
 }: PropertyCardProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -122,11 +124,19 @@ export default function PropertyCard({
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const slug = generatePropertySlug(property);
     
-    // Use router.push with shallow routing to update the URL without a full page reload
+    // If onSelect is provided, use it (for improved modal handling)
+    if (onSelect) {
+      onSelect();
+      return;
+    }
+    
+    // Otherwise, fall back to the original navigation logic
+    // Generate the slug and navigate with shallow routing
+    const slug = generatePropertySlug(property);
     router.push(`/house/${slug}`, undefined, { 
       shallow: true,
+      scroll: false // Prevent scroll reset
     });
   };
 

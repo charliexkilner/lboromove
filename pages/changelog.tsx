@@ -1,5 +1,6 @@
 import { GetStaticProps } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import Head from 'next/head';
 import Navbar from '../components/Navbar';
 import ChangelogCard from '../components/ChangelogCard';
 import { useState, useMemo } from 'react';
@@ -8,6 +9,27 @@ export default function Changelog() {
   const [activeFilter, setActiveFilter] = useState('all');
 
   const changes = [
+    {
+      date: 'March 21 2025',
+      title: 'To-Do',
+      icon: '✔️',
+      description: `fix filter system when on  mobile and make sure that it is a drawer like the example on v0.dev
+      run the coorindates script and any other scripts to properly update properties now that we have new data.
+      check that properties are showing up on the map, and relevant tabbed sections like golden triangle.
+      when map has properties on, get a more accurate area of loughborough campus.
+      make areas on the map more like a heatmap style rather than just straight edges and borders - more like snap maps.
+      potentially think about adding other points of interest to the map like shops, restaurants, bars, cafes, parks, to see how good of a location the houses are in - this could also work well on the map tab section on the property modal as you can inlude nearby things and just the house location.
+      fix search bar filtering on desktop.
+      fix filter bar styling and making the width smaller.
+      instead of "english" maybe think about just having the emojis for the languages - but those flags have more than one language so maybe not.
+      add back in the user profile picture but make it like airbnb that has the drop down so we can add profile, favourites, messages and then a divider then with the changelog, about, landlord login.
+      center the map button properly again. 
+      maybe make the map view have the update scrolled navbars permanently as you can't scroll on this view only zoom in on the map. 
+      make the map the whole bottom of the screen.
+      make the discussion modal and page as they are only cards right now - make it like nomads.com where it is a modal but if sharing or refreshing it becomes a page. prgmatic SEO here will be great ensure that the URL is good for SEO.
+      Change the tools page to look like the v0.dev design.
+      `,
+    },
     {
       date: 'March 20 2025',
       title: 'To-Do',
@@ -337,6 +359,9 @@ export default function Changelog() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Head>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
+      </Head>
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-4xl font-bold mb-8 mt-12 text-center uppercase">Changelog</h1>

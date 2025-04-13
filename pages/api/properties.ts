@@ -22,10 +22,8 @@ export default async function handler(
 
     // Only apply filters if they are explicitly provided and valid
     if (bedrooms && bedrooms !== 'undefined' && !isNaN(Number(bedrooms))) {
-      where.rooms = {
-        gte: Number(bedrooms)
-      };
-      console.log(`Filtering by bedrooms: >= ${bedrooms}`);
+      where.rooms = Number(bedrooms);
+      console.log(`Filtering by bedrooms: ${bedrooms}`);
     }
 
     if (bathrooms && bathrooms !== 'undefined' && !isNaN(Number(bathrooms))) {

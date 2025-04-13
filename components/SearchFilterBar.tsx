@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { AdjustmentsHorizontalIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from 'framer-motion';
+import { Slider } from "@/components/ui/slider";
 
 interface SearchFilterBarProps {
   initialPrice?: number;
@@ -31,6 +32,15 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   const isDefaultFilters = priceRange === 500 && bedrooms === undefined;
 
   useEffect(() => {
+    if (initialBedrooms !== undefined) {
+      setBedrooms(initialBedrooms);
+    }
+    if (initialPrice !== undefined) {
+      setPriceRange(initialPrice);
+    }
+  }, [initialBedrooms, initialPrice]);
+
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -56,7 +66,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   }, [isPriceOpen, isBedroomsOpen]);
 
   const incrementBedrooms = () => {
-    const newValue = bedrooms === undefined ? 1 : Math.min(bedrooms + 1, 8);
+    const newValue = bedrooms === undefined ? 1 : Math.min(bedrooms + 1, 20);
     setBedrooms(newValue);
   };
 
@@ -65,9 +75,16 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
     setBedrooms(newValue);
   };
 
-  const handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(event.target.value);
-    setPriceRange(newValue);
+  const resetPrice = () => {
+    setPriceRange(500);
+  };
+
+  const resetBedrooms = () => {
+    setBedrooms(undefined);
+  };
+
+  const handlePriceChange = (value: number[]) => {
+    setPriceRange(value[0]);
   };
 
   const handleSearch = () => {
@@ -117,53 +134,68 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
 
   const PriceFilter = () => (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium uppercase tracking-wide">Price filter</h3>
+        <button 
+          onClick={resetPrice}
+          className="text-gray-500 text-sm hover:text-purple-600 transition-colors"
+        >
+          Reset
+        </button>
+      </div>
       <div className="flex flex-col items-center text-center">
         <span className="text-3xl font-bold text-purple-600">£{priceRange}</span>
         <span className="text-sm text-gray-500">per week</span>
       </div>
-      <div className="relative py-2">
-        <input
-          type="range"
-          min="0"
-          max="500"
-          step="10"
-          value={priceRange}
-          onChange={handlePriceChange}
-          className="w-full h-3 bg-purple-100 rounded-lg appearance-none cursor-pointer accent-purple-600
-          [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:w-6
-          [&::-webkit-slider-thumb]:h-6
-          [&::-webkit-slider-thumb]:rounded-full
-          [&::-webkit-slider-thumb]:bg-purple-600
-          [&::-webkit-slider-thumb]:cursor-pointer
-          [&::-webkit-slider-thumb]:shadow-md
-          [&::-webkit-slider-thumb]:transition-all
-          [&::-webkit-slider-thumb:hover]:w-8
-          [&::-webkit-slider-thumb:hover]:h-8
-          [&::-webkit-slider-thumb:hover]:shadow-lg
-          [&::-moz-range-thumb]:w-6
-          [&::-moz-range-thumb]:h-6
-          [&::-moz-range-thumb]:rounded-full
-          [&::-moz-range-thumb]:bg-purple-600
-          [&::-moz-range-thumb]:border-0
-          [&::-moz-range-thumb]:cursor-pointer
-          [&::-moz-range-thumb]:shadow-md
-          [&::-moz-range-thumb]:transition-all
-          [&::-moz-range-thumb:hover]:w-8
-          [&::-moz-range-thumb:hover]:h-8
-          [&::-moz-range-thumb:hover]:shadow-lg"
+      <div className="relative py-6 px-2 md:px-4">
+        <Slider
+          value={[priceRange]}
+          min={0}
+          max={500}
+          step={10}
+          onValueChange={handlePriceChange}
+          className="w-full"
         />
+        <div className="mt-4 flex justify-between items-center">
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-gray-600">£0</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-gray-600">£250</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-gray-600">£500+</span>
+          </div>
+        </div>
       </div>
-      <div className="flex justify-between text-sm text-gray-500">
-        <span>£0</span>
-        <span>£500+</span>
+      <div className="flex justify-between mt-6">
+        <button
+          onClick={() => setPriceRange(500)}
+          className="py-3 px-6 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors w-[48%] font-medium"
+        >
+          Any
+        </button>
+        <button
+          onClick={handleSearch}
+          className="py-3 px-6 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors w-[48%] font-medium"
+        >
+          Apply
+        </button>
       </div>
     </div>
   );
 
   const BedroomsFilter = () => (
     <div className="space-y-4">
-      <h3 className="font-medium uppercase tracking-wide text-center">NUMBER OF BEDROOMS</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium uppercase tracking-wide">Number of Bedrooms</h3>
+        <button 
+          onClick={resetBedrooms}
+          className="text-gray-500 text-sm hover:text-purple-600 transition-colors"
+        >
+          Reset
+        </button>
+      </div>
       <div className="flex items-center justify-between p-4 rounded-xl border bg-gray-50">
         <button
           type="button"
@@ -173,7 +205,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         >
           −
         </button>
-        <span className="text-3xl font-semibold">{bedrooms === undefined ? "Any beds" : `${bedrooms} bed${bedrooms === 1 ? '' : 's'}`}</span>
+        <span className="text-2xl font-semibold">{bedrooms === undefined ? "Any" : bedrooms}</span>
         <button
           type="button"
           onClick={incrementBedrooms}
@@ -183,12 +215,27 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           +
         </button>
       </div>
+      
+      <div className="flex justify-between mt-6">
+        <button
+          onClick={resetBedrooms}
+          className="py-3 px-6 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors w-[48%] font-medium"
+        >
+          Any beds
+        </button>
+        <button
+          onClick={handleSearch}
+          className="py-3 px-6 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors w-[48%] font-medium"
+        >
+          Apply
+        </button>
+      </div>
     </div>
   );
 
   if (isCompact) {
     return (
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center" id="search-filter-compact">
         <div className="flex items-center gap-2 bg-white/70 backdrop-filter backdrop-blur-lg rounded-full border border-gray-200 shadow-sm p-1.5 max-w-fit">
           <div className="relative" ref={bedroomsRef}>
             <button
@@ -197,18 +244,12 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
               onClick={handleBedroomsButtonClick}
             >
               <span className="text-sm">🛏️</span>
-              <span>{bedrooms === undefined ? "Any beds" : `${bedrooms} bed${bedrooms === 1 ? '' : 's'}`}</span>
+              <span>{bedrooms === undefined ? "Any" : bedrooms}</span>
             </button>
             
             {isBedroomsOpen && (
               <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
                 <BedroomsFilter />
-                <button
-                  onClick={handleSearch}
-                  className="w-full mt-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Apply
-                </button>
               </div>
             )}
           </div>
@@ -222,18 +263,12 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
               onClick={handlePriceButtonClick}
             >
               <span className="text-sm">💰</span>
-              <span>{priceRange === 500 ? "Any price" : `£${priceRange}/w`}</span>
+              <span>{priceRange === 500 ? "Any" : `£${priceRange}/w`}</span>
             </button>
             
             {isPriceOpen && (
               <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
                 <PriceFilter />
-                <button
-                  onClick={handleSearch}
-                  className="w-full mt-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Apply
-                </button>
               </div>
             )}
           </div>
@@ -266,55 +301,71 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <div className="hidden sm:flex items-stretch rounded-2xl border shadow-sm bg-white/70 backdrop-filter backdrop-blur-lg overflow-visible">
+    <div className="w-full max-w-3xl mx-auto" id="search-filter-main">
+      <div className="hidden sm:flex items-stretch rounded-2xl border shadow-md bg-white overflow-visible md:hover:shadow-lg transition-shadow duration-300">
         <div className="relative flex-1" ref={priceRef}>
           <button
             type="button"
-            className="flex items-center px-6 py-4 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50/70 transition-colors rounded-l-2xl"
+            className="flex items-center px-6 py-5 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50 transition-colors rounded-l-2xl"
             aria-label="Select price range"
             onClick={handlePriceButtonClick}
           >
             <span className="text-amber-500 mr-3 flex-shrink-0 text-xl">💰</span>
             <div className="overflow-hidden">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">PRICE</p>
-              <p className="text-gray-600">{priceRange === 500 ? "Any price" : `£${priceRange}/week`}</p>
+              <p className="text-gray-600 font-medium mt-1">{priceRange === 500 ? "Any" : `£${priceRange}/week`}</p>
             </div>
           </button>
           
           {isPriceOpen && (
-            <div className="absolute top-full left-0 mt-2 w-80 p-6 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
-              <PriceFilter />
-            </div>
+            <AnimatePresence>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-full left-0 mt-3 w-80 p-6 bg-white rounded-xl shadow-xl z-[9999] border border-gray-200"
+              >
+                <PriceFilter />
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
 
         <div className="relative flex-1" ref={bedroomsRef}>
           <button
             type="button"
-            className="flex items-center px-6 py-4 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50/70 transition-colors"
+            className="flex items-center px-6 py-5 h-full w-full border-r border-gray-200 text-left hover:bg-gray-50 transition-colors"
             aria-label="Select number of bedrooms"
             onClick={handleBedroomsButtonClick}
           >
             <span className="text-amber-500 mr-3 flex-shrink-0 text-xl">🛏️</span>
             <div className="overflow-hidden">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">BEDROOMS</p>
-              <p className="text-gray-600">
-                {bedrooms === undefined ? "Any beds" : `${bedrooms} bedroom${bedrooms === 1 ? '' : 's'}`}
+              <p className="text-gray-600 font-medium mt-1">
+                {bedrooms === undefined ? "Any" : bedrooms}
               </p>
             </div>
           </button>
           
           {isBedroomsOpen && (
-            <div className="absolute top-full left-0 mt-2 w-80 p-6 bg-white/70 backdrop-filter backdrop-blur-lg rounded-xl shadow-lg z-[9999] border">
-              <BedroomsFilter />
-            </div>
+            <AnimatePresence>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-full left-0 mt-3 w-80 p-6 bg-white rounded-xl shadow-xl z-[9999] border border-gray-200"
+              >
+                <BedroomsFilter />
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
 
         <button
           type="button"
-          className="bg-purple-600 hover:bg-purple-700 transition-colors px-8 flex items-center justify-center rounded-r-2xl"
+          className="bg-purple-600 hover:bg-purple-700 transition-colors px-8 flex items-center justify-center rounded-r-2xl shadow-sm"
           aria-label="Search properties"
           onClick={handleSearch}
         >
@@ -325,7 +376,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             viewBox="0 0 24 24" 
             fill="none" 
             stroke="currentColor" 
-            strokeWidth="2" 
+            strokeWidth="2.5" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
             className="text-white"
@@ -365,14 +416,30 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             >
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 mb-4 text-center">PRICE</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900">PRICE</h3>
+                    <button 
+                      onClick={resetPrice}
+                      className="text-gray-500 text-sm hover:text-purple-600 transition-colors"
+                    >
+                      Reset
+                    </button>
+                  </div>
                   <PriceFilter />
                 </div>
                 
                 <hr className="border-gray-200" />
                 
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 mb-4 text-center">BEDROOMS</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900">BEDROOMS</h3>
+                    <button 
+                      onClick={resetBedrooms}
+                      className="text-gray-500 text-sm hover:text-purple-600 transition-colors"
+                    >
+                      Reset
+                    </button>
+                  </div>
                   <BedroomsFilter />
                 </div>
                 

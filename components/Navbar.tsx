@@ -16,6 +16,14 @@ export default function Navbar() {
   const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
+    // Only enable scroll behavior if not on map view
+    const isMapView = pathname === '/' && router.query.view === 'map';
+    
+    if (isMapView) {
+      setIsVisible(true);
+      return;
+    }
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
@@ -33,7 +41,7 @@ export default function Navbar() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [lastScrollY]);
+  }, [lastScrollY, pathname, router.query.view]);
 
   useEffect(() => {
     // Prefetch all main navigation routes
@@ -74,12 +82,11 @@ export default function Navbar() {
     'https://cdn.profoto.com/cdn/053149e/contentassets/d39349344d004f9b8963df1551f24bf4/profoto-albert-watson-steve-jobs-pinned-image-original.jpg?width=1280&quality=75&format=jpg';
 
   return (
-    <>
-      {/* Top Navigation */}
-      <nav className="bg-white/70 backdrop-filter backdrop-blur-lg border-b fixed top-0 w-full z-[998]">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between md:justify-around">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <div className="md:w-48">
+          <div className="flex-none w-48">
             <Link href="/" className="flex items-center">
               <span className="text-2xl font-bold text-purple-600">
                 LBOROMOVE
@@ -88,41 +95,43 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            <Link
-              href="/"
-              className={`px-1 py-2 border-b-2 font-medium ${
-                pathname === '/'
-                  ? 'border-purple-500 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              HOUSES
-            </Link>
-            <Link
-              href="/discussion"
-              className={`px-1 py-2 border-b-2 font-medium ${
-                pathname === '/discussion'
-                  ? 'border-purple-500 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              DISCUSSION
-            </Link>
-            <Link
-              href="/tools"
-              className={`px-1 py-2 border-b-2 font-medium ${
-                pathname === '/tools'
-                  ? 'border-purple-500 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              TOOLS
-            </Link>
+          <div className="hidden md:flex flex-1 justify-center">
+            <div className="flex space-x-8">
+              <Link
+                href="/"
+                className={`px-1 py-2 border-b-2 font-medium ${
+                  pathname === '/'
+                    ? 'border-purple-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                HOUSES
+              </Link>
+              <Link
+                href="/discussion"
+                className={`px-1 py-2 border-b-2 font-medium ${
+                  pathname === '/discussion'
+                    ? 'border-purple-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                DISCUSSION
+              </Link>
+              <Link
+                href="/tools"
+                className={`px-1 py-2 border-b-2 font-medium ${
+                  pathname === '/tools'
+                    ? 'border-purple-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                TOOLS
+              </Link>
+            </div>
           </div>
 
           {/* Language Selector and Profile */}
-          <div className="md:w-48 flex justify-end items-center gap-3">
+          <div className="flex-none w-48 flex justify-end items-center gap-3">
             {/* Profile - Hidden on mobile */}
             <button
               onClick={() => !isAuthenticated && setShowAuthModal(true)}
@@ -150,7 +159,7 @@ export default function Navbar() {
             </select>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Auth Modal */}
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
@@ -191,6 +200,6 @@ export default function Navbar() {
           </Link>
         </div>
       </nav>
-    </>
+    </nav>
   );
 }

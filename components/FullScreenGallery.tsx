@@ -1,5 +1,5 @@
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   XMarkIcon,
@@ -20,20 +20,39 @@ export default function FullScreenGallery({
 }: FullScreenGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-  const next = () => {
+  // Reset current index when initial index changes
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex]);
+
+  const next = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const previous = () => {
+  const previous = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') previous();
+    if (e.key === 'Escape') onClose();
+  };
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <Transition.Root show={true} as={Fragment}>
       <Dialog
         as="div"
-        className="fixed inset-0 z-[60] overflow-hidden"
+        className="fixed inset-0 z-[150] overflow-hidden"
         onClose={onClose}
+        static
       >
         <Transition.Child
           as={Fragment}
@@ -48,7 +67,7 @@ export default function FullScreenGallery({
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -61,7 +80,10 @@ export default function FullScreenGallery({
               <Dialog.Panel className="relative w-full h-full max-w-7xl transform overflow-hidden transition-all">
                 {/* Close button */}
                 <button
-                  onClick={onClose}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
                   className="absolute right-4 top-4 z-10 p-2 text-white hover:text-gray-300"
                 >
                   <XMarkIcon className="h-6 w-6" />
@@ -76,6 +98,7 @@ export default function FullScreenGallery({
                       fill
                       className="object-contain"
                       priority
+                      unoptimized={true}
                     />
                   </div>
 
@@ -111,7 +134,10 @@ export default function FullScreenGallery({
                     {images.map((_, index) => (
                       <button
                         key={index}
-                        onClick={() => setCurrentIndex(index)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentIndex(index);
+                        }}
                         className={`w-2 h-2 rounded-full transition-colors ${
                           currentIndex === index ? 'bg-white' : 'bg-white/50'
                         }`}
