@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
@@ -15,15 +15,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -36,56 +35,30 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum UserRole {
-  STUDENT
-  LANDLORD
-  ADMIN
-}
-
-enum StudyYear {
-  FIRST_YEAR
-  SECOND_YEAR
-  FINAL_YEAR
-  MASTERS
-  PHD
-  PLACEMENT_YEAR
-}
-
 model User {
-  id            String    @id @default(cuid())
-  firstName     String
-  lastName      String
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  role          UserRole  @default(STUDENT)
-  studyYear     StudyYear?
-  
-  // Auth related
-  accounts      Account[]
-  sessions      Session[]
-  
-  // User activity
-  favorites     Favorite[]
-  recentlyViewed RecentlyViewed[]
-  savedSearches SavedSearch[]
-  
-  // Discussion related
-  posts         DiscussionPost[]
-  comments      Comment[]
-  postVotes     PostVote[]
-  commentVotes  CommentVote[]
-  
-  // Collections
-  collections   Collection[]
-  memberOf      CollectionMember[]
-  
-  // Landlord specific
-  isVerifiedLandlord Boolean @default(false)
-  properties    Property[]    @relation("LandlordProperties")
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String             @id @default(cuid())
+  firstName          String
+  lastName           String
+  email              String?            @unique
+  emailVerified      DateTime?
+  image              String?
+  role               UserRole           @default(STUDENT)
+  studyYear          StudyYear?
+  isVerifiedLandlord Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  accounts           Account[]
+  collections        Collection[]
+  memberOf           CollectionMember[]
+  comments           Comment[]
+  commentVotes       CommentVote[]
+  posts              DiscussionPost[]
+  favorites          Favorite[]
+  postVotes          PostVote[]
+  properties         Property[]         @relation("LandlordProperties")
+  recentlyViewed     RecentlyViewed[]
+  savedSearches      SavedSearch[]
+  sessions           Session[]
 }
 
 model Favorite {
@@ -99,45 +72,40 @@ model Favorite {
 }
 
 model Property {
-  id              Int      @id @default(autoincrement())
-  title           String
-  price           Float
-  rooms           Int
-  bathrooms       Int
-  images          String[]
-  description     String?
-  location        String
-  amenities       String[]
-  scrapedFrom     String
-  externalId      String
-  hash            String   @unique
-  url             String?
-  keyFeatures     Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  isGoldenTriangle Boolean  @default(false)
-  source          String?
-  
-  // Campus property specific fields
-  priceRange      String?
-  catering        String?
-  bathroomType    String?
-  pricingOptions  String[]  @default([])
-  maxPrice        Float?
-
-  // Relations
-  landlordId      String?
-  landlord        User?    @relation("LandlordProperties", fields: [landlordId], references: [id])
-  viewedBy        RecentlyViewed[]
-  collections     CollectionProperty[]
-
-  latitude        Float?
-  longitude       Float?
-  street          String?
-
-  distanceToTown   Float?
+  id               Int                  @id @default(autoincrement())
+  title            String
+  price            Float
+  rooms            Int
+  bathrooms        Int
+  images           String[]
+  description      String?
+  location         String
+  amenities        String[]
+  scrapedFrom      String
+  externalId       String
+  hash             String               @unique
+  url              String?
+  keyFeatures      Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  landlordId       String?
+  bathroomType     String?
+  catering         String?
   distanceToCampus Float?
-  isNearCampus     Boolean @default(false)
+  distanceToTown   Float?
+  isGoldenTriangle Boolean              @default(false)
+  isNearCampus     Boolean              @default(false)
+  latitude         Float?
+  longitude        Float?
+  maxPrice         Float?
+  priceRange       String?
+  pricingOptions   String[]             @default([])
+  source           String?
+  street           String?
+  emoji            String?
+  collections      CollectionProperty[]
+  landlord         User?                @relation("LandlordProperties", fields: [landlordId], references: [id])
+  viewedBy         RecentlyViewed[]
 
   @@unique([title, price, rooms, location], name: "property_unique")
 }
@@ -155,42 +123,42 @@ model ScrapingLog {
 }
 
 model RecentlyViewed {
-  id        String   @id @default(cuid())
-  userId    String
+  id         String   @id @default(cuid())
+  userId     String
   propertyId Int
-  viewedAt  DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  property  Property @relation(fields: [propertyId], references: [id])
+  viewedAt   DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
 }
 
 model SavedSearch {
-  id          String   @id @default(cuid())
-  userId      String
-  filters     Json     // Store search parameters
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  filters   Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Collection {
-  id          String   @id @default(cuid())
+  id          String               @id @default(cuid())
   name        String
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  createdBy   User                 @relation(fields: [createdById], references: [id])
   members     CollectionMember[]
   properties  CollectionProperty[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 
 model CollectionMember {
   id           String     @id @default(cuid())
   collectionId String
   userId       String
+  joinedAt     DateTime   @default(now())
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  joinedAt     DateTime   @default(now())
 
   @@unique([collectionId, userId])
 }
@@ -199,56 +167,58 @@ model CollectionProperty {
   id           String     @id @default(cuid())
   collectionId String
   propertyId   Int
+  addedAt      DateTime   @default(now())
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  addedAt      DateTime   @default(now())
 
   @@unique([collectionId, propertyId])
 }
 
 model DiscussionPost {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   title       String
-  content     String   @db.Text
+  content     String
+  category    String     @default("general")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   authorId    String
-  isAnonymous Boolean  @default(false)
-  author      User     @relation(fields: [authorId], references: [id])
+  isAnonymous Boolean    @default(false)
+  imageUrl    String?
   comments    Comment[]
+  author      User       @relation(fields: [authorId], references: [id])
   votes       PostVote[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
+  id        String         @id @default(cuid())
+  content   String
   authorId  String
   postId    String
-  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  author    User           @relation(fields: [authorId], references: [id])
   post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   votes     CommentVote[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model PostVote {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  value     Int      @db.SmallInt // 1 for upvote, -1 for downvote
-  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String         @id @default(cuid())
+  postId String
+  userId String
+  value  Int            @db.SmallInt
+  post   DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
 }
 
 model CommentVote {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   commentId String
   userId    String
-  value     Int      @db.SmallInt
-  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value     Int     @db.SmallInt
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
 }
@@ -267,4 +237,19 @@ model CampusProperty {
   bathroomType   String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+enum UserRole {
+  STUDENT
+  LANDLORD
+  ADMIN
+}
+
+enum StudyYear {
+  FIRST_YEAR
+  SECOND_YEAR
+  FINAL_YEAR
+  MASTERS
+  PHD
+  PLACEMENT_YEAR
 }

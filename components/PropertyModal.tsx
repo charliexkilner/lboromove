@@ -3,6 +3,7 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState, useMemo, useEffect, useLayoutEffect } from 'react';
+import Head from 'next/head';
 import {
   XMarkIcon,
   ChevronLeftIcon,
@@ -12,7 +13,7 @@ import {
   PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import { formatPriceWithCurrency } from '../utils/currency';
 import toast from 'react-hot-toast';
@@ -25,6 +26,9 @@ import { useRouter } from 'next/router';
 import { createPortal } from 'react-dom';
 import PropertyCard from './PropertyCard';
 import { generatePropertySlug } from '@/utils/url';
+import { useProtectedAction } from '@/hooks/useProtectedAction';
+import { Property } from '@prisma/client';
+import { useImageCache } from '@/hooks/useImageCache';
 
 // Update the amenity icons mapping
 const AMENITY_ICONS: Record<string, string> = {
@@ -50,6 +54,30 @@ interface PropertyModalProps {
   property?: any; // Add property prop to accept pre-fetched data
 }
 
+// Add the emoji favicon generator function
+const generateEmojiFavicon = () => {
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  
+  // Get canvas context
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw emoji
+  ctx.font = '24px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('📍', canvas.width / 2, canvas.height / 2);
+  
+  // Convert to data URL
+  return canvas.toDataURL('image/png');
+};
+
 export default function PropertyModal({ 
   slug, 
   onClose, 
@@ -59,11 +87,16 @@ export default function PropertyModal({
   property: propProperty = null
 }: PropertyModalProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('about');
   const [isFavorite, setIsFavorite] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { isImageLoaded, preloadImages, preloadPropertyImages } = useImageCache();
+  const [viewKey, setViewKey] = useState(Date.now());
+  const runProtectedAction = useProtectedAction();
+  const [emojiFavicon, setEmojiFavicon] = useState<string | null>(null);
 
   // Mount check for SSR compatibility
   useEffect(() => {
@@ -71,61 +104,51 @@ export default function PropertyModal({
     return () => setMounted(false);
   }, []);
 
-  // Handle close with improved UX
-  const handleModalClose = () => {
-    if (preventReload) {
-      // Just call the parent's onClose to handle state changes
-      onClose();
-    } else {
-      // Use the router to navigate back with shallow routing
-      router.push('/', undefined, { 
-        shallow: true,
-        scroll: false
-      })
-        .then(() => {
-          // After the URL is updated, call the parent's onClose
-          onClose();
-          
-          // Restore scroll position if needed (parent might handle this too)
-          if (window.history.state?.scrollPos) {
-            requestAnimationFrame(() => {
-              window.scrollTo({
-                top: window.history.state.scrollPos,
-                behavior: 'auto'
-              });
-            });
-          }
-        });
-    }
-  };
-
-  const copyToClipboard = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard!');
-  };
+  // Check if property is favorited on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      try {
+        const response = await fetch('/api/user/favorites');
+        if (response.ok) {
+          const favorites = await response.json();
+          const propertyId = getPropertyIdFromSlug(slug);
+          setIsFavorite(favorites.some((fav: any) => fav.id === parseInt(propertyId)));
+        }
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    };
+    checkFavoriteStatus();
+  }, [slug]);
 
   // Use the directly passed property if available
   const { data: property, isLoading } = useQuery({
     queryKey: ['property', slug],
     queryFn: async () => {
-      // Prioritize propProperty if provided
       if (propProperty) return propProperty;
       
       const id = getPropertyIdFromSlug(slug);
       if (!id) return null;
       
-      // Use the base URL from environment variable or fallback to relative path
-      const baseUrl = typeof window !== 'undefined' && window.location.origin 
-        ? window.location.origin 
-        : '';
-      const res = await fetch(`${baseUrl}/api/properties/${id}`);
+      const res = await fetch(`/api/properties/${id}`);
       if (!res.ok) throw new Error('Failed to fetch property');
       return res.json();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: Boolean(slug && slug.length > 0 && !propProperty), // Skip query if property already provided
+    staleTime: 1000 * 60 * 5,
+    enabled: Boolean(slug && slug.length > 0 && !propProperty),
   });
+
+  // Process images
+  const processedImages = useMemo(() => {
+    if (!property?.images) return [];
+    return property.images.filter((img: string) => img && img.length > 0);
+  }, [property?.images]);
+
+  // Preload images when property changes
+  useEffect(() => {
+    if (!processedImages.length) return;
+    preloadImages(processedImages);
+  }, [processedImages, preloadImages]);
 
   // Debug property coordinates
   useEffect(() => {
@@ -153,21 +176,17 @@ export default function PropertyModal({
         lng: property.longitude
       });
       
-      // Use the base URL from environment variable or fallback to relative path
       const baseUrl = typeof window !== 'undefined' && window.location.origin 
         ? window.location.origin 
         : '';
-      // Use a dedicated endpoint for nearby properties
       const res = await fetch(`${baseUrl}/api/properties/nearby?latitude=${property.latitude}&longitude=${property.longitude}&limit=4&excludeId=${property.id}`);
       
       if (!res.ok) {
-        // Fallback to the general properties endpoint if the nearby one doesn't exist
         console.log('Nearby properties endpoint not available, falling back to general API');
         const fallbackRes = await fetch(`${baseUrl}/api/properties`);
         if (!fallbackRes.ok) throw new Error('Failed to fetch properties');
         const properties = await fallbackRes.json();
         
-        // Calculate distance for each property
         const propertiesWithDistance = properties
           .filter((p: any) => p.id !== property.id && p.latitude && p.longitude)
           .map((p: any) => ({
@@ -180,22 +199,63 @@ export default function PropertyModal({
             )
           }));
         
-        // Log found properties
         console.log(`Found ${propertiesWithDistance.length} properties with coordinates`);
         
-        // Sort by distance and take the 4 closest
         return propertiesWithDistance
           .sort((a: any, b: any) => a.distance - b.distance)
           .slice(0, 4);
       }
       
-      // If the nearby endpoint exists, use its data
       const data = await res.json();
       console.log('Nearby properties data:', data);
       return data;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
     enabled: Boolean(property?.latitude && property?.longitude),
+  });
+
+  // Fetch similar properties
+  const { data: similarProperties, isLoading: similarLoading } = useQuery<any[]>({
+    queryKey: ['similarProperties', property?.id, property?.rooms, property?.price],
+    queryFn: async () => {
+      if (!property?.rooms || typeof property.price !== 'number') {
+        console.log('No room or price info available for property:', property?.id);
+        return [];
+      }
+      
+      console.log('Fetching similar properties for:', {
+        rooms: property.rooms,
+        price: property.price
+      });
+      
+      const baseUrl = typeof window !== 'undefined' && window.location.origin 
+        ? window.location.origin 
+        : '';
+      
+      const res = await fetch(`${baseUrl}/api/properties`);
+      
+      if (!res.ok) throw new Error('Failed to fetch properties');
+      const data = await res.json();
+      const properties = data.properties || [];
+      
+      const propertiesWithSimilarity = properties
+        .filter((p: any) => 
+          p.id !== property.id &&
+          p.rooms === property.rooms &&
+          p.price > 0
+        )
+        .map((p: any) => ({
+          ...p,
+          priceDiff: Math.abs(p.price - property.price)
+        }));
+      
+      console.log(`Found ${propertiesWithSimilarity.length} properties with ${property.rooms} bedrooms`);
+      return propertiesWithSimilarity
+        .sort((a: any, b: any) => a.priceDiff - b.priceDiff)
+        .slice(0, 4);
+    },
+    staleTime: 1000 * 60 * 5,
+    enabled: Boolean(property?.rooms && property?.price),
   });
 
   // Debug nearby properties
@@ -212,54 +272,6 @@ export default function PropertyModal({
       });
     }
   }, [nearbyProperties]);
-
-  // Fetch similar properties (same bedrooms and similar price)
-  const { data: similarProperties, isLoading: similarLoading } = useQuery<any[]>({
-    queryKey: ['similarProperties', property?.id, property?.rooms, property?.price],
-    queryFn: async () => {
-      if (!property?.rooms || typeof property.price !== 'number') {
-        console.log('No room or price info available for property:', property?.id);
-        return [];
-      }
-      
-      console.log('Fetching similar properties for:', {
-        rooms: property.rooms,
-        price: property.price
-      });
-      
-      // Use the base URL from environment variable or fallback to relative path
-      const baseUrl = typeof window !== 'undefined' && window.location.origin 
-        ? window.location.origin 
-        : '';
-      
-      // Fetch all properties and filter for similar ones
-      const res = await fetch(`${baseUrl}/api/properties`);
-      
-      if (!res.ok) throw new Error('Failed to fetch properties');
-      const data = await res.json();
-      const properties = data.properties || [];
-      
-      // Calculate price difference for each property
-      const propertiesWithSimilarity = properties
-        .filter((p: any) => 
-          p.id !== property.id && // Not the same property
-          p.rooms === property.rooms && // Same number of bedrooms
-          p.price > 0 // Valid price
-        )
-        .map((p: any) => ({
-          ...p,
-          priceDiff: Math.abs(p.price - property.price)
-        }));
-      
-      // Sort by price similarity and take the 4 most similar
-      console.log(`Found ${propertiesWithSimilarity.length} properties with ${property.rooms} bedrooms`);
-      return propertiesWithSimilarity
-        .sort((a: any, b: any) => a.priceDiff - b.priceDiff)
-        .slice(0, 4);
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: Boolean(property?.rooms && property?.price),
-  });
 
   // Debug similar properties
   useEffect(() => {
@@ -278,13 +290,17 @@ export default function PropertyModal({
     }
   }, [similarProperties]);
 
-  // Process the images - ensure we have valid images
-  const processedImages = useMemo(() => {
-    if (!property) return [];
-    
-    const images = Array.isArray(property.images) ? property.images : [property.images];
-    return images.filter((img: string) => img && typeof img === 'string');
-  }, [property]);
+  // Preload nearby property images when they change
+  useEffect(() => {
+    if (!nearbyProperties?.length) return;
+    preloadPropertyImages(nearbyProperties);
+  }, [nearbyProperties, preloadPropertyImages]);
+
+  // Preload similar property images when they change
+  useEffect(() => {
+    if (!similarProperties?.length) return;
+    preloadPropertyImages(similarProperties);
+  }, [similarProperties, preloadPropertyImages]);
 
   // Ensure current image index is valid
   useEffect(() => {
@@ -329,12 +345,18 @@ export default function PropertyModal({
       property.url?.includes('loc8me') ||
       property.externalId?.includes('loc8me')
     ) {
-      return '🟠'; // Loc8me emoji remains orange
+      return '🍊'; // Loc8me emoji is now orange
     } else if (
       property.url?.includes('top-lets') ||
       property.externalId?.includes('top-lets')
     ) {
-      return '🔴'; // Changed from 🟠 to 🔴 for Top Lets
+      return '🔴'; // Top Lets emoji remains red
+    } else if (
+      property.url?.includes('ecocare') ||
+      property.externalId?.includes('ecocare') ||
+      property.scrapedFrom === 'ecocare'
+    ) {
+      return '🌱'; // EcoCare emoji is now a sprout
     } else {
       return '🏠'; // Default emoji
     }
@@ -414,10 +436,172 @@ export default function PropertyModal({
     };
   }, []);
 
+  const handleFavoriteClick = async () => {
+    const propertyId = getPropertyIdFromSlug(slug);
+    
+    runProtectedAction(async () => {
+      try {
+        if (isFavorite) {
+          // Remove from favorites
+          const response = await fetch(`/api/user/favorites?propertyId=${propertyId}`, {
+            method: 'DELETE',
+          });
+          
+          if (response.ok) {
+            setIsFavorite(false);
+            toast.success('Removed from favorites');
+            // Invalidate favorites query to trigger a refetch
+            queryClient.invalidateQueries({ queryKey: ['favorites'] });
+          } else {
+            toast.error('Failed to remove from favorites');
+          }
+        } else {
+          // Add to favorites
+          const response = await fetch('/api/user/favorites', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ propertyId: parseInt(propertyId) }),
+          });
+          
+          if (response.ok) {
+            setIsFavorite(true);
+            toast.success('Added to favorites');
+            // Invalidate favorites query to trigger a refetch
+            queryClient.invalidateQueries({ queryKey: ['favorites'] });
+          } else {
+            toast.error('Failed to add to favorites');
+          }
+        }
+      } catch (error) {
+        console.error('Error updating favorites:', error);
+        toast.error('Failed to update favorites');
+      }
+    });
+  };
+
+  // Image Gallery Component with persistent loading states
+  const ImageGallery = () => (
+    <div className="relative w-full">
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+        <Image
+          key={`${property?.id}-${currentImageIndex}`}
+          src={processedImages[currentImageIndex]}
+          alt={`${property?.title} - Image ${currentImageIndex + 1}`}
+          fill
+          sizes="100vw"
+          className={`object-cover transition-opacity duration-300 ${
+            isImageLoaded(processedImages[currentImageIndex]) ? 'opacity-100' : 'opacity-0'
+          }`}
+          priority={currentImageIndex === 0}
+        />
+        {!isImageLoaded(processedImages[currentImageIndex]) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="animate-pulse rounded-lg bg-gray-200 h-full w-full" />
+          </div>
+        )}
+      </div>
+      
+      {/* Thumbnail Strip */}
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {processedImages.map((image: string, index: number) => (
+          <button
+            key={`thumb-${index}`}
+            onClick={() => setCurrentImageIndex(index)}
+            className={`relative flex-shrink-0 h-16 w-24 overflow-hidden rounded-md 
+              ${currentImageIndex === index ? 'ring-2 ring-purple-500' : 'ring-1 ring-gray-200'}`}
+          >
+            <Image
+              src={image}
+              alt={`${property?.title} thumbnail ${index + 1}`}
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Handle tab changes without resetting image states
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    
+    // Preload images for the selected tab
+    if (tab === 'nearby' && nearbyProperties?.length) {
+      preloadPropertyImages(nearbyProperties);
+    } else if (tab === 'similar' && similarProperties?.length) {
+      preloadPropertyImages(similarProperties);
+    }
+  };
+
+  // Handle close with improved UX
+  const handleModalClose = () => {
+    if (preventReload) {
+      // Just call the parent's onClose to handle state changes
+      onClose();
+    } else {
+      // Use the router to navigate back with shallow routing
+      router.push('/', undefined, { 
+        shallow: true,
+        scroll: false
+      })
+        .then(() => {
+          // After the URL is updated, call the parent's onClose
+          onClose();
+          
+          // Restore scroll position if needed (parent might handle this too)
+          if (window.history.state?.scrollPos) {
+            requestAnimationFrame(() => {
+              window.scrollTo({
+                top: window.history.state.scrollPos,
+                behavior: 'auto'
+              });
+            });
+          }
+        });
+    }
+  };
+
+  const copyToClipboard = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!');
+  };
+
+  // Add title effect
+  useEffect(() => {
+    if (property?.title) {
+      // Update the document title when property is loaded
+      document.title = `${property.title} | Lboro Move`;
+      
+      // Restore the original title when modal is closed
+      return () => {
+        document.title = 'Lboro Move';
+      };
+    }
+  }, [property?.title]);
+
+  // Generate emoji favicon when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const favicon = generateEmojiFavicon();
+      setEmojiFavicon(favicon);
+    }
+  }, []);
+
   // Update the modalContent to handle visibility without adding a background
   const modalContent = (
     <Transition.Root show={Boolean(slug && slug.length > 0)} as={Fragment}>
       <Dialog as="div" className="relative z-[60]" onClose={handleModalClose} static>
+        {property && (
+          <Head>
+            <title>{property.title} | Lboro Move</title>
+            {emojiFavicon && <link rel="icon" type="image/png" href={emojiFavicon} />}
+          </Head>
+        )}
         <div className="fixed inset-0 z-50 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm pointer-events-auto" onClick={handleModalClose} />
           <div className="flex min-h-full items-center justify-center p-0 text-center sm:p-0 pointer-events-none">
@@ -506,7 +690,7 @@ export default function PropertyModal({
                         <h2 className="text-2xl font-bold">{property.title}</h2>
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => setIsFavorite(!isFavorite)}
+                            onClick={handleFavoriteClick}
                             className="p-2 rounded-md hover:bg-gray-100 bg-gray-50 hover:text-black"
                           >
                             {isFavorite ? (
@@ -540,9 +724,7 @@ export default function PropertyModal({
                           ].map((tab) => (
                             <button
                               key={tab.name}
-                              onClick={() =>
-                                setActiveTab(tab.name.toLowerCase())
-                              }
+                              onClick={() => handleTabChange(tab.name.toLowerCase())}
                               className={`${
                                 activeTab === tab.name.toLowerCase()
                                   ? 'text-purple-600 border-purple-600'
@@ -649,10 +831,6 @@ export default function PropertyModal({
                                 </p>
                               </div>
                             </div>
-
-                            <p className="text-gray-600 mb-6">
-                              {property.description}
-                            </p>
 
                             {/* Show different details based on property type */}
                             {isCampusProperty ? (
@@ -803,13 +981,22 @@ export default function PropertyModal({
                             className="w-full h-full cursor-pointer block" 
                             onClick={handleImageClick}
                           >
-                            <FallbackImage
+                            <Image
+                              key={`${property?.id}-${currentImageIndex}`}
                               src={processedImages[currentImageIndex]}
                               alt={property.title}
                               fill
-                              className="object-cover"
-                              fallbackSrc="/images/property-placeholder.jpg"
+                              sizes="50vw"
+                              className={`object-cover transition-opacity duration-300 ${
+                                isImageLoaded(processedImages[currentImageIndex]) ? 'opacity-100' : 'opacity-0'
+                              }`}
+                              priority={currentImageIndex === 0}
                             />
+                            {!isImageLoaded(processedImages[currentImageIndex]) && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                                <div className="animate-pulse rounded-lg bg-gray-200 h-full w-full" />
+                              </div>
+                            )}
                           </button>
 
                           {/* Image navigation controls */}
@@ -838,19 +1025,17 @@ export default function PropertyModal({
 
                           {/* Image indicators */}
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-1 max-w-[90%]">
-                            {processedImages.map(
-                              (_: string, index: number) => (
-                                <button
-                                  key={index}
-                                  onClick={() => setCurrentImageIndex(index)}
-                                  className={`w-2 h-2 rounded-full transition-colors ${
-                                    currentImageIndex === index
-                                      ? 'bg-white'
-                                      : 'bg-white/50'
-                                  }`}
-                                />
-                              )
-                            )}
+                            {processedImages.map((_: string, index: number) => (
+                              <button
+                                key={index}
+                                onClick={() => setCurrentImageIndex(index)}
+                                className={`w-2 h-2 rounded-full transition-colors ${
+                                  currentImageIndex === index
+                                    ? 'bg-white'
+                                    : 'bg-white/50'
+                                }`}
+                              />
+                            ))}
                           </div>
                         </>
                       ) : (

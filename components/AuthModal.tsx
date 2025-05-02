@@ -71,7 +71,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                     LBOROMOVE account
                   </Dialog.Title>
 
-                  <div className="grid grid-cols-4 gap-4 mb-8 px-4">
+                  <div className="grid grid-cols-3 gap-4 mb-8 px-4">
                     <div className="text-center">
                       <div className="text-3xl mb-2">❤️</div>
                       <div className="text-sm">
@@ -85,7 +85,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                       <div className="text-sm">
                         Student
                         <br />
-                        Chat
+                        Discussion
                       </div>
                     </div>
                     <div className="text-center">
@@ -96,14 +96,6 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                         Tools
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">🔍</div>
-                      <div className="text-sm">
-                        Filter
-                        <br />
-                        Houses
-                      </div>
-                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -111,26 +103,13 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                       onClick={() => signIn('google')}
                       className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
                     >
-                      <Image
-                        src="/google.svg"
+                      <img
+                        src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIyLjU2IDEyLjI1QzIyLjU2IDExLjQ3IDIyLjQ5IDEwLjcyIDIyLjM1IDEwSDEyVjE0LjI1NUgxOC4wNEMxNy43OSAxNS43MjUgMTcuMDM1IDE2Ljk1IDE1LjkzNSAxNy43ODVMMTUuOTUgMTcuOTFMMTkuMjA1IDIwLjM0NUwxOS40NiAyMC4zOUMyMS41MSAxOC41MyAyMi41NiAxNS43MyAyMi41NiAxMi4yNVoiIGZpbGw9IiM0Mjg1RjQiLz4KPHBhdGggZD0iTTEyIDIzQzE1LjA1IDIzIDE3LjYyIDIyLjAxNSAxOS40NiAyMC4zOUwxNS45MzUgMTcuNzg1QzE0Ljk5IDE4LjQyNSAxMy42MiAxOC44NSAxMiAxOC44NUMxMi4wNCAxOC44NSAxMi4wOCAxOC44NSAxMi4xMiAxOC44NUw5LjIzNSAxOC44NUM2LjgzIDE4Ljg1IDQuNzg1IDE2LjkzNSA0LjExNSAxNC40NUw0LjAwNSAxNC40NUwwLjYzIDE2Ljk1TDAuNTcgMTdDMi40MyAyMC41NjUgNi45MiAyMyAxMiAyM1oiIGZpbGw9IiMzNEE4NTMiLz4KPHBhdGggZD0iTTQuMTE1IDE0LjQ1QzMuOTQ1IDEzLjc1IDMuODUgMTMuMDIgMy44NSAxMi4yNUMzLjg1IDExLjQ4IDMuOTQ1IDEwLjc1IDQuMSAxMC4wNUw0LjA5NSA5LjkxNUwwLjY3IDcuMzY1TDAuNTcgNy41QzAuMjA1IDguOTUgMCAxMC41NyAwIDEyLjI1QzAgMTMuOTMgMC4yMDUgMTUuNTUgMC41NyAxN0w0LjExNSAxNC40NVoiIGZpbGw9IiNGQkJDMDUiLz4KPHBhdGggZD0iTTEyIDUuNjVDMTMuNjYgNS42NSAxNS4wNiA2LjIxIDE2LjE2NSA3LjI2TDE2LjE3IDcuMjY1TDE5LjI3NSA0LjE3TDE5LjE2IDQuMDY1QzE3LjMzNSAyLjM2NSAxNC44NyAxLjI1IDEyIDEuMjVDNi45MiAxLjI1IDIuNDMgMy42ODUgMC41NyA3LjVMNC4xIDEwLjA1QzQuNzg1IDcuNTY1IDYuODMgNS42NSA5LjIzNSA1LjY1SDEyWiIgZmlsbD0iI0VBNDMzNSIvPgo8L3N2Zz4K"
                         alt="Google"
-                        width={20}
-                        height={20}
+                        width={24}
+                        height={24}
                       />
                       Continue with Google
-                    </button>
-
-                    <button
-                      onClick={() => signIn('apple')}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <Image
-                        src="/apple.svg"
-                        alt="Apple"
-                        width={20}
-                        height={20}
-                      />
-                      Continue with Apple
                     </button>
 
                     <button
@@ -163,23 +142,6 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                       Sign in
                     </button>{' '}
                     to continue exploring.
-                  </div>
-
-                  <div className="mt-8 flex justify-between text-sm text-gray-500">
-                    <div>
-                      <span className="font-semibold text-gray-900">
-                        22,465
-                      </span>
-                      <br />
-                      houses
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">
-                        1,000+
-                      </span>
-                      <br />
-                      students
-                    </div>
                   </div>
                 </div>
               </Dialog.Panel>

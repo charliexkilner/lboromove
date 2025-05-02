@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { Home, MessageCircle, Tool } from 'react-feather';
+import { Home, MessageCircle, Tool, User } from 'react-feather';
 import Image from 'next/image';
 import AuthModal from './AuthModal';
+import { useSession } from 'next-auth/react';
+import { UserRole } from '@prisma/client';
+import type { Session } from 'next-auth';
+
+// Extend Session type to include our custom user fields
+interface ExtendedSession extends Session {
+  user: {
+    id: string;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+    email?: string | null;
+    image?: string | null;
+  }
+}
 
 // Make sure you have this export
 export default function Navbar() {
@@ -11,7 +26,7 @@ export default function Navbar() {
   const { locale, pathname } = router;
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Replace with your auth state
+  const { data: session } = useSession() as { data: ExtendedSession | null };
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -78,9 +93,6 @@ export default function Navbar() {
     </select>
   );
 
-  const defaultAvatar =
-    'https://cdn.profoto.com/cdn/053149e/contentassets/d39349344d004f9b8963df1551f24bf4/profoto-albert-watson-steve-jobs-pinned-image-original.jpg?width=1280&quality=75&format=jpg';
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -133,17 +145,34 @@ export default function Navbar() {
           {/* Language Selector and Profile */}
           <div className="flex-none w-48 flex justify-end items-center gap-3">
             {/* Profile - Hidden on mobile */}
-            <button
-              onClick={() => !isAuthenticated && setShowAuthModal(true)}
-              className="hidden md:block w-8 h-8 rounded-full overflow-hidden relative hover:ring-2 hover:ring-purple-500 transition-all"
-            >
-              <Image
-                src={defaultAvatar}
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
-            </button>
+            {session?.user ? (
+              <Link
+                href="/profile"
+                className="hidden md:block w-8 h-8 rounded-full overflow-hidden relative hover:ring-2 hover:ring-purple-500 transition-all"
+              >
+                {session.user.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt="Profile"
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-600 text-sm">
+                      {session.user.firstName?.[0] || 'U'}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="hidden md:block w-8 h-8 rounded-full overflow-hidden relative hover:ring-2 hover:ring-purple-500 transition-all bg-gray-200 flex items-center justify-center"
+              >
+                <User className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
             <select
               value={locale}
               onChange={(e) => {
@@ -198,6 +227,25 @@ export default function Navbar() {
             <Tool className="w-6 h-6" />
             <span className="text-xs mt-1">TOOLS</span>
           </Link>
+          {session?.user ? (
+            <Link
+              href="/profile"
+              className={`flex flex-col items-center justify-center w-full h-full ${
+                pathname === '/profile' ? 'text-purple-600' : 'text-gray-500'
+              }`}
+            >
+              <User className="w-6 h-6" />
+              <span className="text-xs mt-1">PROFILE</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="flex flex-col items-center justify-center w-full h-full text-gray-500"
+            >
+              <User className="w-6 h-6" />
+              <span className="text-xs mt-1">PROFILE</span>
+            </button>
+          )}
         </div>
       </nav>
     </nav>

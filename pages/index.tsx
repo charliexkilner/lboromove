@@ -27,6 +27,8 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useFavorites } from '@/hooks/useFavorites';
+import Head from 'next/head';
 
 // Import PropertyMap with dynamic import to prevent SSR issues
 const PropertyMap = dynamic(() => import('../components/PropertyMap'), { 
@@ -343,10 +345,8 @@ export default function Home({ campusProperties = [] }: HomeProps) {
       
       if (newFilters.maxPrice !== undefined) {
         filtered = filtered.filter((p) => {
-          // Check if price property exists and is a number
           if (typeof p.price !== 'number') return false;
-          // Filter for price less than or equal to max price
-          return p.price <= newFilters.maxPrice;
+          return p.price <= (newFilters.maxPrice as number);
         });
       }
       
@@ -391,6 +391,33 @@ export default function Home({ campusProperties = [] }: HomeProps) {
         break;
       case 'golden-triangle':
         filtered = filtered.filter((p) => p.isGoldenTriangle === true);
+        break;
+      case 'silver-square':
+        filtered = filtered.filter((p) => {
+          const silverSquareStreets = [
+            'burleigh road',
+            'york road',
+            'william street',
+            'seward street',
+            'radmoor road',
+            'arthur street',
+            'curzon street',
+            'heathcoat street',
+            'caldwell street',
+            'frederick street'
+          ];
+          
+          // Check both location and street fields
+          const location = (p.location || '').toLowerCase();
+          const street = (p.street || '').toLowerCase();
+          const title = (p.title || '').toLowerCase();
+          
+          return silverSquareStreets.some(streetName => 
+            location.includes(streetName) || 
+            street.includes(streetName) || 
+            title.includes(streetName)
+          );
+        });
         break;
       case 'great-value':
         filtered = filtered.filter((p) => p.price <= 135);
@@ -550,6 +577,32 @@ export default function Home({ campusProperties = [] }: HomeProps) {
         return allProperties.filter(
           (p: Property) => p.isGoldenTriangle === true
         ).length;
+      case 'silver-square':
+        return allProperties.filter((p: Property) => {
+          const silverSquareStreets = [
+            'burleigh road',
+            'york road',
+            'william street',
+            'seward street',
+            'radmoor road',
+            'arthur street',
+            'curzon street',
+            'heathcoat street',
+            'caldwell street',
+            'frederick street'
+          ];
+          
+          // Check both location and street fields
+          const location = (p.location || '').toLowerCase();
+          const street = (p.street || '').toLowerCase();
+          const title = (p.title || '').toLowerCase();
+          
+          return silverSquareStreets.some(streetName => 
+            location.includes(streetName) || 
+            street.includes(streetName) || 
+            title.includes(streetName)
+          );
+        }).length;
       case 'great-value':
         const greatValueCount = allProperties.filter(
           (p: Property) => p.price <= 135
@@ -786,6 +839,11 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                 label: t('tabs.goldenTriangle'),
               },
               {
+                id: 'silver-square',
+                icon: '🩶',
+                label: 'SILVER SQUARE',
+              },
+              {
                 id: 'great-value',
                 icon: '💰',
                 label: t('tabs.greatValue'),
@@ -804,16 +862,6 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                 id: 'on-campus',
                 icon: '📚',
                 label: 'ON CAMPUS',
-              },
-              {
-                id: 'driveway-parking',
-                icon: '🚗',
-                label: 'DRIVEWAY PARKING',
-              },
-              {
-                id: 'rare-finds',
-                icon: '✨',
-                label: t('tabs.rareFinds'),
               },
               {
                 id: 'solo-living',
@@ -864,10 +912,16 @@ export default function Home({ campusProperties = [] }: HomeProps) {
   // Add this near the top of the component with other state variables
   const [searchBarKey, setSearchBarKey] = useState<number>(0);
 
+  const { favorites, isFavorite } = useFavorites();
+
   if (isLoading) {
     return (
       <Layout>
         <div className="min-h-screen bg-gray-50">
+          <Head>
+            <title>Lboro Move | Student Housing Made Easy</title>
+            <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
+          </Head>
           {/* Hero Section */}
           <div className="bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
@@ -908,6 +962,10 @@ export default function Home({ campusProperties = [] }: HomeProps) {
   return (
     <Layout>
       <div className="min-h-screen">
+        <Head>
+          <title>Lboro Move | Student Housing Made Easy</title>
+          <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
+        </Head>
         {/* Hero Section */}
         <section 
           id="hero-section"
@@ -1090,6 +1148,10 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                           >
                             <PropertyCard
                               property={property}
+                              isFavorite={isFavorite(property.id)}
+                              onFavoriteChange={(propertyId, isFavorite) => {
+                                // Optional: Add any additional UI updates here
+                              }}
                               onMouseEnter={() => handlePropertyHover(property)}
                               onSelect={() => handlePropertySelect(property)}
                             />
@@ -1303,8 +1365,33 @@ function getPropertyCount(
     case 'golden-triangle':
       return allProperties.filter((p: Property) => p.isGoldenTriangle === true)
         .length;
+    case 'silver-square':
+      return allProperties.filter((p: Property) => {
+        const silverSquareStreets = [
+          'burleigh road',
+          'york road',
+          'william street',
+          'seward street',
+          'radmoor road',
+          'arthur street',
+          'curzon street',
+          'heathcoat street',
+          'caldwell street',
+          'frederick street'
+        ];
+        
+        // Check both location and street fields
+        const location = (p.location || '').toLowerCase();
+        const street = (p.street || '').toLowerCase();
+        const title = (p.title || '').toLowerCase();
+        
+        return silverSquareStreets.some(streetName => 
+          location.includes(streetName) || 
+          street.includes(streetName) || 
+          title.includes(streetName)
+        );
+      }).length;
     case 'great-value':
-      // Log the count to debug
       const greatValueCount = allProperties.filter(
         (p) => p.price <= 135
       ).length;

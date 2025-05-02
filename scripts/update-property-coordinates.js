@@ -5,89 +5,88 @@ const prisma = new PrismaClient();
 
 async function updatePropertyCoordinates() {
   try {
-    // Get all properties without coordinates
+    // Get all TopLets properties without coordinates
     const properties = await prisma.property.findMany({
       where: {
-        OR: [{ latitude: null }, { longitude: null }],
+        AND: [
+          { source: 'TopLets' },
+          {
+            OR: [
+              { latitude: null },
+              { longitude: null },
+              { latitude: 0 },
+              { longitude: 0 }
+            ]
+          }
+        ]
       },
       select: {
         id: true,
         title: true,
         location: true,
         street: true,
-        externalId: true,
         url: true,
       },
     });
 
-    console.log(`Found ${properties.length} properties without coordinates`);
+    console.log(`Found ${properties.length} TopLets properties without coordinates`);
 
     // Check if API key exists
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       console.error('GOOGLE_MAPS_API_KEY environment variable is not set.');
-      console.log('Skipping geocoding...');
+      console.log('Please add your Google Maps API key to the .env file:');
+      console.log('GOOGLE_MAPS_API_KEY=your_api_key_here');
       return;
     }
 
+    let successCount = 0;
+    let failureCount = 0;
+
     for (const property of properties) {
       try {
-        // Determine if this is a Top Lets property
-        const isTopLets =
-          property.externalId?.includes('top-lets') ||
-          property.url?.includes('top-lets');
-
         // Extract address components
         let addressToGeocode = '';
 
-        if (isTopLets) {
-          // For Top Lets properties, try to extract a more specific address
-          // First, check if we can extract the address from the title
+        // First try to use the street address if available
+        if (property.street) {
+          addressToGeocode = `${property.street}, Loughborough, UK`;
+        } else {
+          // Try to extract address from title
           const titleMatch = property.title.match(
-            /(\d+\s+[A-Za-z\s]+(?:Road|Street|Avenue|Lane|Close|Drive|Way|Place|Terrace))/i
+            /(\d+\s+[A-Za-z\s]+(?:Road|Street|Avenue|Lane|Close|Drive|Way|Place|Terrace|Gardens|Grove|Court|Crescent))/i
           );
 
           if (titleMatch && titleMatch[1]) {
-            // Use the address from the title
             addressToGeocode = `${titleMatch[1]}, Loughborough, UK`;
-          } else if (property.street) {
-            // Use the street if available
-            addressToGeocode = `${property.street}, Loughborough, UK`;
           } else {
-            // Extract address from the URL as a fallback
-            const urlMatch = property.url?.match(/properties\/([^\/]+)/);
-            if (urlMatch && urlMatch[1]) {
-              // Convert URL slug to address format (e.g., "13-radmoor-road" to "13 Radmoor Road")
-              const addressFromUrl = urlMatch[1]
-                .replace(/-/g, ' ')
-                .replace(/(\d+)([A-Za-z])/, '$1 $2')
-                .replace(/\b\w/g, (c) => c.toUpperCase());
-
-              addressToGeocode = `${addressFromUrl}, Loughborough, UK`;
-            } else {
-              // Default to location if nothing else works
-              addressToGeocode = `${property.location}, UK`;
-            }
+            // Use location as fallback
+            addressToGeocode = `${property.location}, UK`;
           }
-        } else {
-          // For Loc8me properties, use the existing logic
-          addressToGeocode = property.street
-            ? `${property.street}, ${property.location}, UK`
-            : `${property.location}, UK`;
         }
 
-        console.log(`Geocoding: ${addressToGeocode}`);
+        console.log(`\nGeocoding: ${addressToGeocode}`);
+        console.log(`Property: ${property.title}`);
 
         // Call the geocoding API
         const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
           addressToGeocode
-        )}&key=${apiKey}`;
+        )}&key=${apiKey}&components=country:GB|locality:Loughborough`;
 
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.status === 'OK' && data.results && data.results.length > 0) {
           const { lat, lng } = data.results[0].geometry.location;
+
+          // Verify the coordinates are within Loughborough bounds
+          const isInLoughborough = lat >= 52.75 && lat <= 52.79 && lng >= -1.24 && lng <= -1.19;
+
+          if (!isInLoughborough) {
+            console.log(`✗ Coordinates outside Loughborough bounds: ${lat}, ${lng}`);
+            failureCount++;
+            continue;
+          }
 
           // Update the property with the coordinates
           await prisma.property.update({
@@ -98,24 +97,26 @@ async function updatePropertyCoordinates() {
             },
           });
 
-          console.log(
-            `✓ Updated coordinates for ${property.title}: ${lat}, ${lng}`
-          );
+          console.log(`✓ Updated coordinates: ${lat}, ${lng}`);
+          successCount++;
         } else {
-          console.log(`✗ Failed to geocode ${property.title}: ${data.status}`);
+          console.log(`✗ Failed to geocode: ${data.status}`);
+          failureCount++;
         }
 
-        // Add a small delay to avoid hitting API rate limits
+        // Add a delay to avoid hitting API rate limits
         await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
-        console.error(
-          `Error updating coordinates for property ${property.title}:`,
-          error
-        );
+        console.error(`Error updating coordinates:`, error);
+        failureCount++;
       }
     }
 
-    console.log('Finished updating property coordinates');
+    console.log('\n=== Geocoding Summary ===');
+    console.log(`Successfully geocoded: ${successCount}`);
+    console.log(`Failed to geocode: ${failureCount}`);
+    console.log(`Total processed: ${properties.length}`);
+
   } catch (error) {
     console.error('Error in updatePropertyCoordinates:', error);
   } finally {

@@ -1,20 +1,19 @@
 import { PrismaClient } from '@prisma/client';
-import { Loc8meScraper } from '../lib/scrapers/Loc8meScraper';
+import { StudentBeehiveScraper } from '../lib/scrapers/StudentBeehiveScraper';
 
 async function main() {
   const prisma = new PrismaClient();
-  const scraper = new Loc8meScraper(prisma);
-
+  
   try {
-    console.log('Starting Loc8me scraping...');
+    console.log('Starting Student Beehive scraper...');
+    const scraper = new StudentBeehiveScraper(prisma);
     await scraper.scrape();
     console.log('Scraping completed successfully');
   } catch (error) {
-    console.error('Error during scraping:', error);
+    console.error('Error running scraper:', error);
   } finally {
     await prisma.$disconnect();
-    process.exit(0);
   }
 }
 
-main();
+main(); 

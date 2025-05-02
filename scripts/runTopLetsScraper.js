@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const { TopLetsScraper } = require('../lib/scrapers/TopLetsScraper');
+import { PrismaClient } from '@prisma/client';
+import { TopLetsScraper } from '../lib/scrapers/TopLetsScraper.js';
 
 async function main() {
   const prisma = new PrismaClient();

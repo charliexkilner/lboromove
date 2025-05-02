@@ -13,12 +13,18 @@ const prisma = new PrismaClient();
 
 declare module 'next-auth' {
   interface User extends DefaultUser {
+    id: string;
     role: UserRole;
+    firstName: string;
+    lastName: string;
   }
 
   interface Session extends DefaultSession {
     user: {
+      id: string;
       role: UserRole;
+      firstName: string;
+      lastName: string;
     } & DefaultSession['user'];
   }
 }
@@ -56,13 +62,17 @@ export const authOptions: NextAuthOptions = {
         user: {
           ...session.user,
           id: token.sub,
-          role: token.role,
+          role: token.role as UserRole,
+          firstName: token.firstName as string,
+          lastName: token.lastName as string,
         },
       };
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.role = user.role;
+        token.firstName = user.firstName;
+        token.lastName = user.lastName;
       }
       return token;
     },

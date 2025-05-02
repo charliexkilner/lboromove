@@ -4,11 +4,141 @@ import Head from 'next/head';
 import Navbar from '../components/Navbar';
 import ChangelogCard from '../components/ChangelogCard';
 import { useState, useMemo } from 'react';
+import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 
 export default function Changelog() {
   const [activeFilter, setActiveFilter] = useState('all');
 
   const changes = [
+    {
+      date: 'April 20 2025',
+      title: 'TO-DO - The Final Push',
+      icon: '✔️',
+      description: `Add pages for each estate agent with their google reviews, contact info, houses and reviews.
+      Make it similar to the profile page, but on the tabbed section have houses and then reviews.
+      Fix mobile filter view.
+      Make sure all student tools are finished - use splitwise as an example.
+      Add on campus rooms.
+      Improve load times by incorpoarting lazy loading and infinite scroll so over 400 properties don't load all at once which is currently making user experience slower than it was when we only had around 200 properties.
+      Check that the price and bedroom filters are working correctly as there seems to be abug that filters the properties when setting them but it doesn't search when I click the search button.
+      Center map button proeprly again.
+      Make sure that switching between views on the home pages and on the property modal is working correctly.
+      Ensure that the page is still loaded behing the property modal so that the user can save where they were on the page and contunue browsing properly.
+      Incorporate better sign in / sign up logic as right now it is only prompted when the user tried to favourite or create a discussionm post - perhaps there is a property sized card on the property view that lists benefits of being logged in and this card is also used to display the disucssion posts that could be of interest or those that are top today, and for these to be only after X amount of houses so that it isn't distracting to the user.
+      Create advertising property size cards for the home page so that it can be shown for a future development, also show said advertising card on the map page - offering different tiers for if they are just on the card view or on the map view also.
+      Clear up the scripts and any pages that still have comments in line.
+      Buy domain name and check that it is working live and not just on my local host.
+      Make the dots on the map view easier to view.
+      Remove posts feature and remove the photos from the new post modal if the user changes their mind before uploading.
+      `,
+    },
+    {
+      date: 'April 15 2025',
+      title: 'UI Standardization Update',
+      icon: '🎨',
+      description: `Standardized UI components across the platform:
+      • Updated discussion page filter pills to match student tools and profile sections
+      • Implemented consistent styling for all filter buttons platform-wide:
+        - Rounded-full design with proper padding
+        - Consistent text size and font weight
+        - Hover and focus states for better accessibility
+      • Enhanced mobile responsiveness of filter systems
+      • Added smooth transitions for filter state changes
+      • Improved touch targets for mobile users
+      • Ensured consistent spacing between filter options`,
+    },
+    {
+      date: 'April 14 2025',
+      title: 'Discussion Page To-Do',
+      icon: '✔️',
+      description: `Discussion System Enhancements In Progress:
+      • Implementing full discussion post pages with SEO-friendly URLs and metadata
+      • Adding comment system with nested replies and notifications
+      • Creating public profile pages to view other users' activity and posts
+      • Adding image upload support for discussion posts with proper optimization
+      • Implementing post editing and deletion functionality`,
+    },
+    {
+      date: 'April 12 2025',
+      title: 'User Profile System Implementation',
+      icon: '👤',
+      description: `Launched comprehensive user profile system with Google authentication:
+      • Implemented NextAuth.js with Google OAuth integration for secure login
+      • Created persistent user sessions with automatic token refresh
+      • Integrated Google profile data:
+        - Automatic profile picture import and caching
+        - First and last name synchronization
+        - Email verification status
+      
+      Profile Features:
+      • Personalized dashboard showing saved properties and discussion activity
+      • Favorites system for saving and organizing properties
+      • Activity feed showing recent interactions on discussion posts
+      • Discussion post history including:
+        - Posts created by the user
+        - Posts upvoted by the user
+        - Comments and replies (to be implemented)
+      
+      Technical Improvements:
+      • Implemented proper data relationships in Prisma schema
+      • Added automatic data sync with Google profile updates
+      • Created efficient caching system for profile data
+      • Added proper error handling for auth failures
+      • Implemented secure session management
+      • Added proper TypeScript types for user data`,
+    },
+    {
+      date: 'April 7 2025',
+      title: 'Property Modal Enhancements',
+      icon: '🎯',
+      description: `Major improvements to the property modal experience:
+      • Implemented persistent image loading states to prevent flickering
+      • Added smooth transitions between modal tabs
+      • Enhanced nearby and similar properties loading with proper error states
+      • Improved mobile responsiveness with better touch interactions especially when filtering and on map view
+      • Added loading skeletons for better user experience
+      • Fixed image gallery navigation on mobile devices
+      • Optimized modal performance with proper React key handling`,
+    },
+    {
+      date: 'March 29 2025',
+      title: 'Discussion System Launch',
+      icon: '💬',
+      description: `Launched the new discussion system with the following features:
+      • Implemented post categories (housemate-finder, for-sale, events, etc.)
+      • Added upvoting system for posts and comments
+      • Created mock posts to demonstrate functionality
+      • Implemented SEO-friendly URLs for discussion posts
+      • Added rich text editor for post creation
+      • Integrated with user profiles
+      • Added filtering system for different post categories`,
+    },
+    {
+      date: 'March 22 2025',
+      title: 'Property Geocoding System',
+      icon: '📍',
+      description: `Enhanced property location system with OpenRouteService integration:
+      • Implemented automatic geocoding for property addresses
+      • Added rate limiting to prevent API overuse
+      • Created fallback system for failed geocoding attempts
+      • Updated coordinates for existing properties
+      • Improved accuracy of walking time calculations
+      • Added proper error handling and logging
+      • Enhanced map markers with more accurate positioning`,
+    },
+    {
+      date: 'March 21 2025',
+      title: 'Student Tools Enhancement',
+      icon: '🛠️',
+      description: `Major updates to student tools section:
+      • Redesigned tools page with modern UI/UX
+      • Added comprehensive move-in checklist
+      • Implemented room allocation tool with fair distribution
+      • Created budget calculator for student expenses
+      • Added multi-language support for all tools
+      • Improved mobile responsiveness
+      • Enhanced accessibility features`,
+    },
     {
       date: 'March 21 2025',
       title: 'To-Do',
@@ -309,38 +439,30 @@ export default function Changelog() {
   ];
 
   const filterTabs = [
-    { id: 'all', label: 'ALL CHANGES', count: changes.length },
+    { id: 'all', label: 'ALL CHANGES' },
     { 
       id: 'future-developments', 
-      label: 'FUTURE DEVELOPMENTS', 
-      count: changes.filter(change => change.title.startsWith('FD:')).length 
+      label: 'FUTURE DEVELOPMENTS'
     },
     { 
       id: 'to-do', 
-      label: 'TO-DO', 
-      count: changes.filter(change => change.title.toLowerCase().includes('to-do')).length 
+      label: 'TO-DO'
     },
     { 
       id: 'feature-request', 
-      label: 'FEATURE REQUESTS', 
-      count: changes.filter(change => change.title.toLowerCase().includes('feature request')).length 
+      label: 'FEATURE REQUESTS'
     },
     { 
       id: 'changelog', 
-      label: 'CHANGELOG', 
-      count: changes.filter(change => 
-        !change.title.startsWith('FD:') && 
-        !change.title.toLowerCase().includes('to-do') && 
-        !change.title.toLowerCase().includes('feature request')
-      ).length 
+      label: 'CHANGELOG'
     },
   ];
 
-  const filteredChanges = useMemo(() => {
-    if (activeFilter === 'all') return changes;
+  const getFilteredChanges = (filter: string) => {
+    if (filter === 'all') return changes;
     
     return changes.filter(change => {
-      switch (activeFilter) {
+      switch (filter) {
         case 'future-developments':
           return change.title.startsWith('FD:');
         case 'to-do':
@@ -355,11 +477,19 @@ export default function Changelog() {
           return true;
       }
     });
-  }, [activeFilter, changes]);
+  };
+
+  const filteredChanges = useMemo(() => getFilteredChanges(activeFilter), [activeFilter, changes]);
+
+  const getCurrentTitle = () => {
+    const tab = filterTabs.find(tab => tab.id === activeFilter);
+    return tab?.label || 'ALL CHANGES';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
+        <title>Changelog | Lboro Move</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
       </Head>
       <Navbar />
@@ -367,22 +497,30 @@ export default function Changelog() {
         <h1 className="text-4xl font-bold mb-8 mt-12 text-center uppercase">Changelog</h1>
         
         {/* Filter Tabs */}
-        <div className="mb-8 overflow-x-auto">
-          <div className="flex space-x-4 pb-3 min-w-max">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 whitespace-nowrap
-                  ${activeFilter === tab.id
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                  }`}
-              >
-                {tab.label} ({tab.count})
-              </button>
-            ))}
+        <Tabs defaultValue="all" value={activeFilter} onValueChange={setActiveFilter} className="mb-8">
+          <div className="flex justify-center">
+            <TabsList className="bg-gray-100 p-1 rounded-lg">
+              {filterTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
           </div>
+        </Tabs>
+
+        {/* Header with count */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold">
+            {getCurrentTitle()}
+          </h2>
+          <span className="text-gray-600">
+            {filteredChanges.length} {filteredChanges.length === 1 ? 'entry' : 'entries'}
+          </span>
         </div>
 
         <div className="space-y-6">

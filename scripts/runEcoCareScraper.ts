@@ -1,20 +1,17 @@
 import { PrismaClient } from '@prisma/client';
-import { Loc8meScraper } from '../lib/scrapers/Loc8meScraper';
+import { EcoCareScraper } from '../lib/scrapers/EcoCareScraper';
 
 async function main() {
   const prisma = new PrismaClient();
-  const scraper = new Loc8meScraper(prisma);
+  const scraper = new EcoCareScraper(prisma);
 
   try {
-    console.log('Starting Loc8me scraping...');
     await scraper.scrape();
-    console.log('Scraping completed successfully');
   } catch (error) {
     console.error('Error during scraping:', error);
   } finally {
     await prisma.$disconnect();
-    process.exit(0);
   }
 }
 
-main();
+main(); 

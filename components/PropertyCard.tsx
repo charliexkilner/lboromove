@@ -12,6 +12,10 @@ import { PhotoIcon } from '@heroicons/react/24/outline';
 import { useProtectedAction } from '@/hooks/useProtectedAction';
 import { generatePropertySlug } from '@/utils/url';
 import FallbackImage from './FallbackImage';
+import { useAuthModal } from '@/hooks/useAuthModal';
+import toast from 'react-hot-toast';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useImageCache } from '@/hooks/useImageCache';
 
 type PropertyWithOptionalFields = Prisma.PropertyGetPayload<{}> & {
   propertyType?: string;
@@ -26,6 +30,8 @@ interface PropertyCardProps {
   property: PropertyWithOptionalFields;
   onMouseEnter?: () => void;
   onSelect?: () => void;
+  isFavorite?: boolean;
+  onFavoriteChange?: (propertyId: number, isFavorite: boolean) => void;
 }
 
 const DEFAULT_IMAGE =
@@ -38,18 +44,24 @@ export default function PropertyCard({
   property,
   onMouseEnter,
   onSelect,
+  isFavorite: propIsFavorite,
+  onFavoriteChange,
 }: PropertyCardProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { t, i18n } = useTranslation('common');
   const { locale } = useRouter();
-  const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showControls, setShowControls] = useState(false);
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [isTransitioning, setIsTransitioning] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const runProtectedAction = useProtectedAction();
+  const { openModal } = useAuthModal();
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { isImageLoaded, preloadImages } = useImageCache();
+
+  // Use both prop and hook for favorite state
+  const isPropertyFavorite = propIsFavorite ?? isFavorite(property.id);
 
   // Ensure we have a valid array of images or use a fallback
   const images = useMemo(() => {
@@ -72,32 +84,19 @@ export default function PropertyCard({
     setCurrentImageIndex(0);
   }, [property.id]);
 
-  // Preload images
+  // Preload images immediately when the component mounts or images change
   useEffect(() => {
-    if (!images.length) return;
+    if (!visibleImages.length) return;
     
-    const preloadImages = async () => {
-      const imagesToLoad = images.slice(0, 2); // Preload first two images
-      
-      for (const imgUrl of imagesToLoad) {
-        if (typeof imgUrl === 'string' && !Array.from(loadedImages).includes(imgUrl)) {
-          try {
-            const img = new window.Image();
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-              img.src = imgUrl;
-            });
-            setLoadedImages(prev => new Set([...Array.from(prev), imgUrl]));
-          } catch (error) {
-            console.error('Failed to preload image:', imgUrl);
-          }
-        }
-      }
-    };
-
-    preloadImages();
-  }, [images, loadedImages]);
+    // Preload all visible images
+    preloadImages(visibleImages);
+    
+    // Start loading the next image in sequence
+    const nextIndex = (currentImageIndex + 1) % visibleImages.length;
+    if (nextIndex < visibleImages.length) {
+      preloadImages([visibleImages[nextIndex]]);
+    }
+  }, [visibleImages, currentImageIndex, preloadImages]);
 
   // Handle image navigation
   const navigateImage = (direction: 'next' | 'prev') => {
@@ -106,13 +105,14 @@ export default function PropertyCard({
       ? (currentImageIndex + 1) % visibleImages.length
       : (currentImageIndex - 1 + visibleImages.length) % visibleImages.length;
     
-    // Preload the next image in sequence if within visible range
-    if (newIndex < 5) {
-      const nextImage = new window.Image();
-      nextImage.src = visibleImages[(newIndex + 1) % visibleImages.length];
+    setCurrentImageIndex(newIndex);
+    
+    // Preload the next image in sequence
+    const nextIndex = (newIndex + 1) % visibleImages.length;
+    if (nextIndex < visibleImages.length) {
+      preloadImages([visibleImages[nextIndex]]);
     }
     
-    setCurrentImageIndex(newIndex);
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
@@ -171,10 +171,25 @@ export default function PropertyCard({
     router.prefetch(`/p/${property.id}`);
   };
 
-  const handleFavoriteClick = () => {
-    runProtectedAction(() => {
-      // Add to favorites logic here
-      console.log('Adding to favorites:', property.id);
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    runProtectedAction(async () => {
+      try {
+        if (isPropertyFavorite) {
+          await removeFavorite.mutateAsync(property.id);
+          onFavoriteChange?.(property.id, false);
+          toast.success('Removed from favorites');
+        } else {
+          await addFavorite.mutateAsync(property.id);
+          onFavoriteChange?.(property.id, true);
+          toast.success('Added to favorites');
+        }
+      } catch (error) {
+        console.error('Error updating favorites:', error);
+        toast.error('Failed to update favorites');
+      }
     });
   };
 
@@ -188,20 +203,21 @@ export default function PropertyCard({
         onMouseEnter={() => {
           onMouseEnter?.();
           prefetchPropertyData();
+          
           // Preload next image on hover
-          if (images.length > currentImageIndex + 1) {
-            const nextImg = new window.Image();
-            nextImg.src = images[currentImageIndex + 1];
+          const nextIndex = (currentImageIndex + 1) % visibleImages.length;
+          if (nextIndex < visibleImages.length) {
+            preloadImages([visibleImages[nextIndex]]);
           }
         }}
       >
         {/* Image Gallery */}
         <div 
           ref={imageContainerRef}
-          className="relative aspect-[4/3] overflow-hidden bg-gray-100"
+          className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100"
         >
           <div className="relative w-full h-full">
-            {images.length > 0 && (
+            {visibleImages.length > 0 && (
               <>
                 {/* Favorite Button */}
                 <button
@@ -211,25 +227,31 @@ export default function PropertyCard({
                   <Heart
                     size={20}
                     className={
-                      isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
+                      isPropertyFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
                     }
                   />
                 </button>
 
-                <FallbackImage
-                  key={`${property.id}-${currentImageIndex}-${visibleImages[currentImageIndex]}`}
-                  src={visibleImages[currentImageIndex]}
-                  alt={`${property.title} property image ${currentImageIndex + 1}`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className={`object-cover transition-opacity duration-300 ${
-                    isTransitioning ? 'opacity-0' : 'opacity-100'
-                  }`}
-                  priority={currentImageIndex === 0}
-                  fallbackSrc={DEFAULT_IMAGE}
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    key={`${property.id}-${currentImageIndex}`}
+                    src={visibleImages[currentImageIndex]}
+                    alt={`${property.title} - Image ${currentImageIndex + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className={`object-cover transition-opacity duration-300 ${
+                      isImageLoaded(visibleImages[currentImageIndex]) ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    priority={currentImageIndex === 0}
+                  />
+                  {!isImageLoaded(visibleImages[currentImageIndex]) && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                      <div className="animate-pulse rounded-lg bg-gray-200 h-full w-full" />
+                    </div>
+                  )}
+                </div>
 
-                {/* Navigation Dots - Always Visible */}
+                {/* Navigation Dots - Overlay Position */}
                 {visibleImages.length > 1 && (
                   <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
                     {visibleImages.map((_, index) => (

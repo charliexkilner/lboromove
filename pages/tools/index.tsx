@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import Navbar from "../../components/Navbar"
+import Head from "next/head"
 
 export default function StudentToolsPage() {
   const [activeTab, setActiveTab] = useState("all")
@@ -86,6 +87,10 @@ export default function StudentToolsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Head>
+        <title>Student Tools | Lboro Move</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
+      </Head>
       <Navbar />
 
       {/* Main Content */}
@@ -155,7 +160,7 @@ export default function StudentToolsPage() {
                       ))}
                     </div>
 
-                    <Link href={`/tools/${tool.id}`} className="block">
+                    <Link href={tool.id === "move-in-checklist" ? "/student-move-in-checklist" : `/tools/${tool.id}`} className="block">
                       <Button className="w-full group bg-purple-600 hover:bg-purple-700 text-white font-medium py-3">
                         {tool.buttonText}
                         <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1 text-white" />

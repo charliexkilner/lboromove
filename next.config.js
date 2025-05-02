@@ -5,7 +5,13 @@ const nextConfig = {
   reactStrictMode: true,
   i18n,
   images: {
-    domains: ['lboro.ac.uk', 'loc8me.co.uk', 'top-lets.co.uk'],
+    domains: [
+      'lboro.ac.uk',
+      'loc8me.co.uk',
+      'top-lets.co.uk',
+      'lh3.googleusercontent.com',  // Add this for Google profile images
+      'googleusercontent.com'       // Add this for Google profile images
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -43,6 +49,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**',
       },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',  // Add this for Google profile images
+      }
     ],
     minimumCacheTTL: 60,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],

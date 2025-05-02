@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Post } from '../../types/post';
 
 interface NewPostModalProps {
   onClose: () => void;
@@ -18,24 +20,62 @@ export default function NewPostModal({ onClose }: NewPostModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
 
-    // Here you would typically make an API call to create the post
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('category', category);
+      if (photo) {
+        formData.append('photo', photo);
+      }
+
+      const response = await fetch('/api/posts/create', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to create post');
+      }
+
       // Clear form and close modal
       setTitle('');
       setDescription('');
       setCategory('');
+      setPhoto(null);
+      setPhotoPreview(null);
+      
+      // Invalidate and refetch posts
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      
       onClose();
     } catch (error) {
       console.error('Error creating post:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create post');
     } finally {
       setIsSubmitting(false);
     }
@@ -65,6 +105,12 @@ export default function NewPostModal({ onClose }: NewPostModalProps) {
               <p className="text-sm text-gray-500 mb-6">
                 Share your thoughts, questions, or announcements with the community.
               </p>
+
+              {error && (
+                <div className="mb-4 rounded-md bg-red-50 p-4">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -114,6 +160,28 @@ export default function NewPostModal({ onClose }: NewPostModalProps) {
                     placeholder="Provide details about your post"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
+                    Photo <span className="text-gray-500 text-xs">(optional)</span>
+                  </label>
+                  <input
+                    type="file"
+                    id="photo"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                  />
+                  {photoPreview && (
+                    <div className="mt-2">
+                      <img
+                        src={photoPreview}
+                        alt="Preview"
+                        className="h-32 w-auto object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3">

@@ -19,322 +19,163 @@ import { useState, useEffect } from 'react';
 import NewPostModal from '../../components/modals/NewPostModal';
 import FilterModal from '../../components/modals/FilterModal';
 import { useRouter } from 'next/router';
+import { useProtectedAction } from '../../hooks/useProtectedAction';
+import { useSession } from 'next-auth/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Post } from '../../types/post';
+import Head from 'next/head';
+import Layout from '../../components/Layout';
 
-type Post = {
-  id: string;
-  title: string;
-  shortDesc: string;
+const categories = [
+  { id: 'housemate-finder', icon: '🏠', label: 'HOUSEMATE FINDER', count: 0 },
+  { id: 'for-sale', icon: '💰', label: 'FOR SALE', count: 0 },
+  { id: 'events', icon: '🎉', label: 'EVENTS', count: 0 },
+  { id: 'questions', icon: '❓', label: 'QUESTIONS', count: 0 },
+  { id: 'house-hunting', icon: '🔍', label: 'HOUSE HUNTING', count: 0 },
+  { id: 'student-life', icon: '🎓', label: 'STUDENT LIFE', count: 0 },
+];
+
+const fetchPosts = async ({
+  category,
+  sortBy,
+}: {
   category: string;
-  author: string;
-  timeAgo: string;
-  comments: number;
-  upvotes: number;
-  imageSrc?: string;
-  imageAlt?: string;
+  sortBy: string;
+}): Promise<Post[]> => {
+  const params = new URLSearchParams();
+  if (category && category !== 'All') params.append('category', category);
+  if (sortBy) params.append('sortBy', sortBy);
+  
+  const response = await fetch(`/api/posts?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch posts');
+  }
+  return response.json();
 };
 
-const truncateText = (text: string, maxLength: number) => {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
-};
-
-type Category = {
-  id: string;
-  icon: string;
-  label: string;
-  count: number;
-};
-
-const generateDummyPosts = (): Post[] => {
-  return [
-    // Housemate Finder posts
-    {
-      id: '1',
-      title: 'Looking for a housemate in Golden Triangle',
-      shortDesc:
-        'I have a spare room in a 3-bed house near UEA. £450pcm including bills. Available from September.',
-      category: 'housemate-finder',
-      author: 'Emily',
-      timeAgo: '2 hours ago',
-      comments: 7,
-      upvotes: 12,
-      imageSrc: '/queens-park.jpg',
-    },
-    {
-      id: '2',
-      title: 'Postgrad student seeking quiet flatmate',
-      shortDesc:
-        'PhD student looking for a considerate flatmate for a 2-bed apartment in city center. £500pcm + bills.',
-      category: 'housemate-finder',
-      author: 'Michael',
-      timeAgo: '1 day ago',
-      comments: 3,
-      upvotes: 5,
-      imageSrc: '/queens-park.jpg',
-    },
-
-    // For Sale posts
-    {
-      id: '3',
-      title: 'Desk and office chair - perfect for students',
-      shortDesc:
-        'Selling my IKEA desk and ergonomic chair. Both in excellent condition. £80 for both or can sell separately.',
-      category: 'for-sale',
-      author: 'Alex',
-      timeAgo: '5 hours ago',
-      comments: 9,
-      upvotes: 4,
-      imageSrc: '/queens-park.jpg',
-      imageAlt: 'IKEA desk and chair set',
-    },
-    {
-      id: '4',
-      title: 'Textbooks for Computer Science courses',
-      shortDesc:
-        'Various CS textbooks for sale. Most are in good condition with minimal highlighting. £10-25 each.',
-      category: 'for-sale',
-      author: 'Jamie',
-      timeAgo: '3 days ago',
-      comments: 2,
-      upvotes: 3,
-    },
-
-    // Events posts
-    {
-      id: '5',
-      title: 'House party this Saturday - all welcome!',
-      shortDesc:
-        'Hosting a house party in my place near the SU. Starting at 8pm, bring your own drinks!',
-      category: 'events',
-      author: 'Sophie',
-      timeAgo: '1 day ago',
-      comments: 15,
-      upvotes: 22,
-    },
-    {
-      id: '6',
-      title: 'Study group for Economics finals',
-      shortDesc:
-        'Meeting at the library this Thursday at 2pm to prepare for Economics finals. All welcome!',
-      category: 'events',
-      author: 'Daniel',
-      timeAgo: '12 hours ago',
-      comments: 4,
-      upvotes: 8,
-    },
-
-    // Questions posts
-    {
-      id: '7',
-      title: 'Best letting agents in Norwich?',
-      shortDesc:
-        'Looking for recommendations for student-friendly letting agents. Who has had good experiences?',
-      category: 'questions',
-      author: 'Olivia',
-      timeAgo: '6 hours ago',
-      comments: 11,
-      upvotes: 7,
-    },
-    {
-      id: '8',
-      title: 'How to deal with noisy neighbors?',
-      shortDesc:
-        "My neighbors party until 3am most nights. I've tried talking to them but no luck. Any advice?",
-      category: 'questions',
-      author: 'Ben',
-      timeAgo: '2 days ago',
-      comments: 14,
-      upvotes: 18,
-    },
-
-    // House Hunting posts
-    {
-      id: '9',
-      title: 'Any houses still available for September?',
-      shortDesc:
-        'Our group of 4 is still looking for a house for next academic year. Any leads would be appreciated!',
-      category: 'house-hunting',
-      author: 'Grace',
-      timeAgo: '3 hours ago',
-      comments: 5,
-      upvotes: 4,
-    },
-    {
-      id: '10',
-      title: 'Advice on Golden Triangle vs. City Center',
-      shortDesc:
-        'Trying to decide between a house in Golden Triangle or a flat in the city center. Pros and cons?',
-      category: 'house-hunting',
-      author: 'Tom',
-      timeAgo: '4 days ago',
-      comments: 8,
-      upvotes: 6,
-    },
-
-    // Student Life posts
-    {
-      id: '11',
-      title: 'Best places to study on campus?',
-      shortDesc:
-        "Looking for quiet study spots on campus that aren't always packed. Any hidden gems?",
-      category: 'student-life',
-      author: 'Zoe',
-      timeAgo: '7 hours ago',
-      comments: 12,
-      upvotes: 15,
-    },
-    {
-      id: '12',
-      title: 'Cheapest supermarkets near UEA',
-      shortDesc:
-        'Which supermarkets offer the best value for money? Trying to save on my food budget this term.',
-      category: 'student-life',
-      author: 'Ryan',
-      timeAgo: '5 days ago',
-      comments: 10,
-      upvotes: 20,
-    },
-
-    // Posts with no category
-    {
-      id: '13',
-      title: 'Lost my student ID card',
-      shortDesc:
-        'Lost my student ID somewhere between the library and the SU yesterday. Has anyone found it?',
-      category: '',
-      author: 'Lily',
-      timeAgo: '1 day ago',
-      comments: 3,
-      upvotes: 2,
-    },
-    {
-      id: '14',
-      title: 'Anyone want to start a band?',
-      shortDesc:
-        'I play guitar and am looking for other musicians to jam with. All skill levels welcome!',
-      category: '',
-      author: 'Josh',
-      timeAgo: '2 days ago',
-      comments: 6,
-      upvotes: 9,
-    },
-    {
-      id: '15',
-      title: 'Free furniture to collect',
-      shortDesc:
-        'Moving out and have some furniture to give away. Must collect from Golden Triangle by this weekend.',
-      category: '',
-      author: 'Emma',
-      timeAgo: '8 hours ago',
-      comments: 18,
-      upvotes: 25,
-    },
-  ];
+const fetchAllPosts = async (): Promise<Post[]> => {
+  const response = await fetch('/api/posts');
+  if (!response.ok) {
+    throw new Error('Failed to fetch posts');
+  }
+  return response.json();
 };
 
 export default function Discussion() {
   const { t } = useTranslation('common');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedSort, setSelectedSort] = useState('Top');
-  const [votes, setVotes] = useState<{ [key: string]: boolean }>({});
+  const router = useRouter();
+  const runProtectedAction = useProtectedAction();
+  const { data: session } = useSession();
   const [showNewPostModal, setShowNewPostModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [activeSort, setActiveSort] = useState('trending');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [activeSort, setActiveSort] = useState('new');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
-  const router = useRouter();
   const { category } = router.query;
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 'housemate-finder', icon: '🏠', label: 'HOUSEMATE FINDER', count: 0 },
-    { id: 'for-sale', icon: '💰', label: 'FOR SALE', count: 0 },
-    { id: 'events', icon: '🎉', label: 'EVENTS', count: 0 },
-    { id: 'questions', icon: '❓', label: 'QUESTIONS', count: 0 },
-    { id: 'house-hunting', icon: '🔍', label: 'HOUSE HUNTING', count: 0 },
-    { id: 'student-life', icon: '🎓', label: 'STUDENT LIFE', count: 0 },
-  ]);
+  const queryClient = useQueryClient();
 
-  const sortOptions = [
-    { id: 'new', label: 'New', icon: ClockIcon },
-    { id: 'top', label: 'Top', icon: ChartBarIcon },
-  ];
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ['posts', category || 'All', activeSort],
+    queryFn: () => fetchPosts({
+      category: category as string || 'All',
+      sortBy: activeSort,
+    }),
+    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+  });
 
-  const getSortedPosts = (posts: Post[], sortType: string) => {
-    if (sortType === 'new') {
-      // Sort by time (most recent first)
-      // This is a simple implementation - in a real app you'd parse the timeAgo properly
-      return [...posts].sort((a, b) => {
-        // Convert timeAgo to approximate hours for sorting
-        const getHours = (timeStr: string) => {
-          if (timeStr.includes('hour')) {
-            return parseInt(timeStr.split(' ')[0]);
-          } else if (timeStr.includes('day')) {
-            return parseInt(timeStr.split(' ')[0]) * 24;
-          }
-          return 0;
-        };
-        return getHours(a.timeAgo) - getHours(b.timeAgo);
-      });
-    } else if (sortType === 'top') {
-      // Sort by upvotes (highest first)
-      return [...posts].sort((a, b) => b.upvotes - a.upvotes);
-    }
-    return posts;
-  };
+  const { data: allPosts = [] } = useQuery({
+    queryKey: ['posts', 'all'],
+    queryFn: fetchAllPosts,
+    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+  });
+
+  const categoryCounts = allPosts.reduce((acc, post) => {
+    acc[post.category] = (acc[post.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   useEffect(() => {
-    // Update selectedCategory based on URL query
     setSelectedCategory((category as string) || 'All');
+  }, [category]);
 
-    // Use dummy data instead of API fetch
-    setLoading(true);
-    try {
-      const dummyPosts = generateDummyPosts();
-      setPosts(dummyPosts);
+  const handleUpvote = async (postId: string) => {
+    runProtectedAction(async () => {
+      const currentPost = posts.find(p => p.id === postId);
+      if (!currentPost) return;
 
-      // Create a new array with updated counts
-      const updatedCategories = categories.map((cat) => ({
-        ...cat,
-        count: dummyPosts.filter((post: Post) => post.category === cat.id)
-          .length,
-      }));
+      const isUpvoted = currentPost.hasUpvoted;
 
-      // Update the categories state
-      setCategories(updatedCategories);
+      try {
+        // Optimistically update the UI
+        queryClient.setQueryData(['posts', category || 'All', activeSort], (oldData: Post[]) =>
+          oldData.map(post => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                hasUpvoted: !isUpvoted,
+                _count: {
+                  ...post._count,
+                  votes: isUpvoted ? post._count.votes - 1 : post._count.votes + 1
+                }
+              };
+            }
+            return post;
+          })
+        );
 
-      // Filter posts if category is selected
-      let filtered = category
-        ? dummyPosts.filter((post: Post) => post.category === category)
-        : dummyPosts;
+        // Make the API call
+        const response = await fetch('/api/posts/vote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            postId, 
+            value: isUpvoted ? -1 : 1 
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to vote');
+        }
 
-      // Apply sorting
-      filtered = getSortedPosts(filtered, activeSort);
+        // Get the updated post data
+        const updatedPost = await response.json();
 
-      setFilteredPosts(filtered);
-    } catch (error) {
-      console.error('Error with dummy posts:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [category, activeSort]);
-
-  useEffect(() => {
-    if (posts.length > 0) {
-      const filtered = category
-        ? posts.filter((post) => post.category === category)
-        : posts;
-
-      setFilteredPosts(getSortedPosts(filtered, activeSort));
-    }
-  }, [activeSort]);
-
-  const handleUpvote = (postTitle: string) => {
-    setVotes((prev) => ({
-      ...prev,
-      [postTitle]: !prev[postTitle],
-    }));
+        // Update the cache with the server response
+        queryClient.setQueryData(['posts', category || 'All', activeSort], (oldData: Post[]) =>
+          oldData.map(post => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                ...updatedPost,
+                hasUpvoted: updatedPost.hasUpvoted,
+                _count: updatedPost._count
+              };
+            }
+            return post;
+          })
+        );
+      } catch (error) {
+        console.error('Error voting:', error);
+        // Revert the optimistic update on error
+        queryClient.setQueryData(['posts', category || 'All', activeSort], (oldData: Post[]) =>
+          oldData.map(post => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                hasUpvoted: isUpvoted,
+                _count: {
+                  ...post._count,
+                  votes: isUpvoted ? post._count.votes : post._count.votes - 1
+                }
+              };
+            }
+            return post;
+          })
+        );
+      }
+    });
   };
 
   const handleCategoryClick = (categoryId: string) => {
@@ -348,205 +189,235 @@ export default function Discussion() {
     }
   };
 
+  const handleCreatePost = () => {
+    runProtectedAction(() => {
+      setShowNewPostModal(true);
+    });
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'just now';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <Layout>
+      <Head>
+        <title>Student Discussion | Lboro Move</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
+      </Head>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20 pb-24">
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative">
-            <div className="sm:hidden">
-              <button
-                onClick={() => setIsTopMenuOpen(!isTopMenuOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm"
-              >
-                <ChartBarIcon className="h-5 w-5" />
-                <span className="capitalize">{activeSort}</span>
-                <ChevronDownIcon
-                  className={`h-5 w-5 transition-transform ${
-                    isTopMenuOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {isTopMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-lg shadow-lg py-1 z-10">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => {
-                        setActiveSort(option.id);
-                        setIsTopMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-4 py-2 text-left ${
-                        activeSort === option.id
-                          ? 'text-purple-600 bg-purple-50'
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <option.icon className="h-5 w-5" />
-                      <span>{option.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="hidden sm:flex items-center gap-3">
-              {sortOptions.map((option) => (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20 pb-24">
+          <div className="flex justify-between items-center mb-6">
+            <div className="relative">
+              <div className="sm:hidden">
                 <button
-                  key={option.id}
-                  onClick={() => setActiveSort(option.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                    activeSort === option.id
-                      ? 'bg-white shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  onClick={() => setIsTopMenuOpen(!isTopMenuOpen)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm"
                 >
-                  <option.icon className="h-5 w-5" />
-                  <span>{option.label}</span>
+                  <ChartBarIcon className="h-5 w-5" />
+                  <span className="capitalize">{activeSort}</span>
+                  <ChevronDownIcon
+                    className={`h-5 w-5 transition-transform ${
+                      isTopMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
                 </button>
-              ))}
-            </div>
-          </div>
 
-          <button
-            onClick={() => setShowNewPostModal(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-          >
-            <PlusIcon className="h-5 w-5" />
-            <span className="hidden sm:inline">Create new post</span>
-            <span className="sm:hidden">Post</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            {loading ? (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-              </div>
-            ) : filteredPosts.length > 0 ? (
-              <div className="space-y-4">
-                {filteredPosts.map((post, index) => (
-                  <div
-                    key={index}
-                    className="relative bg-white rounded-lg shadow-sm mb-4 flex overflow-hidden border border-gray-200"
-                  >
-                    <div
-                      onClick={() => handleUpvote(post.title)}
-                      className={`flex flex-col items-center justify-center w-16 border-r bg-gray-50 ${
-                        votes[post.title]
-                          ? 'border-purple-200 bg-purple-50 text-purple-600'
-                          : 'border-gray-200 hover:bg-gray-100 text-gray-500'
-                      } transition-colors group cursor-pointer`}
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        <ArrowUpIcon
-                          className={`h-4 w-4 sm:h-5 sm:w-5 mb-1 transition-colors ${
-                            votes[post.title]
-                              ? 'text-purple-600'
-                              : 'text-gray-400 group-hover:text-gray-500'
-                          }`}
-                        />
-                        <span
-                          className={`text-xs sm:text-sm font-medium transition-colors ${
-                            votes[post.title]
-                              ? 'text-purple-600'
-                              : 'text-gray-700 group-hover:text-gray-900'
-                          }`}
-                        >
-                          {post.upvotes + (votes[post.title] ? 1 : 0)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 p-6">
-                      <div className="flex flex-col">
-                        <h2 className="text-lg font-bold text-gray-800">{post.title}</h2>
-                        <p className="text-gray-500 mt-2 font-medium">{post.shortDesc}</p>
-                        <div className="bg-white border border-gray-200 px-2.5 py-1 rounded-full text-gray-900 text-xs lowercase font-medium w-fit mt-4">
-                          {post.category || 'general'}
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mt-6">
-                          <span className="truncate">
-                            Posted by {post.author} • {post.timeAgo}
-                          </span>
-
-                          <div className="flex items-center gap-1 ml-2 text-black">
-                            <ChatBubbleLeftIcon className="h-4 w-4 text-black" />
-                            <span>{post.comments}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {post.imageSrc && (
-                      <div className="w-32 sm:w-56 bg-gray-100 border-l border-gray-200">
-                        <div className="relative w-full h-full">
-                          <Image
-                            src={post.imageSrc}
-                            alt={post.imageAlt || 'Post image'}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 128px, 224px"
-                          />
-                        </div>
-                      </div>
-                    )}
+                {isTopMenuOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-lg shadow-lg py-1 z-10">
+                    {['new', 'top'].map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setActiveSort(option);
+                          setIsTopMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-4 py-2 text-left ${
+                          activeSort === option
+                            ? 'text-purple-600 bg-purple-50'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {option === 'new' ? (
+                          <ClockIcon className="h-5 w-5" />
+                        ) : (
+                          <ChartBarIcon className="h-5 w-5" />
+                        )}
+                        <span className="capitalize">{option}</span>
+                      </button>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">
-                  No discussions found in this category.
-                </p>
-                <button
-                  onClick={() => router.push('/discussion')}
-                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                >
-                  View All Discussions
-                </button>
-              </div>
-            )}
-          </div>
 
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
-              <h2 className="text-lg font-semibold mb-4">CATEGORIES</h2>
-              <div className="space-y-3">
-                {categories.map((cat) => (
+              <div className="hidden sm:flex items-center gap-3">
+                {['new', 'top'].map((option) => (
                   <button
-                    key={cat.id}
-                    onClick={() => handleCategoryClick(cat.id)}
-                    className={`w-full flex items-start text-left px-3 py-2.5 rounded-lg transition-colors ${
-                      category === cat.id
-                        ? 'bg-purple-50 text-purple-600'
-                        : 'hover:bg-gray-50 text-gray-700'
+                    key={option}
+                    onClick={() => setActiveSort(option)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                      activeSort === option
+                        ? 'bg-white shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    <span className="text-xl mr-2.5">{cat.icon}</span>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium uppercase text-sm">{cat.label}</span>
-                      <span className="text-xs text-gray-500">
-                        {cat.count} posts
-                      </span>
-                    </div>
+                    {option === 'new' ? (
+                      <ClockIcon className="h-5 w-5" />
+                    ) : (
+                      <ChartBarIcon className="h-5 w-5" />
+                    )}
+                    <span className="capitalize">{option}</span>
                   </button>
                 ))}
               </div>
             </div>
+
+            <button
+              onClick={handleCreatePost}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5" />
+              <span className="hidden sm:inline">Create new post</span>
+              <span className="sm:hidden">Post</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-3">
+              {isLoading ? (
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                </div>
+              ) : posts.length > 0 ? (
+                <div className="space-y-4">
+                  {posts.map((post: Post) => (
+                    <div
+                      key={post.id}
+                      className="relative bg-white rounded-lg shadow-sm mb-4 flex overflow-hidden border border-gray-200"
+                    >
+                      <button
+                        onClick={() => handleUpvote(post.id)}
+                        className={`flex flex-col items-center justify-center w-16 border-r transition-colors group cursor-pointer ${
+                          post.hasUpvoted 
+                            ? 'bg-purple-50 hover:bg-purple-100' 
+                            : 'bg-gray-50 hover:bg-gray-100'
+                        } border-gray-200`}
+                      >
+                        <div className="flex flex-col items-center justify-center">
+                          <ArrowUpIcon 
+                            className={`h-4 w-4 sm:h-5 sm:w-5 mb-1 transition-colors ${
+                              post.hasUpvoted 
+                                ? 'text-purple-600 fill-purple-600' 
+                                : 'text-gray-400 group-hover:text-gray-500'
+                            }`} 
+                          />
+                          <span className={`text-xs sm:text-sm font-medium transition-colors ${
+                            post.hasUpvoted 
+                              ? 'text-purple-600' 
+                              : 'text-gray-700 group-hover:text-gray-900'
+                          }`}>
+                            {post._count.votes}
+                          </span>
+                        </div>
+                      </button>
+
+                      <div className="flex-1 flex">
+                        <div className="flex-1 p-6">
+                          <div className="flex-1 min-w-0">
+                            <h2 className="text-lg font-bold text-gray-800">{post.title}</h2>
+                            <p className="text-gray-500 mt-2 font-medium">{post.content}</p>
+                            
+                            <div className="bg-white border border-gray-200 px-2.5 py-1 rounded-full text-gray-900 text-xs lowercase font-medium w-fit mt-4">
+                              {post.category || 'general'}
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mt-6">
+                              <span className="truncate">
+                                Posted by {post.author.firstName} • {formatTimeAgo(post.createdAt)}
+                              </span>
+
+                              <div className="flex items-center gap-1 ml-2 text-black">
+                                <ChatBubbleLeftIcon className="h-4 w-4 text-black" />
+                                <span>{post._count.comments}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {post.imageUrl && (
+                          <div className="flex-shrink-0 w-32 md:w-48 lg:w-56">
+                            <Image
+                              src={post.imageUrl}
+                              alt="Post image"
+                              width={224}
+                              height={224}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    No discussions found in this category.
+                  </p>
+                  <button
+                    onClick={() => router.push('/discussion')}
+                    className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    View All Discussions
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="hidden lg:block lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+                <h2 className="text-lg font-semibold mb-4">CATEGORIES</h2>
+                <div className="space-y-3">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategoryClick(cat.id)}
+                      className={`w-full flex items-start text-left px-3 py-2.5 rounded-lg transition-colors ${
+                        category === cat.id
+                          ? 'bg-purple-50 text-purple-600'
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <span className="text-xl mr-2.5">{cat.icon}</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium uppercase text-sm">{cat.label}</span>
+                        <span className="text-xs text-gray-500">
+                          {categoryCounts[cat.id] || 0} posts
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {showNewPostModal && (
-        <NewPostModal onClose={() => setShowNewPostModal(false)} />
-      )}
-      {showFilters && <FilterModal onClose={() => setShowFilters(false)} />}
-    </div>
+        {showNewPostModal && (
+          <NewPostModal onClose={() => setShowNewPostModal(false)} />
+        )}
+        {showFilterModal && <FilterModal onClose={() => setShowFilterModal(false)} />}
+      </div>
+    </Layout>
   );
 }
 
@@ -557,3 +428,4 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
     },
   };
 };
+

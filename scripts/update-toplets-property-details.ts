@@ -10,10 +10,10 @@ async function updateTopLetsPropertyDetails() {
     const properties = await prisma.property.findMany({
       where: {
         OR: [
-          { rooms: 0 },
-          { bathrooms: 0 },
-          { rooms: { equals: undefined } },
-          { bathrooms: { equals: undefined } },
+          { rooms: { equals: 0 } },
+          { bathrooms: { equals: 0 } },
+          { rooms: { equals: null } },
+          { bathrooms: { equals: null } },
         ],
         AND: [
           {
@@ -260,10 +260,10 @@ async function updateTopLetsPropertyDetails() {
     const remainingProperties = await prisma.property.findMany({
       where: {
         OR: [
-          { rooms: 0 },
-          { bathrooms: 0 },
-          { rooms: { equals: undefined } },
-          { bathrooms: { equals: undefined } },
+          { rooms: { equals: 0 } },
+          { bathrooms: { equals: 0 } },
+          { rooms: { equals: null } },
+          { bathrooms: { equals: null } },
         ],
         AND: [
           {
