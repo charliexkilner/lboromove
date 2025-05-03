@@ -1,64 +1,126 @@
-import { useState, useEffect } from 'react';
-import { Property } from '../types/property';
+import { useState, useEffect, useCallback } from 'react';
+import { Property } from '@prisma/client';
 
-const ITEMS_PER_PAGE = 12;
+interface UsePropertiesResult {
+  properties: Property[];
+  loading: boolean;
+  error: string | null;
+  hasMore: boolean;
+  loadMore: () => void;
+  reset: () => void;
+  fetchAllForMap: () => Promise<void>;
+  allMapProperties: Property[];
+}
 
-export const useProperties = (filters?: {
-  minPrice?: number;
-  maxPrice?: number;
-  rooms?: number;
-  // Add other filter parameters
-}) => {
+export function useProperties(filters: Record<string, any>): UsePropertiesResult {
   const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
+  const [allMapProperties, setAllMapProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [cursor, setCursor] = useState<number | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
 
-  const fetchProperties = async () => {
+  const fetchProperties = useCallback(async (isInitialLoad = false) => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(
-        `/api/properties?page=${page}&limit=${ITEMS_PER_PAGE}${
-          filters ? `&filters=${JSON.stringify(filters)}` : ''
-        }`
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (isInitialLoad) {
+        setLoading(true);
+        setProperties([]);
+        setCursor(null);
+      } else {
+        setIsLoadingMore(true);
       }
+
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
+        }
+      });
+      if (cursor) queryParams.append('cursor', cursor.toString());
+      
+      console.log('Fetching properties with filters:', JSON.stringify(filters));
+      console.log('Query params:', queryParams.toString());
+
+      const response = await fetch(`/api/properties?${queryParams.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch properties');
 
       const data = await response.json();
-
-      if (!data.properties || !Array.isArray(data.properties)) {
-        throw new Error('Invalid data format received from server');
+      
+      if (isInitialLoad) {
+        setProperties(data.properties);
+      } else {
+        setProperties(prev => [...prev, ...data.properties]);
       }
-
-      if (data.properties.length < ITEMS_PER_PAGE) {
-        setHasMore(false);
-      }
-
-      setProperties((prev) => [...prev, ...data.properties]);
-    } catch (error) {
-      console.error('Error fetching properties:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred');
-      setHasMore(false);
+      
+      setHasMore(data.hasMore);
+      setCursor(data.nextCursor);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [filters, cursor]);
+
+  // New function to fetch all properties for map view
+  const fetchAllForMap = useCallback(async () => {
+    try {
+      setIsLoadingMap(true);
+      
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
+        }
+      });
+      // Add a special parameter to fetch all properties at once
+      queryParams.append('fetchAll', 'true');
+      
+      console.log('Fetching ALL properties for map with filters:', JSON.stringify(filters));
+      console.log('Map query params:', queryParams.toString());
+
+      const response = await fetch(`/api/properties?${queryParams.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch all properties for map');
+
+      const data = await response.json();
+      setAllMapProperties(data.properties || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching all properties for map:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred fetching map data');
+    } finally {
+      setIsLoadingMap(false);
+    }
+  }, [filters]);
 
   useEffect(() => {
-    fetchProperties();
-  }, [page, JSON.stringify(filters)]);
+    fetchProperties(true);
+  }, [filters]);
 
-  const loadMore = () => {
-    if (!loading && !error) {
-      setPage((prev) => prev + 1);
+  const loadMore = useCallback(() => {
+    if (!loading && !isLoadingMore && hasMore) {
+      fetchProperties(false);
     }
-  };
+  }, [loading, isLoadingMore, hasMore, fetchProperties]);
 
-  return { properties, loading, hasMore, loadMore, error };
-};
+  const reset = useCallback(() => {
+    setProperties([]);
+    setCursor(null);
+    setHasMore(true);
+    fetchProperties(true);
+  }, [fetchProperties]);
+
+  return {
+    properties,
+    loading,
+    error,
+    hasMore,
+    loadMore,
+    reset,
+    fetchAllForMap,
+    allMapProperties,
+  };
+}

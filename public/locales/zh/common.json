@@ -53,7 +53,11 @@
     "soloLiving": "单人居住",
     "furnished": "带家具",
     "garden": "带花园",
-    "luxuryLiving": "豪华住宅"
+    "luxuryLiving": "豪华住宅",
+    "silverSquare": "银色广场",
+    "onCampus": "校内房源",
+    "largeHouses": "大户型",
+    "recentlyAdded": "最新上架"
   },
   "locations": {
     "allHouses": "所有房源",
@@ -72,5 +76,120 @@
     "closeToShops": "近商店",
     "modern": "现代装修",
     "petFriendly": "宠物友好"
+  },
+  "navbar": {
+    "houses": "房源",
+    "discussion": "讨论",
+    "tools": "工具",
+    "profile": "个人资料"
+  },
+  "mapView": {
+    "map": "地图",
+    "list": "列表"
+  },
+  "searchBar": {
+    "price": "价格",
+    "bedrooms": "卧室",
+    "any": "任意",
+    "perWeek": "每周",
+    "bedroom": "卧室",
+    "bedroomPlural": "卧室",
+    "filter": "筛选",
+    "apply": "应用",
+    "resetPrice": "重置",
+    "resetBedrooms": "重置",
+    "resetAll": "全部重置",
+    "viewProperties": "查看房源"
+  },
+  "tools": {
+    "page_title": "学生工具",
+    "heading": "学生工具",
+    "free_badge": "100% 免费",
+    "all_tools": "所有工具",
+    "housing": "住房",
+    "finance": "财务", 
+    "utilities": "实用工具",
+    "moveout_checklist": {
+      "title": "搬出清单",
+      "description": "确保租约结束无忧的完整清单",
+      "long_description": "使用我们全面的搬出清单，确保您在离开学生住宿时不会遗漏任何重要任务。提高获得全额押金返还的几率。",
+      "features": {
+        "track": "追踪您的进度",
+        "print": "可打印清单",
+        "filter": "按类别筛选"
+      },
+      "button": "查看清单"
+    },
+    "room_allocator": {
+      "title": "房间分配器",
+      "description": "通过有趣的转轮游戏公平分配房间。",
+      "long_description": "不再为谁获得哪个房间而争论！这个互动工具使用公平的随机选择过程，使房间分配变得有趣和透明。",
+      "features": {
+        "random": "随机分配",
+        "fair": "公平分配",
+        "fun": "有趣界面",
+        "save": "保存结果"
+      },
+      "button": "转动轮盘"
+    },
+    "split_rent": {
+      "title": "分租计算器",
+      "description": "根据房间大小和特点计算公平的租金分配。",
+      "long_description": "不同的房间有不同的价值。该计算器帮助您根据房间大小、特点和设施为每个房间确定合理价格。",
+      "features": {
+        "comparison": "房间比较",
+        "weighting": "特点权重",
+        "methods": "多种方法",
+        "shareable": "可分享结果"
+      },
+      "button": "计算分配"
+    },
+    "wifi_guide": {
+      "title": "WiFi设置指南",
+      "description": "通过我们的分步指南上网。包含最便宜的WiFi供应商！",
+      "long_description": "快速、可靠的互联网至关重要。我们的指南将引导您设置连接并为学生住房寻找最佳优惠。",
+      "features": {
+        "providers": "供应商比较",
+        "setup": "设置说明",
+        "troubleshooting": "故障排除提示",
+        "discounts": "学生折扣"
+      },
+      "button": "查看指南"
+    },
+    "rent_calculator": {
+      "title": "搬出清单",
+      "description": "确保租约结束无忧的完整清单",
+      "long_description": "使用我们全面的搬出清单，确保您在离开学生住宿时不会遗漏任何重要任务。提高获得全额押金返还的几率。",
+      "features": {
+        "track": "追踪您的进度",
+        "print": "可打印清单",
+        "filter": "按类别筛选"
+      },
+      "button": "查看清单"
+    },
+    "checklist": {
+      "title": "入住清单",
+      "description": "搬入学生住房的完整清单。由在校和毕业学生撰写。",
+      "long_description": "搬家时不要忘记任何事情！这个全面的清单涵盖了在搬入学生住宿前、搬入期间和搬入后需要做的所有事情。",
+      "features": {
+        "printable": "可打印清单",
+        "progress": "进度跟踪",
+        "custom": "可定制项目",
+        "sharing": "室友共享"
+      },
+      "button": "查看清单"
+    },
+    "energy": {
+      "title": "能源估算器",
+      "description": "估算您的月能源消耗和成本。",
+      "long_description": "了解和管理您的能源使用。该工具根据您的生活状况和习惯，帮助您估算电费和燃气费用。",
+      "features": {
+        "calculator": "使用计算器",
+        "breakdown": "成本明细",
+        "tips": "节省提示",
+        "seasonal": "季节性估算"
+      },
+      "button": "估算成本"
+    }
   }
 }

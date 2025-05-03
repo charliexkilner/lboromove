@@ -1,4 +1,4 @@
-import { AdjustmentsHorizontalIcon, MapIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, MapIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'next-i18next';
 import { GetServerSideProps } from 'next/types';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useFavorites } from '@/hooks/useFavorites';
 import Head from 'next/head';
+import { useProperties } from '../hooks/useProperties';
 
 // Import PropertyMap with dynamic import to prevent SSR issues
 const PropertyMap = dynamic(() => import('../components/PropertyMap'), { 
@@ -128,60 +129,110 @@ interface ExtendedProperty extends Property {
   _viewKey?: number;
 }
 
-export default function Home({ campusProperties = [] }: HomeProps) {
+const TAB_FILTERS = {
+  'all-houses': {},
+  'golden-triangle': { isGoldenTriangle: true },
+  'silver-square': { silverSquare: true },
+  'great-value': { maxPrice: 135 },
+  'solo-living': { bedrooms: 1 },
+  'large-houses': { minBedrooms: 5 },
+  'near-campus': { nearCampus: true },
+  'on-campus': { onCampus: true },
+  'driveway-parking': { parking: true },
+  'en-suite': { ensuite: true },
+  'bills-included': { billsIncluded: true },
+  'rare-finds': { rareFinds: true },
+  'recently-added': { recentlyAdded: true },
+};
+
+const getTabApiParams = (tabId: string): Record<string, any> => {
+  const params: Record<string, any> = {};
+  switch (tabId) {
+    case 'all-houses':
+      break;
+    case 'golden-triangle':
+      params.isGoldenTriangle = true;
+      break;
+    case 'silver-square':
+      params.silverSquare = true;
+      break;
+    case 'great-value':
+      params.maxPrice = 135;
+      break;
+    case 'solo-living':
+      params.bedrooms = 1;
+      break;
+    case 'large-houses':
+      params.minBedrooms = 5;
+      break;
+    case 'near-campus':
+      params.nearCampus = true;
+      break;
+    case 'on-campus':
+      params.onCampus = true;
+      break;
+    case 'driveway-parking':
+      params.parking = true;
+      break;
+    case 'en-suite':
+      params.ensuite = true;
+      break;
+    case 'bills-included':
+      params.billsIncluded = true;
+      break;
+    case 'rare-finds':
+      params.rareFinds = true;
+      break;
+    case 'recently-added':
+      params.recentlyAdded = true;
+      break;
+    default:
+      break;
+  }
+  return params;
+};
+
+export default function Home() {
   const { t } = useTranslation('common');
   const router = useRouter();
   const { locale, pathname } = router;
+  // Split the filters into visible user filters (shown in search bar) and internal filters (used for querying)
+  const [userFilters, setUserFilters] = useState<{
+    bedrooms?: number;
+    maxPrice?: number;
+  }>({});
+  
+  // Internal filters used for actual querying - combines user filters and tab filters
   const [filters, setFilters] = useState<{
     bedrooms?: number;
-    bathrooms?: number;
     maxPrice?: number;
-  }>({
-    bedrooms: undefined,
-    bathrooms: undefined,
-    maxPrice: undefined,
-  });
+    storedBedrooms?: number;
+    storedMaxPrice?: number;
+    [key: string]: any;
+  }>({});
+  
+  // State for properties
+  // Data fetching with the custom hook
+  const { properties, loading, error, hasMore: propertiesHasMore, loadMore: propertiesLoadMore, reset: propertiesReset, fetchAllForMap, allMapProperties } = useProperties(filters);
   const [discussions, setDiscussions] = useState<Discuession[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
   const [localFilteredProperties, setLocalFilteredProperties] = useState<Property[]>([]);
   const [showMap, setShowMap] = useState(false);
+  const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
+  const [loadingCounts, setLoadingCounts] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchBarKey, setSearchBarKey] = useState<number>(0);
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const observerTarget = useRef<HTMLDivElement>(null);
   const heroSectionRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
-
-  // Use the scroll behavior hook
-  const scrollInfo = useScrollBehavior(80);
-  const { isSticky, direction, progress, isAtTop } = scrollInfo;
-  
-  // Handle window resize for mobile detection
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  const isCurrentlyMobile = windowWidth < 768;
-
-  const {
-    properties,
-    filteredProperties,
-    setProperties,
-    setActiveTab,
-    activeTab,
-  } = usePropertyStore();
-
-  // Add a ref to track previous pathname 
+  const abortControllerRef = useRef<AbortController | null>(null);
   const previousPathRef = useRef<string>('');
-
-  // Add proper scroll position tracking and restoration
   const scrollPositionsRef = useRef<Map<string, number>>(new Map());
-
-  // Add refs to store state before modal opens
   const preModalStateRef = useRef<{
     activeTab: string | null;
     showMap: boolean;
@@ -195,24 +246,230 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     showMap: false,
     filters: {}
   });
+  
+  const { favorites, isFavorite } = useFavorites();
+  
+  // Add the queryClient initialization at the top of the component
+  const queryClient = useQueryClient();
+  
+  // Create a dedicated function to fetch counts with debouncing
+  const fetchTabCounts = useCallback(async () => {
+    // Cancel any in-progress fetches
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    
+    setLoadingCounts(true);
+    try {
+      // Only fetch counts for the visible tabs
+      const tabsToFetch = [
+        'all-houses',
+        'golden-triangle',
+        'silver-square',
+        'great-value',
+        'solo-living',
+        'large-houses',
+        'near-campus',
+        'on-campus',
+        'recently-added'
+      ];
+      
+      const newCounts: Record<string, number> = {};
+      
+      // Extract user filters for counts
+      const userFilterParams: Record<string, string> = {};
+      if (userFilters.bedrooms !== undefined) {
+        userFilterParams.bedrooms = String(userFilters.bedrooms);
+      }
+      if (userFilters.maxPrice !== undefined) {
+        userFilterParams.maxPrice = String(userFilters.maxPrice);
+      }
+      
+      // Use Promise.all to fetch all counts in parallel
+      await Promise.all(tabsToFetch.map(async (tabId) => {
+        try {
+          // Get the tab's specific filters
+          const tabFilters = getTabApiParams(tabId);
+          
+          // Convert tab filters to strings for URLSearchParams
+          const tabParamsAsStrings: Record<string, string> = {};
+          Object.entries(tabFilters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              tabParamsAsStrings[key] = String(value);
+            }
+          });
+          
+          // Handle special cases for tab filtering:
+          // For tabs that filter by bedrooms (solo-living, large-houses),
+          // we should not apply the user's bedroom filter
+          let filteredUserParams = {...userFilterParams};
+          if ('bedrooms' in tabParamsAsStrings || 'minBedrooms' in tabParamsAsStrings) {
+            delete filteredUserParams.bedrooms;
+          }
+          
+          // For great-value tab, we should not apply the user's maxPrice filter
+          if ('maxPrice' in tabParamsAsStrings) {
+            delete filteredUserParams.maxPrice;
+          }
+          
+          // Combine tab filters with the user's filters - tab filters have priority
+          const query = new URLSearchParams({
+            ...filteredUserParams,
+            ...tabParamsAsStrings, // Tab params should override user params
+            countOnly: 'true'
+          });
+          
+          const res = await fetch(`/api/properties?${query.toString()}`, { signal });
+          if (!res.ok) throw new Error(`Failed to fetch count for ${tabId}`);
+          const data = await res.json();
+          newCounts[tabId] = data.total || 0;
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            console.error(`Error fetching count for ${tabId}:`, error);
+          }
+        }
+      }));
+      
+      // Only update state if not aborted
+      if (!signal.aborted) {
+        setTabCounts(newCounts);
+      }
+    } catch (error) {
+      console.error('Error fetching counts:', error);
+    } finally {
+      if (!signal.aborted) {
+        setLoadingCounts(false);
+      }
+    }
+  }, [userFilters]); // Add userFilters as a dependency
 
-  // Add state tracking refs
-  const scrollRef = useRef<number>(0);
-  const stateRef = useRef({ tab: activeTab, filters });
+  // Fetch counts on mount and when filters change
+  useEffect(() => {
+    fetchTabCounts();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchTabCounts, userFilters]); // Add userFilters as a dependency
 
-  // Add state preservation functions
-  const saveScroll = () => {
-    scrollRef.current = window.scrollY;
-    stateRef.current = { tab: activeTab, filters };
+  const getTabCount = (tabId: string): number => {
+    return tabCounts[tabId] || 0;
   };
 
-  const restoreScroll = () => {
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollRef.current });
+  // Create a wrapper for loadMore to track loading state
+  const handleLoadMore = useCallback(() => {
+    if (!loading && !loadingMore && propertiesHasMore) {
+      setLoadingMore(true);
+      // Call loadMore and handle the Promise if it returns one
+      try {
+        propertiesLoadMore();
+      } catch (error) {
+        console.error('Error loading more properties:', error);
+      } finally {
+        // Always reset loading state
+        setTimeout(() => setLoadingMore(false), 500);
+      }
+    }
+  }, [loading, loadingMore, propertiesHasMore, propertiesLoadMore]);
+
+  // Update the useEffect for the intersection observer
+  useEffect(() => {
+    // Skip setting up observer if no target ref or already loading
+    if (!observerTarget.current) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Only trigger loadMore if we're not already loading and we have more items
+        if (entries[0].isIntersecting && propertiesHasMore && !loading && !loadingMore) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    observer.observe(observerTarget.current);
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [propertiesHasMore, handleLoadMore, loading, loadingMore]);
+  
+  // Update the handleTabChange function to not affect userFilters
+  const handleTabChange = (tabName: string) => {
+    // Abort any in-progress fetches
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    setActiveTab(tabName);
+    
+    // Get the tab-specific filters
+    const tabFilters = getTabApiParams(tabName);
+    
+    // Combine with current user filters
+    const combinedFilters = {
+      // First apply tab filters (highest priority)
+      ...tabFilters,
+      // Then apply user filters for properties not covered by tab filters
+      // This should not affect what's displayed in the search bar UI
+      ...(userFilters.maxPrice !== undefined && !tabFilters.maxPrice 
+        ? { maxPrice: userFilters.maxPrice } 
+        : {}),
+      ...(userFilters.bedrooms !== undefined && !tabFilters.bedrooms && !tabFilters.minBedrooms
+        ? { bedrooms: userFilters.bedrooms } 
+        : {})
+    };
+    
+    console.log('Tab change - combined filters:', combinedFilters);
+    
+    // Update the internal filters state (not what's visible in the search bar)
+    setFilters(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(combinedFilters)) {
+        return prev;
+      }
+      return combinedFilters;
     });
-    setActiveTab(stateRef.current.tab);
-    setFilters(stateRef.current.filters);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Reset the useProperties hook to reload the first 20
+    propertiesReset();
+    
+    // If we're in map view, also fetch all properties for the map with the new filters
+    if (showMap) {
+      console.log('Tab changed while in map view - fetching all properties for map');
+      // Use setTimeout to ensure filters are updated first
+      setTimeout(() => {
+        fetchAllForMap();
+      }, 0);
+    }
   };
+
+  // Handle window resize for mobile detection
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const isCurrentlyMobile = windowWidth < 768;
+
+  const {
+    properties: propertiesStore,
+    filteredProperties,
+    setProperties,
+    setActiveTab,
+    activeTab,
+  } = usePropertyStore();
 
   // Replace existing router path effect with improved version that prevents unnecessary rerenders
   useEffect(() => {
@@ -225,70 +482,14 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     }
   }, [router.asPath]);
 
-  // Update useQuery to prevent refetching when modal is open
-  const {
-    data,
-    isLoading,
-    error: queryError,
-  }: {
-    data: { properties: Property[] } | null | undefined;
-    isLoading: boolean;
-    error: unknown;
-  } = useQuery({
-    queryKey: ['properties', filters],
-    queryFn: async (): Promise<{ properties: Property[] }> => {
-      try {
-        // Skip data fetching if modal is open and we have data
-        if (selectedProperty && data) {
-          return data;
-        }
-
-        const queryParams = new URLSearchParams();
-        if (filters.bedrooms) {
-          queryParams.append('bedrooms', filters.bedrooms.toString());
-        }
-        if (filters.bathrooms) {
-          queryParams.append('bathrooms', filters.bathrooms.toString());
-        }
-        if (filters.maxPrice) {
-          queryParams.append('maxPrice', filters.maxPrice.toString());
-        }
-
-        const response = await fetchAPI(`/api/properties?${queryParams.toString()}`) as { properties: Property[] };
-        if (response.properties) {
-          setProperties(response.properties);
-        }
-        return response;
-      } catch (error) {
-        console.error('Error fetching properties:', error);
-        throw error;
-      }
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: !selectedProperty, // Don't refetch when modal is open
-  });
-
-  // Update allProperties definition
-  const allProperties = data?.properties || [];
-
-  // Set default tab and initialize filtered properties when data is loaded
+  // Set localFilteredProperties based on the properties from useProperties
   useEffect(() => {
-    if (data?.properties && data.properties.length > 0) {
-      // Set the properties in the store
-      setProperties(data.properties);
-      
-      // Initialize the filtered properties based on the active tab
-      // Only apply tab filtering on initial load
-      if (!localFilteredProperties.length) {
-        if (activeTab) {
-          handleTabChange(activeTab);
-        } else {
-          // If no active tab, set to all-houses
-          handleTabChange('all-houses');
-        }
-      }
+    if (properties.length > 0) {
+      setLocalFilteredProperties(properties);
+      // Also sync with property store
+      setProperties(properties);
     }
-  }, [data?.properties]); // Only depend on data.properties, not activeTab
+  }, [properties, setProperties]);
 
   useEffect(() => {
     // Prefetch all main navigation routes
@@ -316,210 +517,61 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     }
   };
 
+  // Update handleFilterChange to modify userFilters state
   const handleFilterChange = (newFilters: any) => {
     console.log('Filter changed:', newFilters);
     
     // Only update if filters actually changed
     if (
-      filters.bedrooms !== newFilters.bedrooms ||
-      filters.maxPrice !== newFilters.maxPrice
+      userFilters.bedrooms !== newFilters.bedrooms ||
+      userFilters.maxPrice !== newFilters.maxPrice
     ) {
-      // Update the filters state
-      setFilters({
-        ...filters,
+      // Store the filters in user filters state but don't trigger a reload yet
+      setUserFilters({
         bedrooms: newFilters.bedrooms,
-        maxPrice: newFilters.maxPrice,
+        maxPrice: newFilters.maxPrice === 500 ? undefined : newFilters.maxPrice
       });
       
-      // Apply filters to properties
-      let filtered = [...properties]; // Create a copy to avoid mutation
-      
-      if (newFilters.bedrooms !== undefined) {
-        filtered = filtered.filter((p) => {
-          // Check if rooms property exists and is a number
-          if (typeof p.rooms !== 'number') return false;
-          // Filter for EXACTLY the number of bedrooms selected
-          return p.rooms === newFilters.bedrooms;
-        });
-      }
-      
-      if (newFilters.maxPrice !== undefined) {
-        filtered = filtered.filter((p) => {
-          if (typeof p.price !== 'number') return false;
-          return p.price <= (newFilters.maxPrice as number);
-        });
-      }
-      
-      console.log(`Filtered properties: ${filtered.length} out of ${properties.length}`);
-      
-      // Update the local state with filtered properties
-      setLocalFilteredProperties(filtered);
-      
-      // Set the active tab to 'all-houses' when searching
-      setActiveTab('all-houses');
+      console.log('Updated user filters:', {
+        bedrooms: newFilters.bedrooms,
+        maxPrice: newFilters.maxPrice === 500 ? undefined : newFilters.maxPrice
+      });
     }
   };
-
-  const handleTabChange = (tabName: string) => {
-    console.log('Tab changed to:', tabName);
+  
+  // New function to handle search button click
+  const handleSearchClick = () => {
+    // Set the active tab to 'all-houses' when performing a search
+    setActiveTab('all-houses');
     
-    // Update the active tab in the store
-    setActiveTab(tabName);
-
-    // Apply filters to properties based on the selected tab and existing filters
-    let filtered = [...properties]; // Create a copy to avoid mutation
+    // Apply the user filters
+    setFilters(userFilters);
     
-    // First apply price and bedroom filters if they exist
-    if (filters.bedrooms !== undefined) {
-      filtered = filtered.filter((p) => {
-        if (typeof p.rooms !== 'number') return false;
-        return p.rooms === filters.bedrooms;
-      });
+    // Reset page before fetching with new filters
+    if (propertiesReset) {
+      propertiesReset();
     }
     
-    if (filters.maxPrice !== undefined) {
-      filtered = filtered.filter((p) => {
-        if (typeof p.price !== 'number') return false;
-        return p.price <= filters.maxPrice;
-      });
+    // If in map view, fetch all properties for the map with the new filters
+    if (showMap) {
+      console.log('Search performed while in map view - fetching all properties for map');
+      // Use setTimeout to ensure filters are updated first
+      setTimeout(() => {
+        fetchAllForMap();
+      }, 0);
     }
     
-    // Then apply tab-specific filters
-    switch (tabName) {
-      case 'all-houses':
-        // No additional filtering needed
-        break;
-      case 'golden-triangle':
-        filtered = filtered.filter((p) => p.isGoldenTriangle === true);
-        break;
-      case 'silver-square':
-        filtered = filtered.filter((p) => {
-          const silverSquareStreets = [
-            'burleigh road',
-            'york road',
-            'william street',
-            'seward street',
-            'radmoor road',
-            'arthur street',
-            'curzon street',
-            'heathcoat street',
-            'caldwell street',
-            'frederick street'
-          ];
-          
-          // Check both location and street fields
-          const location = (p.location || '').toLowerCase();
-          const street = (p.street || '').toLowerCase();
-          const title = (p.title || '').toLowerCase();
-          
-          return silverSquareStreets.some(streetName => 
-            location.includes(streetName) || 
-            street.includes(streetName) || 
-            title.includes(streetName)
-          );
-        });
-        break;
-      case 'great-value':
-        filtered = filtered.filter((p) => p.price <= 135);
-        break;
-      case 'solo-living':
-        filtered = filtered.filter((p) => p.rooms === 1);
-        break;
-      case 'large-houses':
-        filtered = filtered.filter((p) => p.rooms >= 5);
-        break;
-      case 'near-campus':
-        // First filter properties that have coordinates
-        filtered = filtered.filter((p) => p.latitude && p.longitude)
-          .filter((p) => isCloseToUniversity(p));
-        
-        console.log('Near Campus filtered properties:', filtered.length);
-        break;
-      case 'on-campus':
-        // Filter properties that are on campus using keyFeatures
-        filtered = filtered.filter((p: Property) => {
-          // Check if it's a campus property using keyFeatures
-          const isCampusProperty = p.keyFeatures && 
-            typeof p.keyFeatures === 'object' && 
-            (p.keyFeatures as any).isCampusProperty;
-          
-          // Also check amenities for "on campus" properties
-          const hasOnCampusAmenity = p.amenities && p.amenities.some(a => {
-            const amenity = a.toLowerCase();
-            return amenity.includes('on campus') || 
-                   amenity.includes('university accommodation') || 
-                   amenity.includes('student halls');
-          });
-          
-          return isCampusProperty || hasOnCampusAmenity;
-        });
-        break;
-      case 'driveway-parking':
-        // Count properties with driveway or parking
-        filtered = filtered.filter((p: Property) => {
-          if (!p.amenities) return false;
-          return p.amenities.some((a) => {
-            const amenity = a.toLowerCase();
-            return amenity.includes('parking') || 
-                   amenity.includes('driveway') || 
-                   amenity.includes('garage');
-          });
-        });
-        break;
-      case 'rare-finds':
-        // Implement proper rare finds logic - properties with unique features
-        filtered = filtered.filter((p: Property) => {
-          // For now, we'll define rare finds as properties with 4+ bathrooms or very specific amenities
-          if (p.bathrooms && p.bathrooms >= 4) return true;
-          
-          // Check for rare amenities
-          if (p.amenities) {
-            return p.amenities.some(amenity => {
-              const a = amenity.toLowerCase();
-              return a.includes('gym') || 
-                     a.includes('swimming pool') || 
-                     a.includes('cinema room') ||
-                     a.includes('games room');
-            });
-          }
-          return false;
-        });
-        break;
-      case 'recently-added':
-        // Filter properties added in the last two weeks
-        const twoWeeksAgo = new Date();
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        
-        filtered = filtered.filter((p: Property) => {
-          // Check if createdAt exists and is a valid date string
-          if (!p.createdAt) return false;
-          
-          // Parse the date string
-          const createdDate = new Date(p.createdAt);
-          
-          // Check if the property was created in the last two weeks
-          return createdDate >= twoWeeksAgo;
-        });
-        
-        console.log('Recently Added filtered properties:', filtered.length);
-        break;
-      default:
-        // No additional filtering
-        break;
-    }
-
-    console.log(`Tab ${tabName} filtered properties: ${filtered.length} out of ${properties.length}`);
+    // Reset scroll position to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Update the local state with filtered properties
-    setLocalFilteredProperties(filtered);
-    
-    // DO NOT clear existing filters - this allows combining filters with tabs
+    // Log the filters we're applying
+    console.log('Applied search filters:', userFilters);
   };
 
   // Update the getActiveFiltersText function
   const getActiveFiltersText = () => {
     // Check if any filters are active
-    const hasActiveFilters = Object.values(filters).some(
+    const hasActiveFilters = Object.values(userFilters).some(
       (v) => v !== undefined
     );
 
@@ -529,22 +581,14 @@ export default function Home({ campusProperties = [] }: HomeProps) {
 
     const parts = ['FILTER'];
 
-    if (filters.bedrooms) {
+    if (userFilters.bedrooms) {
       parts.push(
-        `${filters.bedrooms} ${filters.bedrooms === 1 ? 'bedroom' : 'bedrooms'}`
+        `${userFilters.bedrooms} ${userFilters.bedrooms === 1 ? 'bedroom' : 'bedrooms'}`
       );
     }
 
-    if (filters.bathrooms) {
-      parts.push(
-        `${filters.bathrooms} ${
-          filters.bathrooms === 1 ? 'bathroom' : 'bathrooms'
-        }`
-      );
-    }
-
-    if (filters.maxPrice) {
-      parts.push(`£${filters.maxPrice}${filters.maxPrice >= 350 ? '+' : ''}`);
+    if (userFilters.maxPrice) {
+      parts.push(`£${userFilters.maxPrice}${userFilters.maxPrice >= 350 ? '+' : ''}`);
     }
 
     return parts.join(' | ');
@@ -568,147 +612,13 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     console.log('Hovering property:', property.id);
   };
 
-  // Update the getTabCount function
-  const getTabCount = (tabId: string) => {
-    switch (tabId) {
-      case 'all-houses':
-        return allProperties.length;
-      case 'golden-triangle':
-        return allProperties.filter(
-          (p: Property) => p.isGoldenTriangle === true
-        ).length;
-      case 'silver-square':
-        return allProperties.filter((p: Property) => {
-          const silverSquareStreets = [
-            'burleigh road',
-            'york road',
-            'william street',
-            'seward street',
-            'radmoor road',
-            'arthur street',
-            'curzon street',
-            'heathcoat street',
-            'caldwell street',
-            'frederick street'
-          ];
-          
-          // Check both location and street fields
-          const location = (p.location || '').toLowerCase();
-          const street = (p.street || '').toLowerCase();
-          const title = (p.title || '').toLowerCase();
-          
-          return silverSquareStreets.some(streetName => 
-            location.includes(streetName) || 
-            street.includes(streetName) || 
-            title.includes(streetName)
-          );
-        }).length;
-      case 'great-value':
-        const greatValueCount = allProperties.filter(
-          (p: Property) => p.price <= 135
-        ).length;
-        console.log('Great Value tab count:', greatValueCount);
-        return greatValueCount;
-      case 'solo-living':
-        return allProperties.filter((p: Property) => p.rooms === 1).length;
-      case 'large-houses':
-        return allProperties.filter((p: Property) => p.rooms >= 5).length;
-      case 'near-campus':
-        // Check if properties have coordinates before filtering
-        const propertiesWithCoordinates = allProperties.filter(
-          (p: Property) => p.latitude && p.longitude
-        );
-        
-        // Count properties that are close to university
-        const nearCampusCount = propertiesWithCoordinates.filter(
-          (p: Property) => isCloseToUniversity(p)
-        ).length;
-        
-        console.log('Near Campus tab count:', nearCampusCount, 'out of', propertiesWithCoordinates.length, 'properties with coordinates');
-        return nearCampusCount;
-      case 'on-campus':
-        // Count properties that are on campus using keyFeatures
-        return allProperties.filter((p: Property) => {
-          // Check if it's a campus property using keyFeatures
-          const isCampusProperty = p.keyFeatures && 
-            typeof p.keyFeatures === 'object' && 
-            (p.keyFeatures as any).isCampusProperty;
-          
-          // Also check amenities for "on campus" properties
-          const hasOnCampusAmenity = p.amenities && p.amenities.some(a => {
-            const amenity = a.toLowerCase();
-            return amenity.includes('on campus') || 
-                   amenity.includes('university accommodation') || 
-                   amenity.includes('student halls');
-          });
-          
-          return isCampusProperty || hasOnCampusAmenity;
-        }).length;
-      case 'driveway-parking':
-        // Count properties with driveway or parking
-        return allProperties.filter((p: Property) => {
-          if (!p.amenities) return false;
-          return p.amenities.some((a) => {
-            const amenity = a.toLowerCase();
-            return amenity.includes('parking') || 
-                   amenity.includes('driveway') || 
-                   amenity.includes('garage');
-          });
-        }).length;
-      case 'en-suite':
-        return allProperties.filter((p: Property) =>
-          p.amenities?.some((a: string) => a.toLowerCase().includes('en-suite'))
-        ).length;
-      case 'bills-included':
-        return allProperties.filter((p: Property) =>
-          p.amenities?.some(
-            (a: string) =>
-              a.toLowerCase().includes('bills included') ||
-              a.toLowerCase().includes('all bills included')
-          )
-        ).length;
-      case 'rare-finds':
-        // Count properties with rare features
-        return allProperties.filter((p: Property) => {
-          // For now, we'll define rare finds as properties with 4+ bathrooms or very specific amenities
-          if (p.bathrooms && p.bathrooms >= 4) return true;
-          
-          // Check for rare amenities
-          if (p.amenities) {
-            return p.amenities.some(amenity => {
-              const a = amenity.toLowerCase();
-              return a.includes('gym') || 
-                     a.includes('swimming pool') || 
-                     a.includes('cinema room') ||
-                     a.includes('games room');
-            });
-          }
-          return false;
-        }).length;
-      case 'recently-added':
-        // Count properties added in the last two weeks
-        const twoWeeksAgo = new Date();
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        
-        const recentlyAddedCount = allProperties.filter((p: Property) => {
-          // Check if createdAt exists and is a valid date string
-          if (!p.createdAt) return false;
-          
-          // Parse the date string
-          const createdDate = new Date(p.createdAt);
-          
-          // Check if the property was created in the last two weeks
-          return createdDate >= twoWeeksAgo;
-        }).length;
-        
-        console.log('Recently Added tab count:', recentlyAddedCount);
-        return recentlyAddedCount;
-      default:
-        return allProperties.length;
-    }
-  };
+  // Add back the missing scrollInfo hook
+  // Use the scroll behavior hook
+  const scrollInfo = useScrollBehavior(80);
+  const { isSticky, direction, progress, isAtTop } = scrollInfo;
 
-  // Update the handlePropertySelect function to save state
+  // Restore the missing functions
+  // Add back the missing property selection functions
   const handlePropertySelect = (property: Property) => {
     // Save scroll and state before showing the modal
     saveScroll();
@@ -727,7 +637,6 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     setSelectedProperty(slug);
   };
 
-  // Update the handleCloseModal function
   const handleCloseModal = () => {
     // Update URL without reload using shallow routing
     router.push('/', undefined, { shallow: true, scroll: false })
@@ -746,7 +655,24 @@ export default function Home({ campusProperties = [] }: HomeProps) {
       });
   };
 
-  // Function to handle map button click
+  // Add back scroll position functions
+  const scrollRef = useRef<number>(0);
+  const stateRef = useRef({ tab: activeTab, filters });
+
+  const saveScroll = () => {
+    scrollRef.current = window.scrollY;
+    stateRef.current = { tab: activeTab, filters };
+  };
+
+  const restoreScroll = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollRef.current });
+    });
+    setActiveTab(stateRef.current.tab);
+    setFilters(stateRef.current.filters);
+  };
+
+  // Fix view toggle function
   const handleViewToggle = () => {
     // If already showing the view user wants, do nothing
     const targetView = !showMap;
@@ -755,29 +681,34 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     // When switching views, ensure smooth transition
     const performViewTransition = async () => {
       try {
-        // First, update the view state
+        // If switching to map view, fetch all properties first
+        if (targetView) {
+          console.log('Switching to map view - fetching all properties');
+          await fetchAllForMap();
+        }
+        
+        // Update the view state
         setShowMap(targetView);
         
         if (!targetView) { // Switching to list view
           // Keep existing properties state to maintain image loading
-          const propertiesToShow = localFilteredProperties.length > 0 
-            ? localFilteredProperties 
-            : properties;
+          const propertiesToShow = properties.length > 0 
+            ? properties 
+            : [];
           
           // Create a new array of properties with preserved image state from existing properties
           // This avoids the type issues with direct state updates
           const updatedProperties = propertiesToShow.map(property => {
-            // Find existing property to get its images if available
-            const existingProperty = properties.find(p => p.id === property.id);
             return {
               ...property,
-              _viewKey: (property as ExtendedProperty)._viewKey || Date.now(),
-              images: existingProperty ? existingProperty.images : property.images
+              _viewKey: Date.now()
             };
           });
           
-          // Update properties with the new array (avoiding the linter issues)
-          setProperties(updatedProperties as any);
+          // Update properties state if needed
+          if (propertiesToShow.length === 0) {
+            propertiesReset();
+          }
         }
         
         // Ensure smooth scroll position
@@ -795,33 +726,10 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     performViewTransition();
   };
 
-  // Floating Button Component to toggle between map and list view
-  const FloatingViewToggleButton = () => (
-    <button
-      onClick={handleViewToggle}
-      className="fixed bottom-24 md:bottom-10 left-1/2 transform -translate-x-1/2 z-[200] flex items-center gap-1 px-3 py-1.5 bg-white/70 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg border border-gray-200/50 hover:bg-white/95 transition-all"
-      aria-label={showMap ? "Switch to list view" : "Switch to map view"}
-    >
-      {showMap ? (
-        <>
-          <span className="text-lg">📋</span>
-          <span className="font-medium text-sm text-black uppercase tracking-wide">List</span>
-        </>
-      ) : (
-        <>
-          <span className="text-lg">🗺️</span>
-          <span className="font-medium text-sm text-black uppercase tracking-wide">Map</span>
-        </>
-      )}
-    </button>
-  );
-  
-  // Render the tabs for location filtering
+  // Add back the tabs rendering function
   const renderTabs = () => {
     return (
-      <div 
-        className="relative w-full border-b border-gray-200/50"
-      >
+      <div className="relative w-full border-b border-gray-200/50">
         <div className="max-w-7xl mx-auto">
           <div
             ref={scrollContainerRef}
@@ -841,7 +749,7 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               {
                 id: 'silver-square',
                 icon: '🩶',
-                label: 'SILVER SQUARE',
+                label: t('tabs.silverSquare'),
               },
               {
                 id: 'great-value',
@@ -851,7 +759,7 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               {
                 id: 'recently-added',
                 icon: '🆕',
-                label: 'RECENTLY ADDED',
+                label: t('tabs.recentlyAdded'),
               },
               {
                 id: 'near-campus',
@@ -861,7 +769,7 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               {
                 id: 'on-campus',
                 icon: '📚',
-                label: 'ON CAMPUS',
+                label: t('tabs.onCampus'),
               },
               {
                 id: 'solo-living',
@@ -871,7 +779,7 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               {
                 id: 'large-houses',
                 icon: '🏰',
-                label: 'Large Houses',
+                label: t('tabs.largeHouses'),
               },
             ].map((tab, index, array) => (
               <button
@@ -909,10 +817,34 @@ export default function Home({ campusProperties = [] }: HomeProps) {
     );
   };
 
-  // Add this near the top of the component with other state variables
-  const [searchBarKey, setSearchBarKey] = useState<number>(0);
+  // Function to clear all filters and reset to default view
+  const clearAllFilters = () => {
+    // Reset user filters
+    setUserFilters({});
+    
+    // Reset internal filters
+    setFilters({});
+    
+    // Reset to default tab
+    setActiveTab('all-houses');
+    
+    // Reset properties
+    propertiesReset();
+    
+    // Increment search bar key to force re-render with cleared state
+    setSearchBarKey(prev => prev + 1);
+    
+    // Reset scroll position
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const { favorites, isFavorite } = useFavorites();
+  // Add a useEffect to fetch all map properties when filters change and we're in map view
+  useEffect(() => {
+    if (showMap) {
+      console.log('Filters changed while in map view - fetching all properties for map');
+      fetchAllForMap();
+    }
+  }, [filters, showMap, fetchAllForMap]);
 
   if (isLoading) {
     return (
@@ -937,8 +869,8 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                 <div className="mt-8 mb-4">
                   <SearchFilterBar 
                     key={`search-bar-loading-${searchBarKey}`}
-                    initialPrice={filters.maxPrice}
-                    initialBedrooms={filters.bedrooms}
+                    initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
+                    initialBedrooms={userFilters.bedrooms}
                     onFilterChange={handleFilterChange}
                   />
                 </div>
@@ -971,21 +903,7 @@ export default function Home({ campusProperties = [] }: HomeProps) {
           id="hero-section"
           className={`bg-white relative z-30 ${showMap ? 'hidden' : ''}`}
         >
-          <motion.div 
-            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8"
-            animate={{ 
-              opacity: isSticky ? 0 : 1,
-              y: isSticky ? -20 : 0
-            }}
-            transition={{ 
-              type: "spring",
-              stiffness: 200,
-              damping: 30,
-              mass: 0.5,
-              duration: 0.3
-            }}
-            layout="position"
-          >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl tracking-tight">
                 {t('hero.title')}
@@ -994,44 +912,46 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                 {t('hero.subtitle')}
               </p>
               
-              {/* SearchFilterBar */}
-              <motion.div 
-                className="mt-8 mb-4"
-                layout="position"
-                layoutId="search-bar"
-              >
+              {/* SearchFilterBar - Hidden on mobile */}
+              <div className="mt-8 mb-4 hidden sm:block">
                 <SearchFilterBar 
                   key={`search-bar-hero-${searchBarKey}`}
-                  initialPrice={filters.maxPrice}
-                  initialBedrooms={filters.bedrooms}
+                  initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
+                  initialBedrooms={userFilters.bedrooms}
                   onFilterChange={handleFilterChange}
+                  onSearch={handleSearchClick}
                 />
-              </motion.div>
+              </div>
+              
+              {/* Mobile Search Bar - Only visible on mobile */}
+              <div className="mt-8 mb-4 sm:hidden">
+                <SearchFilterBar 
+                  key={`search-bar-mobile-${searchBarKey}`}
+                  initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
+                  initialBedrooms={userFilters.bedrooms}
+                  onFilterChange={handleFilterChange}
+                  onSearch={handleSearchClick}
+                  isCompact={true}
+                />
+              </div>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Sticky Search Bar */}
-        <motion.div
-          className={`fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 ${
-            isSticky && !showMap ? 'block' : 'hidden'
-          }`}
-          initial={false}
-          animate={{ 
-            opacity: isSticky && !showMap ? 1 : 0,
-            y: isSticky && !showMap ? 0 : -20
-          }}
-          transition={{ duration: 0.2 }}
+        <div
+          className={`fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 hidden`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <SearchFilterBar 
               key={`search-bar-sticky-${searchBarKey}`}
-              initialPrice={filters.maxPrice}
-              initialBedrooms={filters.bedrooms}
+              initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
+              initialBedrooms={userFilters.bedrooms}
               onFilterChange={handleFilterChange}
+              onSearch={handleSearchClick}
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Filter tabs - Moved outside hero section */}
         <div className={`bg-white ${showMap ? 'fixed top-16 left-0 right-0 z-40 border-b border-gray-200 shadow-sm' : 'relative'}`}>
@@ -1059,8 +979,8 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                 className="w-full h-full relative"
               >
                 <PropertyMap 
-                  key={`map-view-${showMap}-${localFilteredProperties.length}-${Date.now()}`}
-                  properties={localFilteredProperties}
+                  key={`map-view-${showMap}-${Date.now()}`}
+                  properties={allMapProperties}
                   onViewChange={handleViewToggle}
                   onPropertySelect={(property) => {
                     if (property && property.id) {
@@ -1077,20 +997,16 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${
-                isSticky ? 'pt-4' : 'pt-6'
-              } pb-16 md:pb-8 bg-transparent`}
+              className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 md:pb-8 bg-transparent`}
             >
               <div className="max-w-7xl mx-auto">
-                {queryError ? (
+                {error ? (
                   <div className="text-center text-red-500 py-12">
                     <p className="text-lg font-medium">
-                      {(queryError as unknown) instanceof Error
-                        ? (queryError as Error).message
-                        : 'An error occurred'}
+                      {error || 'An error occurred fetching properties'}
                     </p>
                     <button
-                      onClick={() => window.location.reload()}
+                      onClick={() => propertiesReset()}
                       className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                     >
                       Try Again
@@ -1101,8 +1017,8 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                     layout
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                   >
-                    {localFilteredProperties.length > 0 ? (
-                      localFilteredProperties.map((property) => {
+                    {properties.length > 0 ? (
+                      properties.map((property) => {
                         // Check if it's a campus property
                         const isCampusProperty = property.keyFeatures && 
                           typeof property.keyFeatures === 'object' && 
@@ -1173,11 +1089,18 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                             {/* Increase budget suggestion */}
                             <button
                               onClick={() => {
-                                const newMaxPrice = (filters.maxPrice !== undefined ? filters.maxPrice : 190) + 50;
-                                handleFilterChange({
-                                  ...filters,
+                                const newMaxPrice = (userFilters.maxPrice !== undefined ? userFilters.maxPrice : 190) + 50;
+                                const updatedFilters = {
+                                  ...userFilters,
                                   maxPrice: newMaxPrice
-                                });
+                                };
+                                setUserFilters(updatedFilters);
+                                
+                                // If we're on "all-houses" tab, directly apply the filter
+                                if (activeTab === 'all-houses') {
+                                  setFilters(updatedFilters);
+                                  propertiesReset();
+                                }
                               }}
                               className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left flex items-center gap-4"
                             >
@@ -1186,17 +1109,24 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                               </div>
                               <div>
                                 <h3 className="font-semibold text-lg text-gray-900">Increase your budget</h3>
-                                <p className="text-gray-500">Try £{((filters.maxPrice !== undefined ? filters.maxPrice : 190) + 50).toFixed(0)} per week</p>
+                                <p className="text-gray-500">Try £{((userFilters.maxPrice !== undefined ? userFilters.maxPrice : 190) + 50).toFixed(0)} per week</p>
                               </div>
                             </button>
                             
                             {/* Any bedrooms suggestion */}
                             <button
                               onClick={() => {
-                                handleFilterChange({
-                                  ...filters,
+                                const updatedFilters = {
+                                  ...userFilters,
                                   bedrooms: undefined
-                                });
+                                };
+                                setUserFilters(updatedFilters);
+                                
+                                // If we're on "all-houses" tab, directly apply the filter
+                                if (activeTab === 'all-houses') {
+                                  setFilters(updatedFilters);
+                                  propertiesReset();
+                                }
                               }}
                               className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left flex items-center gap-4"
                             >
@@ -1212,23 +1142,7 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                           
                           {/* Reset all filters */}
                           <button
-                            onClick={() => {
-                              // First reset all filter state values
-                              setFilters({
-                                bedrooms: undefined,
-                                bathrooms: undefined,
-                                maxPrice: undefined
-                              });
-                              
-                              // Then set active tab to all houses and force a reload of properties
-                              setActiveTab('all-houses');
-                              
-                              // Update local filtered properties with all properties
-                              setLocalFilteredProperties(properties);
-                              
-                              // Increment key to force re-render of search bars
-                              setSearchBarKey(prev => prev + 1);
-                            }}
+                            onClick={clearAllFilters}
                             className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left flex items-center gap-4 w-full max-w-md mx-auto"
                           >
                             <div className="w-12 h-12 flex items-center justify-center text-3xl">
@@ -1245,19 +1159,44 @@ export default function Home({ campusProperties = [] }: HomeProps) {
                   </motion.div>
                 )}
               </div>
+              {loadingMore && (
+                <div className="col-span-full flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* View Toggle (Desktop Only) */}
+        <div className="hidden md:flex items-center space-x-3 ml-3">
+          <button
+            onClick={() => setShowMap(false)}
+            className={`flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md ${
+              !showMap
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <ListBulletIcon className="h-4 w-4 mr-1.5" />
+            LIST
+          </button>
+          <button
+            onClick={() => setShowMap(true)}
+            className={`flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md ${
+              showMap
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <MapIcon className="h-4 w-4 mr-1.5" />
+            MAP
+          </button>
+        </div>
+
         {/* Floating Map Toggle Button - Always show regardless of modal state */}
-        <motion.div
-          className="fixed z-[90] left-1/2 transform -translate-x-1/2"
-          initial={false}
-          animate={{ 
-            bottom: isCurrentlyMobile ? (direction === 'down' && !isAtTop ? 20 : 88) : 20,
-            scale: isCurrentlyMobile && direction === 'down' && !isAtTop ? 0.95 : 1
-          }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+        <div
+          className="fixed z-[90] left-1/2 transform -translate-x-1/2 bottom-20 md:bottom-8"
         >
           <motion.button
             onClick={handleViewToggle}
@@ -1286,10 +1225,10 @@ export default function Home({ campusProperties = [] }: HomeProps) {
               }}
               transition={{ duration: 0.2 }}
             >
-              {showMap ? 'List' : 'Map'}
+              {showMap ? "LIST" : "MAP"}
             </motion.span>
           </motion.button>
-        </motion.div>
+        </div>
 
         {/* Modal Backdrop - Only render when modal is active, but preserve background */}
         {selectedProperty && (
@@ -1322,6 +1261,8 @@ export default function Home({ campusProperties = [] }: HomeProps) {
             />
           ) : null}
         </div>
+
+        <div ref={observerTarget} className="h-4" />
       </div>
     </Layout>
   );

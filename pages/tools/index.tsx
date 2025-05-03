@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Badge } from "../../components/ui/badge"
@@ -8,77 +8,104 @@ import { Button } from "../../components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import Navbar from "../../components/Navbar"
 import Head from "next/head"
+import { serverSideTranslations } from "next-i18next/serverSideTranslations"
+import { useTranslation } from "next-i18next"
+import { GetStaticProps } from "next"
 
 export default function StudentToolsPage() {
+  const { t } = useTranslation('common')
   const [activeTab, setActiveTab] = useState("all")
 
   const tools = [
     {
       id: "room-allocator",
-      title: "Room Allocator",
-      description: "Fairly assign rooms with a fun spin-the-wheel game.",
-      longDescription:
-        "No more arguments about who gets which room! This interactive tool uses a fair random selection process that makes room allocation fun and transparent.",
+      title: t('tools.room_allocator.title'),
+      description: t('tools.room_allocator.description'),
+      longDescription: t('tools.room_allocator.long_description'),
       category: "housing",
       usageCount: 1234,
-      features: ["Random allocation", "Fair distribution", "Fun interface", "Save results"],
-      buttonText: "Spin The Wheel",
+      features: [
+        t('tools.room_allocator.features.random'),
+        t('tools.room_allocator.features.fair'),
+        t('tools.room_allocator.features.fun'),
+        t('tools.room_allocator.features.save')
+      ],
+      buttonText: t('tools.room_allocator.button'),
       color: "bg-pink-100",
     },
     {
       id: "split-rent-calculator",
-      title: "Split Rent Calculator",
-      description: "Calculate fair rent splits based on room sizes and features.",
-      longDescription:
-        "Different rooms have different values. This calculator helps you determine a fair price for each room based on size, features, and amenities.",
+      title: t('tools.split_rent.title'),
+      description: t('tools.split_rent.description'),
+      longDescription: t('tools.split_rent.long_description'),
       category: "finance",
       usageCount: 892,
-      features: ["Room comparison", "Feature weighting", "Multiple methods", "Shareable results"],
-      buttonText: "Calculate Split",
+      features: [
+        t('tools.split_rent.features.comparison'),
+        t('tools.split_rent.features.weighting'),
+        t('tools.split_rent.features.methods'),
+        t('tools.split_rent.features.shareable')
+      ],
+      buttonText: t('tools.split_rent.button'),
       color: "bg-yellow-100",
     },
     {
       id: "wifi-setup-guide",
-      title: "WiFi Setup Guide",
-      description: "Get online with our step-by-step guide. Includes cheapest WiFi providers!",
-      longDescription:
-        "Fast, reliable internet is essential. Our guide walks you through setting up your connection and finding the best deals for student housing.",
+      title: t('tools.wifi_guide.title'),
+      description: t('tools.wifi_guide.description'),
+      longDescription: t('tools.wifi_guide.long_description'),
       category: "utilities",
-      features: ["Provider comparison", "Setup instructions", "Troubleshooting tips", "Student discounts"],
-      buttonText: "View Guide",
+      features: [
+        t('tools.wifi_guide.features.providers'),
+        t('tools.wifi_guide.features.setup'),
+        t('tools.wifi_guide.features.troubleshooting'),
+        t('tools.wifi_guide.features.discounts')
+      ],
+      buttonText: t('tools.wifi_guide.button'),
       color: "bg-blue-100",
     },
     {
       id: "rent-calculator",
-      title: "Rent Calculator",
-      description: "Calculate total rental costs including bills and deposits.",
-      longDescription:
-        "Understand the true cost of renting by factoring in all expenses. This calculator helps you budget for rent, bills, deposits, and other housing costs.",
+      title: t('tools.moveout_checklist.title'),
+      description: t('tools.moveout_checklist.description'),
+      longDescription: t('tools.moveout_checklist.long_description'),
       category: "finance",
-      features: ["Bill estimation", "Deposit calculation", "Monthly breakdown", "Annual summary"],
-      buttonText: "Calculate Costs",
+      features: [
+        t('tools.moveout_checklist.features.track'),
+        t('tools.moveout_checklist.features.print'),
+        t('tools.moveout_checklist.features.filter')
+      ],
+      buttonText: t('tools.moveout_checklist.button'),
       color: "bg-red-100",
     },
     {
       id: "move-in-checklist",
-      title: "Move-In Checklist",
-      description: "Complete checklist for moving into your student home. Written by current and former students.",
-      longDescription:
-        "Don't forget anything when moving in! This comprehensive checklist covers everything you need to do before, during, and after moving into your student accommodation.",
+      title: t('tools.checklist.title'),
+      description: t('tools.checklist.description'),
+      longDescription: t('tools.checklist.long_description'),
       category: "housing",
-      features: ["Printable list", "Progress tracking", "Customizable items", "Roommate sharing"],
-      buttonText: "View Checklist",
+      features: [
+        t('tools.checklist.features.printable'),
+        t('tools.checklist.features.progress'),
+        t('tools.checklist.features.custom'),
+        t('tools.checklist.features.sharing')
+      ],
+      buttonText: t('tools.checklist.button'),
       color: "bg-green-100",
     },
     {
       id: "energy-estimator",
-      title: "Energy Estimator",
-      description: "Estimate your monthly energy consumption and costs.",
-      longDescription:
-        "Understand and manage your energy usage. This tool helps you estimate electricity and gas costs based on your living situation and habits.",
+      title: t('tools.energy.title'),
+      description: t('tools.energy.description'),
+      longDescription: t('tools.energy.long_description'),
       category: "utilities",
-      features: ["Usage calculator", "Cost breakdown", "Saving tips", "Seasonal estimates"],
-      buttonText: "Estimate Costs",
+      features: [
+        t('tools.energy.features.calculator'),
+        t('tools.energy.features.breakdown'),
+        t('tools.energy.features.tips'),
+        t('tools.energy.features.seasonal')
+      ],
+      buttonText: t('tools.energy.button'),
       color: "bg-purple-100",
     },
   ]
@@ -88,7 +115,7 @@ export default function StudentToolsPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Head>
-        <title>Student Tools | Lboro Move</title>
+        <title>{t('tools.page_title')} | Lboro Move</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏡</text></svg>" />
       </Head>
       <Navbar />
@@ -97,10 +124,10 @@ export default function StudentToolsPage() {
       <main className="flex-1 pt-20">
         <div className="container max-w-6xl mx-auto py-8 px-4">
           <div className="space-y-2 text-center mb-8">
-            <h1 className="text-5xl font-bold tracking-tight">STUDENT TOOLS</h1>
+            <h1 className="text-5xl font-bold tracking-tight">{t('tools.heading')}</h1>
             <div className="flex items-center justify-center gap-2">
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 mt-4">
-                100% Free
+                {t('tools.free_badge')}
               </Badge>
             </div>
           </div>
@@ -109,16 +136,16 @@ export default function StudentToolsPage() {
             <div className="flex justify-center">
               <TabsList className="bg-gray-100 p-1 rounded-lg">
                 <TabsTrigger value="all" className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                  All Tools
+                  {t('tools.all_tools')}
                 </TabsTrigger>
                 <TabsTrigger value="housing" className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                  Housing
+                  {t('tools.housing')}
                 </TabsTrigger>
                 <TabsTrigger value="finance" className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                  Finance
+                  {t('tools.finance')}
                 </TabsTrigger>
                 <TabsTrigger value="utilities" className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                  Utilities
+                  {t('tools.utilities')}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -160,7 +187,9 @@ export default function StudentToolsPage() {
                       ))}
                     </div>
 
-                    <Link href={tool.id === "move-in-checklist" ? "/student-move-in-checklist" : `/tools/${tool.id}`} className="block">
+                    <Link href={tool.id === "move-in-checklist" ? "/student-move-in-checklist" : 
+                        tool.id === "rent-calculator" ? "/tools/move-out-checklist" : 
+                        `/tools/${tool.id}`} className="block">
                       <Button className="w-full group bg-purple-600 hover:bg-purple-700 text-white font-medium py-3">
                         {tool.buttonText}
                         <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1 text-white" />
@@ -175,4 +204,12 @@ export default function StudentToolsPage() {
       </main>
     </div>
   )
+}
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'en', ['common'])),
+    },
+  }
 }

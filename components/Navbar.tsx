@@ -7,6 +7,9 @@ import AuthModal from './AuthModal';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@prisma/client';
 import type { Session } from 'next-auth';
+import { useTranslation } from 'next-i18next';
+import { Menu } from '@headlessui/react';
+import { UserCircleIcon } from '@heroicons/react/24/solid';
 
 // Extend Session type to include our custom user fields
 interface ExtendedSession extends Session {
@@ -29,6 +32,7 @@ export default function Navbar() {
   const { data: session } = useSession() as { data: ExtendedSession | null };
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { t } = useTranslation('common');
 
   useEffect(() => {
     // Only enable scroll behavior if not on map view
@@ -117,7 +121,7 @@ export default function Navbar() {
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                HOUSES
+                {t('navbar.houses')}
               </Link>
               <Link
                 href="/discussion"
@@ -127,7 +131,7 @@ export default function Navbar() {
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                DISCUSSION
+                {t('navbar.discussion')}
               </Link>
               <Link
                 href="/tools"
@@ -137,7 +141,7 @@ export default function Navbar() {
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                TOOLS
+                {t('navbar.tools')}
               </Link>
             </div>
           </div>
@@ -146,25 +150,22 @@ export default function Navbar() {
           <div className="flex-none w-48 flex justify-end items-center gap-3">
             {/* Profile - Hidden on mobile */}
             {session?.user ? (
-              <Link
-                href="/profile"
-                className="hidden md:block w-8 h-8 rounded-full overflow-hidden relative hover:ring-2 hover:ring-purple-500 transition-all"
-              >
-                {session.user.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt="Profile"
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-600 text-sm">
-                      {session.user.firstName?.[0] || 'U'}
-                    </span>
-                  </div>
-                )}
-              </Link>
+              <Menu as="div" className="relative ml-3">
+                <div>
+                  <Menu.Button className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                    <span className="sr-only">{t('navbar.profile')}</span>
+                    {session?.user?.image ? (
+                      <img
+                        className="h-8 w-8 rounded-full"
+                        src={session.user.image}
+                        alt=""
+                      />
+                    ) : (
+                      <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                    )}
+                  </Menu.Button>
+                </div>
+              </Menu>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
@@ -195,7 +196,7 @@ export default function Navbar() {
 
       {/* Mobile Bottom Navigation */}
       <nav 
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/70 backdrop-filter backdrop-blur-lg border-t z-[998] transition-transform duration-300 ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-[998] transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
@@ -203,47 +204,69 @@ export default function Navbar() {
           <Link
             href="/"
             className={`flex flex-col items-center justify-center w-full h-full ${
-              pathname === '/' ? 'text-purple-600' : 'text-gray-500'
+              pathname === '/' 
+                ? 'text-black font-bold' 
+                : 'text-gray-500'
             }`}
           >
-            <Home className="w-6 h-6" />
-            <span className="text-xs mt-1">HOUSES</span>
+            <Home className={`w-6 h-6 ${pathname === '/' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
+            <span className="text-xs mt-1">{t('navbar.houses')}</span>
           </Link>
           <Link
             href="/discussion"
             className={`flex flex-col items-center justify-center w-full h-full ${
-              pathname === '/discussion' ? 'text-purple-600' : 'text-gray-500'
+              pathname === '/discussion' 
+                ? 'text-black font-bold' 
+                : 'text-gray-500'
             }`}
           >
-            <MessageCircle className="w-6 h-6" />
-            <span className="text-xs mt-1">DISCUSSION</span>
+            <MessageCircle className={`w-6 h-6 ${pathname === '/discussion' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
+            <span className="text-xs mt-1">{t('navbar.discussion')}</span>
           </Link>
           <Link
             href="/tools"
             className={`flex flex-col items-center justify-center w-full h-full ${
-              pathname === '/tools' ? 'text-purple-600' : 'text-gray-500'
+              pathname === '/tools' 
+                ? 'text-black font-bold' 
+                : 'text-gray-500'
             }`}
           >
-            <Tool className="w-6 h-6" />
-            <span className="text-xs mt-1">TOOLS</span>
+            <Tool className={`w-6 h-6 ${pathname === '/tools' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
+            <span className="text-xs mt-1">{t('navbar.tools')}</span>
           </Link>
           {session?.user ? (
             <Link
               href="/profile"
               className={`flex flex-col items-center justify-center w-full h-full ${
-                pathname === '/profile' ? 'text-purple-600' : 'text-gray-500'
+                pathname === '/profile' 
+                  ? 'text-black font-bold' 
+                  : 'text-gray-500'
               }`}
             >
-              <User className="w-6 h-6" />
-              <span className="text-xs mt-1">PROFILE</span>
+              {session.user.image ? (
+                <div className={`w-6 h-6 rounded-full overflow-hidden ${pathname === '/profile' ? 'ring-2 ring-purple-600' : ''}`}>
+                  <img 
+                    src={session.user.image} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
+              )}
+              <span className="text-xs mt-1">{t('navbar.profile')}</span>
             </Link>
           ) : (
             <button
               onClick={() => setShowAuthModal(true)}
-              className="flex flex-col items-center justify-center w-full h-full text-gray-500"
+              className={`flex flex-col items-center justify-center w-full h-full ${
+                pathname === '/profile' 
+                  ? 'text-black font-bold' 
+                  : 'text-gray-500'
+              }`}
             >
-              <User className="w-6 h-6" />
-              <span className="text-xs mt-1">PROFILE</span>
+              <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
+              <span className="text-xs mt-1">{t('navbar.profile')}</span>
             </button>
           )}
         </div>

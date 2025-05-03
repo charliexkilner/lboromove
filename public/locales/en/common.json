@@ -27,7 +27,11 @@
     "bestGroups": "Best for Groups",
     "noDeposit": "No Deposit",
     "security": "24/7 Security",
-    "luxuryLiving": "Luxury Living"
+    "luxuryLiving": "Luxury Living",
+    "silverSquare": "SILVER SQUARE",
+    "recentlyAdded": "RECENTLY ADDED",
+    "onCampus": "ON CAMPUS",
+    "largeHouses": "LARGE HOUSES"
   },
   "filters": {
     "rooms": "🛌 ROOMS",
@@ -81,6 +85,121 @@
       "rooms": "rooms",
       "minsToCampus": "mins to",
       "campus": "campus"
+    }
+  },
+  "navbar": {
+    "houses": "HOUSES",
+    "discussion": "DISCUSSION",
+    "tools": "TOOLS",
+    "profile": "PROFILE"
+  },
+  "mapView": {
+    "map": "MAP",
+    "list": "LIST"
+  },
+  "searchBar": {
+    "price": "PRICE",
+    "bedrooms": "BEDROOMS",
+    "any": "Any",
+    "perWeek": "per week",
+    "bedroom": "bedroom",
+    "bedroomPlural": "bedrooms",
+    "filter": "Filter",
+    "apply": "Apply",
+    "resetPrice": "Reset",
+    "resetBedrooms": "Reset",
+    "resetAll": "Reset all",
+    "viewProperties": "View properties"
+  },
+  "tools": {
+    "page_title": "Student Tools",
+    "heading": "STUDENT TOOLS",
+    "free_badge": "100% Free",
+    "all_tools": "All Tools",
+    "housing": "Housing",
+    "finance": "Finance", 
+    "utilities": "Utilities",
+    "moveout_checklist": {
+      "title": "Move-Out Checklist",
+      "description": "Complete checklist for a stress-free end of tenancy",
+      "long_description": "Use our comprehensive move-out checklist to ensure you don't miss any important tasks when leaving your student accommodation. Increase your chances of getting your full deposit back.",
+      "features": {
+        "track": "Track your progress",
+        "print": "Printable checklist",
+        "filter": "Filter by category"
+      },
+      "button": "View Checklist"
+    },
+    "room_allocator": {
+      "title": "Room Allocator",
+      "description": "Fairly assign rooms with a fun spin-the-wheel game.",
+      "long_description": "No more arguments about who gets which room! This interactive tool uses a fair random selection process that makes room allocation fun and transparent.",
+      "features": {
+        "random": "Random allocation",
+        "fair": "Fair distribution",
+        "fun": "Fun interface",
+        "save": "Save results"
+      },
+      "button": "Spin The Wheel"
+    },
+    "split_rent": {
+      "title": "Split Rent Calculator",
+      "description": "Calculate fair rent splits based on room sizes and features.",
+      "long_description": "Different rooms have different values. This calculator helps you determine a fair price for each room based on size, features, and amenities.",
+      "features": {
+        "comparison": "Room comparison",
+        "weighting": "Feature weighting",
+        "methods": "Multiple methods",
+        "shareable": "Shareable results"
+      },
+      "button": "Calculate Split"
+    },
+    "wifi_guide": {
+      "title": "WiFi Setup Guide",
+      "description": "Get online with our step-by-step guide. Includes cheapest WiFi providers!",
+      "long_description": "Fast, reliable internet is essential. Our guide walks you through setting up your connection and finding the best deals for student housing.",
+      "features": {
+        "providers": "Provider comparison",
+        "setup": "Setup instructions",
+        "troubleshooting": "Troubleshooting tips",
+        "discounts": "Student discounts"
+      },
+      "button": "View Guide"
+    },
+    "rent_calculator": {
+      "title": "Move-Out Checklist",
+      "description": "Complete checklist for a stress-free end of tenancy",
+      "long_description": "Use our comprehensive move-out checklist to ensure you don't miss any important tasks when leaving your student accommodation. Increase your chances of getting your full deposit back.",
+      "features": {
+        "track": "Track your progress",
+        "print": "Printable checklist",
+        "filter": "Filter by category"
+      },
+      "button": "View Checklist"
+    },
+    "checklist": {
+      "title": "Move-In Checklist",
+      "description": "Complete checklist for moving into your student home. Written by current and former students.",
+      "long_description": "Don't forget anything when moving in! This comprehensive checklist covers everything you need to do before, during, and after moving into your student accommodation.",
+      "features": {
+        "printable": "Printable list",
+        "progress": "Progress tracking",
+        "custom": "Customizable items",
+        "sharing": "Roommate sharing"
+      },
+      "button": "View Checklist"
+    },
+    "energy": {
+      "title": "Energy Estimator",
+      "description": "Estimate your monthly energy consumption and costs.",
+      "long_description": "Understand and manage your energy usage. This tool helps you estimate electricity and gas costs based on your living situation and habits.",
+      "features": {
+        "calculator": "Usage calculator",
+        "breakdown": "Cost breakdown",
+        "tips": "Saving tips",
+        "seasonal": "Seasonal estimates"
+      },
+      "button": "Estimate Costs"
     }
   }
 }
