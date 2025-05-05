@@ -1,30 +1,10 @@
 import { NextApiHandler } from 'next';
-import NextAuth, { NextAuthOptions, DefaultSession } from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import GoogleProvider from 'next-auth/providers/google';
 import EmailProvider from 'next-auth/providers/email';
 import { prisma } from '../../../lib/prisma';
-import { UserRole, StudyYear } from '@prisma/client';
-
-// Extend the built-in session types
-declare module "next-auth" {
-  interface Session {
-    user: DefaultSession["user"] & {
-      id: string;
-      role: UserRole;
-      firstName: string;
-      lastName: string;
-      studyYear?: StudyYear;
-    }
-  }
-
-  interface User {
-    role: UserRole;
-    firstName: string;
-    lastName: string;
-    studyYear?: StudyYear;
-  }
-}
+import { UserRole } from '@prisma/client';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -112,6 +92,7 @@ export const authOptions: NextAuthOptions = {
           role: true,
           firstName: true,
           lastName: true,
+          image: true,
           studyYear: true,
         },
       });
@@ -126,8 +107,8 @@ export const authOptions: NextAuthOptions = {
           ...session.user,
           id: user.id,
           role: user.role,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          // Map firstName/lastName to name for compatibility
+          name: session.user.name || `${user.firstName} ${user.lastName}`,
           studyYear: user.studyYear,
         },
       };

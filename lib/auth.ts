@@ -11,23 +11,7 @@ import { UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-declare module 'next-auth' {
-  interface User extends DefaultUser {
-    id: string;
-    role: UserRole;
-    firstName: string;
-    lastName: string;
-  }
-
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-      role: UserRole;
-      firstName: string;
-      lastName: string;
-    } & DefaultSession['user'];
-  }
-}
+// Type declarations moved to types/next-auth.d.ts to avoid conflicts
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,

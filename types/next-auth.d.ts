@@ -9,6 +9,8 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       role: UserRole;
+      firstName: string;
+      lastName: string;
       studyYear?: StudyYear | null;
     }
   }
@@ -19,6 +21,8 @@ declare module "next-auth" {
     email?: string | null;
     image?: string | null;
     role: UserRole;
+    firstName: string;
+    lastName: string;
     studyYear?: StudyYear | null;
   }
 } 
