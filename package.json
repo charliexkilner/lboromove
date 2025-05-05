@@ -65,7 +65,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/verify-locales.js && next build",
     "start": "next start",
     "lint": "next lint",
     "check-config": "node scripts/check-config.js",
@@ -104,7 +104,10 @@
     "verify:distances-ors": "ts-node --project tsconfig.node.json scripts/verify-walking-distances-ors.ts",
     "fix:distances-ors": "ts-node --project tsconfig.node.json scripts/verify-walking-distances-ors.ts --fix",
     "scrape:loc8me": "ts-node --project tsconfig.scraper.json scripts/runLoc8meScraper.ts",
-    "dev:debug": "node /Users/charliekilner/Documents/Documents - Charlie's MacBook Pro/lboromove/debug-next.js dev"
+    "dev:debug": "node /Users/charliekilner/Documents/Documents - Charlie's MacBook Pro/lboromove/debug-next.js dev",
+    "prepare-deploy": "node scripts/prepare-vercel-deploy.js",
+    "vercel-build": "npm run prepare-deploy && node scripts/verify-locales.js && next build",
+    "verify-locales": "node scripts/verify-locales.js"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

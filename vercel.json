@@ -1,0 +1,25 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "regions": ["lhr1"],
+  "env": {
+    "DEBUG_I18N": "true",
+    "DEBUG_PRISMA": "true"
+  },
+  "headers": [
+    {
+      "source": "/locales/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "locales": ["en", "hi", "zh"],
+    "defaultLocale": "en"
+  }
+} 
