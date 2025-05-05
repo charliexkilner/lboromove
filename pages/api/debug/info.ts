@@ -3,6 +3,13 @@ import { testDatabaseConnection } from '../../../lib/db-helper';
 import path from 'path';
 import fs from 'fs';
 
+// Define interface for locale info
+interface LocaleInfo {
+  locale: string;
+  files: string[];
+  hasCommonJson: boolean;
+}
+
 // This endpoint provides debug information about the environment
 // It's useful for troubleshooting deployment issues
 export default async function handler(
@@ -22,7 +29,7 @@ export default async function handler(
     // Check for i18n files
     const localesPath = path.join(process.cwd(), 'public', 'locales');
     let i18nStatus = 'unknown';
-    let files = [];
+    let files: LocaleInfo[] = [];
     
     try {
       // Check if the locales directory exists and is readable
