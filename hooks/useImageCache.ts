@@ -26,7 +26,14 @@ export function useImageCache() {
   const addToCache = useMutation({
     mutationFn: (imageUrl: string) => {
       queryClient.setQueryData([IMAGE_CACHE_KEY], (old: Set<string> = new Set()) => {
-        return new Set([...Array.from(old), imageUrl]);
+        const newCache = new Set<string>();
+        // Add all existing items to the new Set
+        if (old) {
+          Array.from(old).forEach(item => newCache.add(item));
+        }
+        // Add the new item
+        newCache.add(imageUrl);
+        return newCache;
       });
       return Promise.resolve();
     },
@@ -41,7 +48,7 @@ export function useImageCache() {
 
   // Preload a list of images
   const preloadImages = async (imageUrls: string[]) => {
-    const uniqueUrls = [...new Set(imageUrls)].filter(url => url && !isImageLoaded(url));
+    const uniqueUrls = Array.from(new Set(imageUrls)).filter(url => url && !isImageLoaded(url));
     
     if (uniqueUrls.length === 0) return;
 
@@ -72,7 +79,7 @@ export function useImageCache() {
     const allImages = properties.flatMap(property => {
       if (!property?.images) return [];
       return Array.isArray(property.images) 
-        ? property.images.filter(img => typeof img === 'string' && img)
+        ? property.images.filter((img: any) => typeof img === 'string' && img)
         : [property.images].filter(Boolean);
     });
 
