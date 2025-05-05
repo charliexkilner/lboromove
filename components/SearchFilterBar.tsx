@@ -73,7 +73,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
 
   useEffect(() => {
     if (!isInitialMount.current) {
-      function handleClickOutside(event: MouseEvent) {
+      const handleClickOutside = (event: MouseEvent) => {
         // Close price dropdown if clicking outside of it
         if (isPriceOpen && priceRef.current && !priceRef.current.contains(event.target as Node)) {
           setIsPriceOpen(false);
@@ -83,7 +83,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         if (isBedroomsOpen && bedroomsRef.current && !bedroomsRef.current.contains(event.target as Node)) {
           setIsBedroomsOpen(false);
         }
-      }
+      };
       
       document.addEventListener("mousedown", handleClickOutside);
       return () => {
