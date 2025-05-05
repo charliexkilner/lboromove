@@ -84,4 +84,10 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Check if we're using a special config file
+if (process.env.NEXT_CONFIG_FILE) {
+  console.log(`Using custom config: ${process.env.NEXT_CONFIG_FILE}`);
+  module.exports = require(`./${process.env.NEXT_CONFIG_FILE}`);
+} else {
+  module.exports = nextConfig;
+}

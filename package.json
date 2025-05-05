@@ -68,6 +68,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "fix-next-dev": "node scripts/fix-next-dev.js",
+    "dev:safe": "node scripts/dev-setup.js && next dev",
+    "dev:clean": "rm -rf .next node_modules/.cache && next dev",
+    "dev:nowatch": "NEXT_CONFIG_FILE=next.config.no-watch.js WATCHPACK_POLLING=false NODE_OPTIONS='--no-warnings' next dev",
+    "dev:prod": "next build && next start",
+    "dev:fix": "NEXT_CONFIG_FILE=next.config.fix.js WATCHPACK_POLLING=false NODE_OPTIONS='--max-old-space-size=4096 --no-warnings' next dev",
     "scrape": "ts-node --project tsconfig.scraper.json scripts/scrapeProperties.ts",
     "scrape:toplets": "ts-node --project tsconfig.scraper.json scripts/runTopLetsScraper.ts",
     "clear-test": "ts-node -O '{\"module\":\"CommonJS\"}' prisma/clear-test.ts",
@@ -96,7 +102,8 @@
     "fix:distances": "ts-node --project tsconfig.node.json scripts/verify-walking-distances-ors.ts --fix",
     "verify:distances-ors": "ts-node --project tsconfig.node.json scripts/verify-walking-distances-ors.ts",
     "fix:distances-ors": "ts-node --project tsconfig.node.json scripts/verify-walking-distances-ors.ts --fix",
-    "scrape:loc8me": "ts-node --project tsconfig.scraper.json scripts/runLoc8meScraper.ts"
+    "scrape:loc8me": "ts-node --project tsconfig.scraper.json scripts/runLoc8meScraper.ts",
+    "dev:debug": "node /Users/charliekilner/Documents/Documents - Charlie's MacBook Pro/lboromove/debug-next.js dev"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
