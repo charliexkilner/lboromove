@@ -9,31 +9,7 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-declare module 'next-auth' {
-  interface User {
-    id: string;
-    role: UserRole;
-    firstName: string;
-    lastName: string;
-    studyYear?: StudyYear | null;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  }
-
-  interface Session {
-    user: {
-      id: string;
-      role: UserRole;
-      firstName: string;
-      lastName: string;
-      studyYear?: StudyYear | null;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    }
-  }
-}
+// Type declarations moved to types/next-auth.d.ts
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,

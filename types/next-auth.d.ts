@@ -12,6 +12,7 @@ declare module "next-auth" {
       firstName: string;
       lastName: string;
       studyYear?: StudyYear | null;
+      isVerifiedLandlord?: boolean;
     }
   }
 
@@ -24,5 +25,6 @@ declare module "next-auth" {
     firstName: string;
     lastName: string;
     studyYear?: StudyYear | null;
+    isVerifiedLandlord?: boolean;
   }
 } 

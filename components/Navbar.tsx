@@ -12,25 +12,13 @@ import { Menu } from '@headlessui/react';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 import { signOut } from 'next-auth/react';
 
-// Extend Session type to include our custom user fields
-interface ExtendedSession extends Session {
-  user: {
-    id: string;
-    role: UserRole;
-    firstName: string;
-    lastName: string;
-    email?: string | null;
-    image?: string | null;
-  }
-}
-
 // Make sure you have this export
 export default function Navbar() {
   const router = useRouter();
   const { locale, pathname } = router;
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const { data: session } = useSession() as { data: ExtendedSession | null };
+  const { data: session } = useSession();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const { t, ready } = useTranslation('common', { useSuspense: false });

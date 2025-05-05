@@ -1,27 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
 import { Session } from 'next-auth';
-import { UserRole } from '@prisma/client';
-
-// Extend Session type to include our custom user fields
-interface ExtendedSession extends Session {
-  user: {
-    id: string;
-    email?: string | null;
-    image?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
-    role: UserRole;
-  }
-}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions) as ExtendedSession | null;
+  const session = await getServerSession(req, res, authOptions);
 
   if (!session?.user?.id) {
     return res.status(401).json({ error: 'Unauthorized' });
