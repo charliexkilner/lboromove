@@ -81,11 +81,17 @@
     "houses": "房源",
     "discussion": "讨论",
     "tools": "工具",
-    "profile": "个人资料"
+    "profile": "个人资料",
+    "viewProfile": "查看资料",
+    "settings": "设置",
+    "changelog": "更新日志",
+    "signOut": "退出登录"
   },
   "mapView": {
     "map": "地图",
-    "list": "列表"
+    "list": "列表",
+    "switchToMap": "切换到地图视图",
+    "switchToList": "切换到列表视图"
   },
   "searchBar": {
     "price": "价格",
@@ -101,6 +107,17 @@
     "resetAll": "全部重置",
     "viewProperties": "查看房源"
   },
+  "profile": {
+    "editProfile": "编辑资料",
+    "favoriteHouses": "收藏房源",
+    "myDiscussions": "我的讨论",
+    "houses": "房源",
+    "discussions": "讨论",
+    "noFavorites": "暂无收藏房源。",
+    "browseProperties": "浏览房源",
+    "noDiscussions": "您尚未参与任何讨论。",
+    "joinDiscussion": "加入讨论"
+  },
   "tools": {
     "page_title": "学生工具",
     "heading": "学生工具",
@@ -110,15 +127,7 @@
     "finance": "财务", 
     "utilities": "实用工具",
     "moveout_checklist": {
-      "title": "搬出清单",
-      "description": "确保租约结束无忧的完整清单",
-      "long_description": "使用我们全面的搬出清单，确保您在离开学生住宿时不会遗漏任何重要任务。提高获得全额押金返还的几率。",
-      "features": {
-        "track": "追踪您的进度",
-        "print": "可打印清单",
-        "filter": "按类别筛选"
-      },
-      "button": "查看清单"
+      "title": "搬出清单"
     },
     "room_allocator": {
       "title": "房间分配器",
@@ -161,9 +170,10 @@
       "description": "确保租约结束无忧的完整清单",
       "long_description": "使用我们全面的搬出清单，确保您在离开学生住宿时不会遗漏任何重要任务。提高获得全额押金返还的几率。",
       "features": {
-        "track": "追踪您的进度",
-        "print": "可打印清单",
-        "filter": "按类别筛选"
+        "bills": "追踪您的进度",
+        "deposit": "可打印清单",
+        "monthly": "按类别筛选",
+        "annual": "获得全额押金返还"
       },
       "button": "查看清单"
     },

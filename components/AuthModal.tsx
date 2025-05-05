@@ -2,17 +2,14 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
-import { useAuthModal } from '@/hooks/useAuthModal';
 
 interface AuthModalProps {
   onClose: () => void;
 }
 
 export default function AuthModal({ onClose }: AuthModalProps) {
-  const { isOpen, closeModal } = useAuthModal();
-
   return (
-    <Transition appear show={isOpen} as={Fragment}>
+    <Transition appear show={true} as={Fragment}>
       <Dialog open={true} onClose={onClose} className="relative z-50">
         <Transition.Child
           as={Fragment}
@@ -42,7 +39,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                   <button
                     type="button"
                     className="text-gray-400 hover:text-gray-500"
-                    onClick={closeModal}
+                    onClick={onClose}
                   >
                     <span className="sr-only">Close</span>
                     <svg
@@ -73,7 +70,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
                   <div className="grid grid-cols-3 gap-4 mb-8 px-4">
                     <div className="text-center">
-                      <div className="text-3xl mb-2">❤️</div>
+                      <div className="text-3xl mb-2">🏠</div>
                       <div className="text-sm">
                         Save
                         <br />
@@ -100,7 +97,10 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
                   <div className="space-y-4">
                     <button
-                      onClick={() => signIn('google')}
+                      onClick={() => {
+                        signIn('google');
+                        onClose();
+                      }}
                       className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <img
@@ -113,7 +113,10 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                     </button>
 
                     <button
-                      onClick={() => signIn('email')}
+                      onClick={() => {
+                        signIn('email');
+                        onClose();
+                      }}
                       className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                       <svg
@@ -136,7 +139,10 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                   <div className="mt-6 text-sm text-gray-500">
                     Already a member?{' '}
                     <button
-                      onClick={() => signIn()}
+                      onClick={() => {
+                        signIn();
+                        onClose();
+                      }}
                       className="text-purple-600 hover:text-purple-700 font-semibold"
                     >
                       Sign in

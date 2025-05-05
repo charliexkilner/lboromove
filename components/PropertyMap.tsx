@@ -879,7 +879,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
       // Ensure cleanup still happens on error
       return cleanup;
     }
-  }, [mapboxReady, centerLat, centerLng, validProperties, isMobile, onPropertySelect]);
+  }, [mapboxReady, centerLat, centerLng]);
 
   // Add a separate effect to resize the map when needed
   useEffect(() => {
@@ -937,30 +937,37 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
       })));
     }
     
-    map.current.getSource('properties').setData(propertiesGeoJSON);
-    
-    // Fit map bounds to show all properties if needed
-    if (!singlePropertyMode && validProperties.length > 1 && (!centerLat || !centerLng)) {
-      try {
-      const bounds = new mapboxgl.LngLatBounds();
+    try {
+      // Only update if the source exists
+      if (map.current.getSource('properties')) {
+        map.current.getSource('properties').setData(propertiesGeoJSON);
+      }
       
-        // Add all property coordinates to bounds
-        validProperties.forEach(property => {
-        bounds.extend([property.longitude, property.latitude]);
-        });
-        
-        // Only fit bounds if we have valid bounds
-        if (!bounds.isEmpty()) {
-          map.current.fitBounds(bounds, {
-            padding: 50,
-            maxZoom: 15
+      // Fit map bounds to show all properties if needed
+      if (!singlePropertyMode && validProperties.length > 1 && (!centerLat || !centerLng)) {
+        try {
+          const bounds = new mapboxgl.LngLatBounds();
+          
+          // Add all property coordinates to bounds
+          validProperties.forEach(property => {
+            bounds.extend([property.longitude, property.latitude]);
           });
-        }
+          
+          // Only fit bounds if we have valid bounds
+          if (!bounds.isEmpty()) {
+            map.current.fitBounds(bounds, {
+              padding: 50,
+              maxZoom: 15
+            });
+          }
         } catch (e) {
           console.error("Error fitting bounds:", e);
         }
       }
-  }, [propertiesGeoJSON, validProperties.length, mapLoaded, singlePropertyMode, centerLat, centerLng]);
+    } catch (error) {
+      console.error("Error updating properties source:", error);
+    }
+  }, [validProperties.length, mapLoaded, singlePropertyMode, centerLat, centerLng]);
 
   // We don't need the old individual markers code anymore since we're using layers
   // Replace this with just a cleanup function

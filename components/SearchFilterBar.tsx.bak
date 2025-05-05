@@ -57,56 +57,49 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Add/remove 'filter-modal-open' class to body when the modal is shown/hidden
   useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (isPriceOpen && priceRef.current && !priceRef.current.contains(event.target as Node)) {
+        setIsPriceOpen(false);
+      }
+      if (isBedroomsOpen && bedroomsRef.current && !bedroomsRef.current.contains(event.target as Node)) {
+        setIsBedroomsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isPriceOpen, isBedroomsOpen]);
+
+  useEffect(() => {
+    // Log when modal state changes to help with debugging
+    console.log('Modal state changed:', showModal);
+    
+    // Add/remove class to body when modal is open/closed to help with styling
     if (showModal) {
       document.body.classList.add('filter-modal-open');
     } else {
       document.body.classList.remove('filter-modal-open');
     }
     
-    // Cleanup on component unmount
     return () => {
+      // Cleanup
       document.body.classList.remove('filter-modal-open');
     };
   }, [showModal]);
 
-  useEffect(() => {
-    if (!isInitialMount.current) {
-      function handleClickOutside(event: MouseEvent) {
-        // Close price dropdown if clicking outside of it
-        if (isPriceOpen && priceRef.current && !priceRef.current.contains(event.target as Node)) {
-          setIsPriceOpen(false);
-        }
-        
-        // Close bedrooms dropdown if clicking outside of it
-        if (isBedroomsOpen && bedroomsRef.current && !bedroomsRef.current.contains(event.target as Node)) {
-          setIsBedroomsOpen(false);
-        }
-      }
-      
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    } else {
-      isInitialMount.current = false;
-    }
-  }, [isPriceOpen, isBedroomsOpen]);
-  
-  // Handle filter values
-
   const incrementBedrooms = () => {
-    const newValue = (bedrooms === undefined ? 1 : bedrooms + 1);
+    const newValue = bedrooms === undefined ? 1 : Math.min(bedrooms + 1, 20);
     setBedrooms(newValue);
   };
-  
+
   const decrementBedrooms = () => {
-    if (bedrooms && bedrooms > 1) {
-      setBedrooms(bedrooms - 1);
-    }
+    const newValue = bedrooms === undefined ? undefined : Math.max(bedrooms - 1, 1);
+    setBedrooms(newValue);
   };
-  
+
   const resetPrice = () => {
     setPriceRange(500);
     onFilterChange({ 
@@ -114,7 +107,7 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
       maxPrice: undefined
     });
   };
-  
+
   const resetBedrooms = () => {
     setBedrooms(undefined);
     onFilterChange({ 
@@ -122,16 +115,16 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
       maxPrice: priceRange === 500 ? undefined : priceRange
     });
   };
-  
+
   const resetAllFilters = () => {
     setPriceRange(500);
     setBedrooms(undefined);
     onFilterChange({ 
       bedrooms: undefined, 
-      maxPrice: undefined
+      maxPrice: undefined 
     });
   };
-  
+
   const handlePriceChange = (value: number[]) => {
     setPriceRange(value[0]);
   };
@@ -202,31 +195,47 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
       <div className="flex justify-between items-center">
         <button
           onClick={decrementBedrooms}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!(bedrooms === undefined || bedrooms <= 1)) {
+              decrementBedrooms();
+            }
+          }}
           disabled={bedrooms === undefined || bedrooms <= 1}
-          className={`w-12 h-12 rounded-full flex items-center justify-center border ${
+          className={`w-14 h-14 rounded-full flex items-center justify-center border ${
             bedrooms === undefined || bedrooms <= 1
               ? 'border-gray-200 text-gray-300 cursor-not-allowed'
               : 'border-gray-300 text-gray-700 hover:border-purple-500 hover:text-purple-600'
           } transition-colors`}
         >
-          <span className="text-xl">−</span>
+          <span className="text-2xl">−</span>
         </button>
 
         <div className="flex flex-col items-center">
-          <span className="text-2xl font-bold text-purple-600">{bedrooms === undefined ? '?' : bedrooms}</span>
+          <span className="text-3xl font-bold text-purple-600">{bedrooms === undefined ? '?' : bedrooms}</span>
           <span className="text-sm text-gray-500">{bedrooms === 1 ? t('searchBar.bedroom') : t('searchBar.bedroomPlural')}</span>
         </div>
 
         <button
           onClick={incrementBedrooms}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!(bedrooms !== undefined && bedrooms >= 20)) {
+              incrementBedrooms();
+            }
+          }}
           disabled={bedrooms !== undefined && bedrooms >= 20}
-          className={`w-12 h-12 rounded-full flex items-center justify-center border ${
+          className={`w-14 h-14 rounded-full flex items-center justify-center border ${
             bedrooms !== undefined && bedrooms >= 20
               ? 'border-gray-200 text-gray-300 cursor-not-allowed'
               : 'border-gray-300 text-gray-700 hover:border-purple-500 hover:text-purple-600'
           } transition-colors`}
         >
-          <span className="text-xl">+</span>
+          <span className="text-2xl">+</span>
         </button>
       </div>
       <div className="flex justify-between mt-6">
@@ -311,9 +320,79 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
     </div>
   );
 
+  if (isCompact) {
+    console.log('Rendering compact SearchFilterBar (mobile)');
+    return (
+      <div className="w-full flex justify-center" id="search-filter-compact" data-mobile-version="true">
+        <div 
+          className="flex items-center bg-white border border-gray-200 shadow-md rounded-2xl w-[95%] max-w-[450px] overflow-hidden relative"
+        >
+          {/* Overlay for filter area */}
+          <div 
+            className="absolute top-0 left-0 bottom-0 right-14 z-20"
+            onClick={() => {
+              console.log('Filter area clicked (overlay)');
+              setShowModal(true);
+            }}
+            style={{ touchAction: 'manipulation' }}
+          />
+          
+          {/* Filter sections container */}
+          <div className="flex flex-1">
+            {/* Price section */}
+            <div className="flex-1 border-r border-gray-200 py-3 px-3">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500 flex-shrink-0 text-xl">💰</span>
+                <div className="text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">{t('searchBar.price')}</p>
+                  <p className="text-gray-600 font-medium mt-1">{priceRange === 500 ? t('searchBar.any') : `£${priceRange}`}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Bedrooms section */}
+            <div className="flex-1 py-3 px-3">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-500 flex-shrink-0 text-xl">🛏️</span>
+                <div className="text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">{t('searchBar.bedrooms')}</p>
+                  <p className="text-gray-600 font-medium mt-0.5">{bedrooms === undefined ? t('searchBar.any') : bedrooms}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Search button */}
+          <div className="h-full flex-shrink-0 w-14 z-30 relative">
+            <button
+              type="button"
+              className="h-full w-full bg-purple-600 flex items-center justify-center"
+              onClick={handleSearch}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="text-white"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-3xl mx-auto" id="search-filter-main">
-      {/* Desktop search filter bar - now visible on all screen sizes */}
       <div className="flex items-stretch rounded-2xl border shadow-md bg-white overflow-visible md:hover:shadow-lg transition-shadow duration-300">
         <div className="relative flex-1" ref={priceRef}>
           <button
@@ -395,6 +474,71 @@ const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
+      </div>
+      
+      {/* Mobile search bar section - removed since we're using desktop version for all screen sizes */}
+      <div className="sm:hidden">
+        <div className="flex items-center bg-white border border-gray-200 shadow-md rounded-2xl w-full overflow-hidden relative">
+          {/* Overlay for filter area */}
+          <div 
+            className="absolute top-0 left-0 bottom-0 right-14 z-20"
+            onClick={() => {
+              console.log('Filter area clicked (overlay)');
+              setShowModal(true);
+            }}
+            style={{ touchAction: 'manipulation' }}
+          />
+          
+          {/* Filter sections container */}
+          <div className="flex flex-1">
+            {/* Price section */}
+            <div className="flex-1 border-r border-gray-200 py-3 px-3">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500 flex-shrink-0 text-xl">💰</span>
+                <div className="text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">{t('searchBar.price')}</p>
+                  <p className="text-gray-600 font-medium mt-0.5">{priceRange === 500 ? t('searchBar.any') : `£${priceRange}`}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Bedrooms section */}
+            <div className="flex-1 py-3 px-3">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-500 flex-shrink-0 text-xl">🛏️</span>
+                <div className="text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-900">{t('searchBar.bedrooms')}</p>
+                  <p className="text-gray-600 font-medium mt-0.5">{bedrooms === undefined ? t('searchBar.any') : bedrooms}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Search button */}
+          <div className="h-full flex-shrink-0 w-14 z-30 relative">
+            <button
+              type="button"
+              className="h-full w-full bg-purple-600 flex items-center justify-center"
+              onClick={handleSearch}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="text-white"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>

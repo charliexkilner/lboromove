@@ -10,6 +10,7 @@ import type { Session } from 'next-auth';
 import { useTranslation } from 'next-i18next';
 import { Menu } from '@headlessui/react';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
+import { signOut } from 'next-auth/react';
 
 // Extend Session type to include our custom user fields
 interface ExtendedSession extends Session {
@@ -32,7 +33,30 @@ export default function Navbar() {
   const { data: session } = useSession() as { data: ExtendedSession | null };
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const { t } = useTranslation('common');
+  const { t, ready } = useTranslation('common', { useSuspense: false });
+
+  // Debug auth modal state
+  useEffect(() => {
+    console.log('Auth Modal state:', showAuthModal);
+  }, [showAuthModal]);
+
+  useEffect(() => {
+    if (ready) {
+      console.log('Navbar translations loaded:', {
+        houses: t('navbar.houses'),
+        discussion: t('navbar.discussion'),
+        tools: t('navbar.tools'),
+        profile: t('navbar.profile'),
+        viewProfile: t('navbar.viewProfile'),
+        settings: t('navbar.settings'),
+        changelog: t('navbar.changelog'),
+        signOut: t('navbar.signOut'),
+        path: pathname
+      });
+    } else {
+      console.log('Navbar translations not ready yet, current path:', pathname);
+    }
+  }, [t, ready, pathname]);
 
   useEffect(() => {
     // Only enable scroll behavior if not on map view
@@ -97,6 +121,11 @@ export default function Navbar() {
     </select>
   );
 
+  const handleShowAuthModal = () => {
+    console.log('Opening auth modal');
+    setShowAuthModal(true);
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -121,7 +150,7 @@ export default function Navbar() {
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                {t('navbar.houses')}
+                {ready && t ? t('navbar.houses') : 'HOUSES'}
               </Link>
               <Link
                 href="/discussion"
@@ -131,7 +160,7 @@ export default function Navbar() {
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                {t('navbar.discussion')}
+                {ready && t ? t('navbar.discussion') : 'DISCUSSION'}
               </Link>
               <Link
                 href="/tools"
@@ -141,7 +170,7 @@ export default function Navbar() {
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
-                {t('navbar.tools')}
+                {ready && t ? t('navbar.tools') : 'TOOLS'}
               </Link>
             </div>
           </div>
@@ -150,10 +179,12 @@ export default function Navbar() {
           <div className="flex-none w-48 flex justify-end items-center gap-3">
             {/* Profile - Hidden on mobile */}
             {session?.user ? (
-              <Menu as="div" className="relative ml-3">
+              <Menu as="div" className="relative ml-3 hidden md:block">
                 <div>
-                  <Menu.Button className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                    <span className="sr-only">{t('navbar.profile')}</span>
+                  <Menu.Button 
+                    className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <span className="sr-only">{ready && t ? t('navbar.profile') : 'PROFILE'}</span>
                     {session?.user?.image ? (
                       <img
                         className="h-8 w-8 rounded-full"
@@ -165,11 +196,62 @@ export default function Navbar() {
                     )}
                   </Menu.Button>
                 </div>
+                <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link
+                        href="/profile"
+                        className={`${
+                          active ? 'bg-gray-100' : ''
+                        } block px-4 py-2 text-sm text-gray-700 uppercase font-medium`}
+                      >
+                        {t('navbar.viewProfile', 'VIEW PROFILE')}
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link
+                        href="/profile/settings"
+                        className={`${
+                          active ? 'bg-gray-100' : ''
+                        } block px-4 py-2 text-sm text-gray-700 uppercase font-medium`}
+                      >
+                        {t('navbar.settings', 'SETTINGS')}
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link
+                        href="/changelog"
+                        className={`${
+                          active ? 'bg-gray-100' : ''
+                        } block px-4 py-2 text-sm text-gray-700 uppercase font-medium`}
+                      >
+                        {t('navbar.changelog', 'CHANGELOG')}
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => signOut()}
+                        className={`${
+                          active ? 'bg-gray-100' : ''
+                        } block w-full text-left px-4 py-2 text-sm text-gray-700 uppercase font-medium`}
+                      >
+                        {t('navbar.signOut', 'SIGN OUT')}
+                      </button>
+                    )}
+                  </Menu.Item>
+                </Menu.Items>
               </Menu>
             ) : (
               <button
-                onClick={() => setShowAuthModal(true)}
+                onClick={handleShowAuthModal}
                 className="hidden md:block w-8 h-8 rounded-full overflow-hidden relative hover:ring-2 hover:ring-purple-500 transition-all bg-gray-200 flex items-center justify-center"
+                aria-label="Sign in"
               >
                 <User className="w-4 h-4 text-gray-600" />
               </button>
@@ -210,7 +292,7 @@ export default function Navbar() {
             }`}
           >
             <Home className={`w-6 h-6 ${pathname === '/' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
-            <span className="text-xs mt-1">{t('navbar.houses')}</span>
+            <span className="text-xs mt-1 uppercase">{ready && t ? t('navbar.houses') : 'HOUSES'}</span>
           </Link>
           <Link
             href="/discussion"
@@ -221,7 +303,7 @@ export default function Navbar() {
             }`}
           >
             <MessageCircle className={`w-6 h-6 ${pathname === '/discussion' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
-            <span className="text-xs mt-1">{t('navbar.discussion')}</span>
+            <span className="text-xs mt-1 uppercase">{ready && t ? t('navbar.discussion') : 'DISCUSSION'}</span>
           </Link>
           <Link
             href="/tools"
@@ -232,7 +314,7 @@ export default function Navbar() {
             }`}
           >
             <Tool className={`w-6 h-6 ${pathname === '/tools' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
-            <span className="text-xs mt-1">{t('navbar.tools')}</span>
+            <span className="text-xs mt-1 uppercase">{ready && t ? t('navbar.tools') : 'TOOLS'}</span>
           </Link>
           {session?.user ? (
             <Link
@@ -254,19 +336,20 @@ export default function Navbar() {
               ) : (
                 <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
               )}
-              <span className="text-xs mt-1">{t('navbar.profile')}</span>
+              <span className="text-xs mt-1 uppercase">{ready && t ? t('navbar.profile') : 'PROFILE'}</span>
             </Link>
           ) : (
             <button
-              onClick={() => setShowAuthModal(true)}
+              onClick={handleShowAuthModal}
               className={`flex flex-col items-center justify-center w-full h-full ${
                 pathname === '/profile' 
                   ? 'text-black font-bold' 
                   : 'text-gray-500'
               }`}
+              aria-label="Sign in"
             >
               <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-purple-600 stroke-[2.5px]' : ''}`} />
-              <span className="text-xs mt-1">{t('navbar.profile')}</span>
+              <span className="text-xs mt-1 uppercase">{ready && t ? t('navbar.profile') : 'PROFILE'}</span>
             </button>
           )}
         </div>

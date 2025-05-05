@@ -865,7 +865,7 @@ export default function PropertyModal({
                                 </div>
                                 <div className="mt-4">
                                   <p className="text-sm text-gray-500">
-                                    {property.address || property.title} is located {property?.latitude ? `${walkToTown} mins walk from town and ${walkToCampus} mins from campus` : 'in Loughborough'}
+                                    {property.address || property.title} is located:<br></br>{property?.latitude ? `${walkToTown} mins walk from town and ${walkToCampus} mins from campus` : 'in Loughborough'}
                                   </p>
                                 </div>
                               </div>

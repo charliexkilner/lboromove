@@ -15,7 +15,7 @@ import {
   AdjustmentsHorizontalIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import NewPostModal from '../../components/modals/NewPostModal';
 import FilterModal from '../../components/modals/FilterModal';
 import { useRouter } from 'next/router';
@@ -37,14 +37,14 @@ const categories = [
 
 const fetchPosts = async ({
   category,
-  sortBy,
+  sortBy = 'new',
 }: {
   category: string;
   sortBy: string;
 }): Promise<Post[]> => {
   const params = new URLSearchParams();
   if (category && category !== 'All') params.append('category', category);
-  if (sortBy) params.append('sortBy', sortBy);
+  params.append('sortBy', sortBy);
   
   const response = await fetch(`/api/posts?${params.toString()}`);
   if (!response.ok) {
@@ -54,45 +54,117 @@ const fetchPosts = async ({
 };
 
 const fetchAllPosts = async (): Promise<Post[]> => {
-  const response = await fetch('/api/posts');
+  const response = await fetch('/api/posts?sortBy=new');
   if (!response.ok) {
     throw new Error('Failed to fetch posts');
   }
   return response.json();
 };
 
-export default function Discussion() {
+interface DiscussionProps {
+  initialPosts: Post[];
+  initialAllPosts: Post[];
+  initialCategory: string;
+  initialSort: string;
+}
+
+export default function Discussion({
+  initialPosts,
+  initialAllPosts,
+  initialCategory,
+  initialSort
+}: DiscussionProps) {
   const { t } = useTranslation('common');
   const router = useRouter();
   const runProtectedAction = useProtectedAction();
   const { data: session } = useSession();
   const [showNewPostModal, setShowNewPostModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [activeSort, setActiveSort] = useState('new');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [activeSort, setActiveSort] = useState(initialSort);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
   const { category } = router.query;
   const queryClient = useQueryClient();
 
-  const { data: posts = [], isLoading } = useQuery({
+  // Initialize query client with server-side data
+  useEffect(() => {
+    // Set initial data for the posts query
+    queryClient.setQueryData(
+      ['posts', initialCategory, initialSort], 
+      initialPosts
+    );
+    
+    // Set initial data for all posts
+    queryClient.setQueryData(['posts', 'all'], initialAllPosts);
+  }, [queryClient, initialPosts, initialAllPosts, initialCategory, initialSort]);
+
+  // Update state when URL changes
+  useEffect(() => {
+    const sortParam = router.query.sort as string;
+    if (sortParam) {
+      setActiveSort(sortParam);
+    } else {
+      setActiveSort('new');
+    }
+  }, [router.query]);
+
+  // Add effect to refetch data when activeSort changes
+  useEffect(() => {
+    // Skip initial render
+    if (typeof window !== 'undefined') {
+      queryClient.fetchQuery({
+        queryKey: ['posts', category || 'All', activeSort],
+        queryFn: () => fetchPosts({
+          category: category as string || 'All',
+          sortBy: activeSort
+        })
+      });
+    }
+  }, [activeSort, category, queryClient]);
+
+  const { data: posts = initialPosts, isLoading, isFetching } = useQuery({
     queryKey: ['posts', category || 'All', activeSort],
     queryFn: () => fetchPosts({
-      category: category as string || 'All',
-      sortBy: activeSort,
+      category: category as string || 'All', 
+      sortBy: activeSort
     }),
     staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    initialData: initialPosts
   });
 
-  const { data: allPosts = [] } = useQuery({
+  // Combined loading state (initial load or refetching)
+  const isLoadingPosts = isLoading || isFetching;
+
+  // Get all posts for category counts - this query should run independently
+  const { data: allPosts = initialAllPosts } = useQuery({
     queryKey: ['posts', 'all'],
     queryFn: fetchAllPosts,
-    staleTime: 1000 * 60, // Consider data fresh for 1 minute
+    staleTime: 1000 * 60,
+    enabled: true, // Explicitly enable
+    initialData: initialAllPosts
   });
 
-  const categoryCounts = allPosts.reduce((acc, post) => {
-    acc[post.category] = (acc[post.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    // Initialize counts for all categories to 0
+    categories.forEach(cat => {
+      counts[cat.id] = 0;
+    });
+    
+    // Count posts for each category
+    if (allPosts && allPosts.length > 0) {
+      allPosts.forEach((post: Post) => {
+        if (post.category) {
+          counts[post.category] = (counts[post.category] || 0) + 1;
+        }
+      });
+    }
+    
+    return counts;
+  }, [allPosts]);
 
   useEffect(() => {
     setSelectedCategory((category as string) || 'All');
@@ -180,18 +252,39 @@ export default function Discussion() {
 
   const handleCategoryClick = (categoryId: string) => {
     if (categoryId === category) {
-      router.push('/discussion');
-    } else {
+      // Clear category filter
       router.push({
         pathname: '/discussion',
-        query: { category: categoryId },
-      });
+        query: activeSort === 'top' ? { sort: 'top' } : {}
+      }, undefined, { shallow: true });
+    } else {
+      // Apply category filter
+      router.push({
+        pathname: '/discussion',
+        query: {
+          category: categoryId,
+          ...(activeSort === 'top' ? { sort: 'top' } : {})
+        },
+      }, undefined, { shallow: true });
     }
+    
+    // Update selected category
+    setSelectedCategory(categoryId === category ? 'All' : categoryId);
   };
 
   const handleCreatePost = () => {
     runProtectedAction(() => {
       setShowNewPostModal(true);
+    });
+  };
+
+  const handleCloseModal = () => {
+    // Close the modal
+    setShowNewPostModal(false);
+    
+    // Refetch posts to show any newly created posts
+    queryClient.invalidateQueries({
+      queryKey: ['posts'],
     });
   };
 
@@ -204,6 +297,31 @@ export default function Discussion() {
     if (diffInHours < 24) return `${diffInHours} hours ago`;
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays} days ago`;
+  };
+
+  const handleNewSort = () => {
+    // Use shallow routing to update URL without full page reload
+    router.push({
+      pathname: '/discussion',
+      query: category ? { category } : {}
+    }, undefined, { shallow: true });
+    
+    // Update state and trigger data refetch
+    setActiveSort('new');
+  };
+
+  const handleTopSort = () => {
+    // Use shallow routing to update URL without full page reload
+    router.push({
+      pathname: '/discussion',
+      query: {
+        ...(category ? { category } : {}),
+        sort: 'top'
+      }
+    }, undefined, { shallow: true });
+    
+    // Update state and trigger data refetch
+    setActiveSort('top');
   };
 
   return (
@@ -238,7 +356,11 @@ export default function Discussion() {
                       <button
                         key={option}
                         onClick={() => {
-                          setActiveSort(option);
+                          if (option === 'new') {
+                            handleNewSort();
+                          } else {
+                            handleTopSort();
+                          }
                           setIsTopMenuOpen(false);
                         }}
                         className={`w-full flex items-center gap-2 px-4 py-2 text-left ${
@@ -263,7 +385,13 @@ export default function Discussion() {
                 {['new', 'top'].map((option) => (
                   <button
                     key={option}
-                    onClick={() => setActiveSort(option)}
+                    onClick={() => {
+                      if (option === 'new') {
+                        handleNewSort();
+                      } else {
+                        handleTopSort();
+                      }
+                    }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                       activeSort === option
                         ? 'bg-white shadow-sm'
@@ -293,7 +421,7 @@ export default function Discussion() {
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div className="lg:col-span-3">
-              {isLoading ? (
+              {isLoadingPosts ? (
                 <div className="flex justify-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                 </div>
@@ -401,7 +529,7 @@ export default function Discussion() {
                       <div className="flex flex-col items-start">
                         <span className="font-medium uppercase text-sm">{cat.label}</span>
                         <span className="text-xs text-gray-500">
-                          {categoryCounts[cat.id] || 0} posts
+                          {categoryCounts ? categoryCounts[cat.id] || 0 : 0} posts
                         </span>
                       </div>
                     </button>
@@ -413,7 +541,7 @@ export default function Discussion() {
         </div>
 
         {showNewPostModal && (
-          <NewPostModal onClose={() => setShowNewPostModal(false)} />
+          <NewPostModal onClose={handleCloseModal} />
         )}
         {showFilterModal && <FilterModal onClose={() => setShowFilterModal(false)} />}
       </div>
@@ -421,11 +549,54 @@ export default function Discussion() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
-    },
-  };
+export const getServerSideProps: GetServerSideProps = async ({ locale, query }) => {
+  try {
+    // Get the category from the query params
+    const category = query.category as string || 'All';
+    const sortBy = (query.sort as string) || 'new';
+    
+    // Fetch posts server-side for the initial render
+    const postsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/posts?${
+      new URLSearchParams({
+        ...(category !== 'All' ? { category } : {}),
+        sortBy
+      }).toString()
+    }`);
+    
+    // Fetch all posts for category counts
+    const allPostsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/posts?sortBy=new`);
+    
+    let initialPosts = [];
+    let allPosts = [];
+    
+    if (postsResponse.ok) {
+      initialPosts = await postsResponse.json();
+    }
+    
+    if (allPostsResponse.ok) {
+      allPosts = await allPostsResponse.json();
+    }
+    
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        initialPosts,
+        initialAllPosts: allPosts,
+        initialCategory: category,
+        initialSort: sortBy
+      },
+    };
+  } catch (error) {
+    console.error('Error in getServerSideProps:', error);
+    return {
+      props: {
+        ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+        initialPosts: [],
+        initialAllPosts: [],
+        initialCategory: 'All',
+        initialSort: 'new'
+      },
+    };
+  }
 };
 

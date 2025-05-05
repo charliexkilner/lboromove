@@ -15,6 +15,9 @@ import { Discuession } from "../types/discussion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Session } from "next-auth";
 import { ArrowUpIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
+import { useTranslation } from 'next-i18next';
+import { GetServerSideProps } from 'next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 // Define property type to match PropertyWithOptionalFields
 type PropertyWithOptionalFields = Prisma.PropertyGetPayload<{}> & {
@@ -44,6 +47,16 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { data: session, status } = useSession() as { data: ExtendedSession | null, status: "loading" | "authenticated" | "unauthenticated" };
   const [activeTab, setActiveTab] = useState("favorites");
+  const { t, ready } = useTranslation('common');
+
+  // Debug log for translation state
+  useEffect(() => {
+    if (ready) {
+      console.log('Profile translations loaded');
+    } else {
+      console.log('Profile translations not ready yet');
+    }
+  }, [ready]);
 
   const { data: favorites = [], isLoading: isFavoritesLoading } = useQuery<PropertyWithOptionalFields[]>({
     queryKey: ['favorites'],
@@ -175,7 +188,7 @@ export default function ProfilePage() {
                 </div>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Edit className="w-4 h-4" />
-                  Edit Profile
+                  {ready ? t('profile.editProfile', 'Edit Profile') : 'Edit Profile'}
                 </Button>
               </div>
             </div>
@@ -186,27 +199,29 @@ export default function ProfilePage() {
           <div className="flex justify-center">
             <TabsList className="bg-gray-100 p-1 rounded-lg">
               <TabsTrigger value="favorites" className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                Favourite Houses
+                {ready ? t('profile.favoriteHouses', 'Favourite Houses') : 'Favourite Houses'}
               </TabsTrigger>
               <TabsTrigger value="discussions" className="px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                My Discussions
+                {ready ? t('profile.myDiscussions', 'My Discussions') : 'My Discussions'}
               </TabsTrigger>
             </TabsList>
           </div>
         </Tabs>
 
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold">
-            {activeTab === 'favorites' ? 'Favourite Houses' : 'My Discussions'}
+          <h2 className="sm:text-2xl text-xl font-semibold uppercase">
+            {activeTab === 'favorites' 
+              ? (ready ? t('profile.favoriteHouses', 'Favourite Houses') : 'Favourite Houses') 
+              : (ready ? t('profile.myDiscussions', 'My Discussions') : 'My Discussions')}
           </h2>
           {activeTab === 'favorites' && (
-            <span className="text-gray-600">
-              {favorites?.length || 0} houses
+            <span className="text-gray-600 sm:text-lg text-md">
+              {favorites?.length || 0} {ready ? t('profile.houses', 'houses') : 'houses'}
             </span>
           )}
           {activeTab === 'discussions' && (
             <span className="text-gray-600">
-              {userDiscussions?.length || 0} discussions
+              {userDiscussions?.length || 0} {ready ? t('profile.discussions', 'discussions') : 'discussions'}
             </span>
           )}
         </div>
@@ -230,9 +245,9 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-600">No favourite properties yet.</p>
+                <p className="text-gray-600">{ready ? t('profile.noFavorites', 'No favourite properties yet.') : 'No favourite properties yet.'}</p>
                 <Link href="/properties" className="text-primary hover:underline mt-2 inline-block">
-                  Browse Properties
+                  {ready ? t('profile.browseProperties', 'Browse Properties') : 'Browse Properties'}
                 </Link>
               </div>
             )}
@@ -247,12 +262,9 @@ export default function ProfilePage() {
               </div>
             ) : userDiscussions.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-600 mb-4">You haven't participated in any discussions yet.</p>
-                <Link 
-                  href="/discussion" 
-                  className="text-purple-600 hover:text-purple-700 font-medium"
-                >
-                  Start a discussion
+                <p className="text-gray-600 mb-4">{ready ? t('profile.noDiscussions', 'You haven\'t participated in any discussions yet.') : 'You haven\'t participated in any discussions yet.'}</p>
+                <Link href="/discussion" className="text-primary hover:underline">
+                  {ready ? t('profile.joinDiscussion', 'Join the discussion') : 'Join the discussion'}
                 </Link>
               </div>
             ) : (
@@ -303,4 +315,12 @@ export default function ProfilePage() {
       </main>
     </div>
   );
-} 
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? 'en', ['common'])),
+    },
+  };
+}; 

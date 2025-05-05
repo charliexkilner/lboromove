@@ -5,7 +5,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { isCloseToUniversity } from '../utils/distance';
 import Layout from '../components/Layout';
 import { useRouter } from 'next/router';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import PropertyCard from '../components/PropertyCard';
 import { Property } from '@prisma/client';
 import DiscussionCard from '../components/DiscussionCard';
@@ -31,6 +31,14 @@ import { useFavorites } from '@/hooks/useFavorites';
 import Head from 'next/head';
 import { useProperties } from '../hooks/useProperties';
 
+// Add a type declaration at the top of the file, after imports
+// Add TypeScript global Window interface extension
+declare global {
+  interface Window {
+    errorCheckInterval?: NodeJS.Timeout;
+  }
+}
+
 // Import PropertyMap with dynamic import to prevent SSR issues
 const PropertyMap = dynamic(() => import('../components/PropertyMap'), { 
   ssr: false, 
@@ -55,6 +63,9 @@ type SerializedProperty = Omit<Partial<Property>, 'createdAt' | 'updatedAt'> & {
 
 interface HomeProps {
   campusProperties: SerializedProperty[];
+  initialProperties: Property[];
+  initialActiveTab: string;
+  initialFilters: Record<string, any>;
 }
 
 type ScrollDirection = 'up' | 'down';
@@ -192,7 +203,12 @@ const getTabApiParams = (tabId: string): Record<string, any> => {
   return params;
 };
 
-export default function Home() {
+export default function Home({
+  campusProperties,
+  initialProperties,
+  initialActiveTab,
+  initialFilters
+}: HomeProps) {
   const { t } = useTranslation('common');
   const router = useRouter();
   const { locale, pathname } = router;
@@ -200,7 +216,10 @@ export default function Home() {
   const [userFilters, setUserFilters] = useState<{
     bedrooms?: number;
     maxPrice?: number;
-  }>({});
+  }>({
+    bedrooms: initialFilters.bedrooms,
+    maxPrice: initialFilters.maxPrice
+  });
   
   // Internal filters used for actual querying - combines user filters and tab filters
   const [filters, setFilters] = useState<{
@@ -209,11 +228,24 @@ export default function Home() {
     storedBedrooms?: number;
     storedMaxPrice?: number;
     [key: string]: any;
-  }>({});
+  }>(initialFilters);
   
-  // State for properties
-  // Data fetching with the custom hook
-  const { properties, loading, error, hasMore: propertiesHasMore, loadMore: propertiesLoadMore, reset: propertiesReset, fetchAllForMap, allMapProperties } = useProperties(filters);
+  // Stabilize the filters to prevent unnecessary re-renders
+  const stableFilters = useMemo(() => {
+    return filters;
+  }, [JSON.stringify(filters)]);
+  
+  // Properties list state with infinite scroll
+  const {
+    properties,
+    loading: propertiesLoading,
+    hasMore: propertiesHasMore,
+    loadMore: propertiesLoadMore,
+    error,
+    reset: propertiesReset,
+    fetchAllForMap,
+    allMapProperties
+  } = useProperties(filters, initialProperties);
   const [discussions, setDiscussions] = useState<Discuession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -251,6 +283,9 @@ export default function Home() {
   
   // Add the queryClient initialization at the top of the component
   const queryClient = useQueryClient();
+  
+  // Add a ref to track previous filter values
+  const prevUserFiltersRef = useRef<{ bedrooms?: number; maxPrice?: number }>({});
   
   // Create a dedicated function to fetch counts with debouncing
   const fetchTabCounts = useCallback(async () => {
@@ -363,7 +398,7 @@ export default function Home() {
 
   // Create a wrapper for loadMore to track loading state
   const handleLoadMore = useCallback(() => {
-    if (!loading && !loadingMore && propertiesHasMore) {
+    if (!propertiesLoading && !loadingMore && propertiesHasMore) {
       setLoadingMore(true);
       // Call loadMore and handle the Promise if it returns one
       try {
@@ -375,83 +410,235 @@ export default function Home() {
         setTimeout(() => setLoadingMore(false), 500);
       }
     }
-  }, [loading, loadingMore, propertiesHasMore, propertiesLoadMore]);
+  }, [propertiesLoading, loadingMore, propertiesHasMore, propertiesLoadMore]);
 
   // Update the useEffect for the intersection observer
   useEffect(() => {
     // Skip setting up observer if no target ref or already loading
     if (!observerTarget.current) return;
     
+    // Create a new observer that triggers when the target is 300px from the viewport
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         // Only trigger loadMore if we're not already loading and we have more items
-        if (entries[0].isIntersecting && propertiesHasMore && !loading && !loadingMore) {
+        if (entries[0].isIntersecting && propertiesHasMore && !propertiesLoading && !loadingMore) {
+          console.log('Intersection observer triggered loadMore');
           handleLoadMore();
         }
       },
-      { threshold: 0.1, rootMargin: '200px' }
+      { 
+        threshold: 0.1, 
+        rootMargin: '300px'  // Increased margin to load earlier
+      }
     );
 
+    // Start observing the target element
     observer.observe(observerTarget.current);
 
+    // Cleanup function to disconnect the observer when component unmounts
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
+      observer.disconnect();
     };
-  }, [propertiesHasMore, handleLoadMore, loading, loadingMore]);
+  }, [propertiesHasMore, handleLoadMore, propertiesLoading, loadingMore]);
   
-  // Update the handleTabChange function to not affect userFilters
+  // Update the handleTabChange function to more robustly handle tab switching
   const handleTabChange = (tabName: string) => {
+    // Don't do anything if the tab is already active
+    if (activeTab === tabName) {
+      return;
+    }
+    
+    console.log(`Switching to tab ${tabName} from ${activeTab}`);
+    
     // Abort any in-progress fetches
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+      abortControllerRef.current = new AbortController();
     }
     
+    // Only set loading state for the properties section
+    const propertiesSection = document.querySelector('.property-grid-section');
+    if (propertiesSection) {
+      propertiesSection.classList.add('opacity-50', 'pointer-events-none');
+    }
+    
+    // Update the active tab immediately for better UX
     setActiveTab(tabName);
     
     // Get the tab-specific filters
     const tabFilters = getTabApiParams(tabName);
     
-    // Combine with current user filters
+    // Special handling for tab-specific filters
+    let updatedUserFilters = {...userFilters};
+    
+    // When switching FROM solo-living TO another tab, clear the bedrooms filter
+    if (activeTab === 'solo-living' && tabName !== 'solo-living') {
+      updatedUserFilters = {
+        ...updatedUserFilters,
+        bedrooms: undefined
+      };
+      setUserFilters(updatedUserFilters);
+      // Force the search bar to re-render with cleared state
+      setSearchBarKey(prev => prev + 1);
+    }
+    
+    // When switching FROM great-value TO another tab, clear the maxPrice filter
+    if (activeTab === 'great-value' && tabName !== 'great-value') {
+      updatedUserFilters = {
+        ...updatedUserFilters,
+        maxPrice: undefined
+      };
+      setUserFilters(updatedUserFilters);
+      // Force the search bar to re-render with cleared state
+      setSearchBarKey(prev => prev + 1);
+    }
+    
+    // Combine tab filters with updated user filters
     const combinedFilters = {
       // First apply tab filters (highest priority)
       ...tabFilters,
       // Then apply user filters for properties not covered by tab filters
-      // This should not affect what's displayed in the search bar UI
-      ...(userFilters.maxPrice !== undefined && !tabFilters.maxPrice 
-        ? { maxPrice: userFilters.maxPrice } 
+      ...(updatedUserFilters.maxPrice !== undefined && !tabFilters.maxPrice 
+        ? { maxPrice: updatedUserFilters.maxPrice } 
         : {}),
-      ...(userFilters.bedrooms !== undefined && !tabFilters.bedrooms && !tabFilters.minBedrooms
-        ? { bedrooms: userFilters.bedrooms } 
+      ...(updatedUserFilters.bedrooms !== undefined && !tabFilters.bedrooms && !tabFilters.minBedrooms
+        ? { bedrooms: updatedUserFilters.bedrooms } 
         : {})
     };
     
-    console.log('Tab change - combined filters:', combinedFilters);
+    console.log(`Tab change to ${tabName} - combined filters:`, combinedFilters);
     
-    // Update the internal filters state (not what's visible in the search bar)
-    setFilters(prev => {
-      if (JSON.stringify(prev) === JSON.stringify(combinedFilters)) {
-        return prev;
-      }
-      return combinedFilters;
-    });
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Reset the useProperties hook to reload the first 20
-    propertiesReset();
-    
-    // If we're in map view, also fetch all properties for the map with the new filters
-    if (showMap) {
-      console.log('Tab changed while in map view - fetching all properties for map');
-      // Use setTimeout to ensure filters are updated first
-      setTimeout(() => {
-        fetchAllForMap();
-      }, 0);
+    // Stop any existing error check intervals
+    if (window.errorCheckInterval) {
+      clearInterval(window.errorCheckInterval);
     }
+    
+    // Create a reliable retry mechanism
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second between retries
+    
+    const attemptFetch = () => {
+      if (retryCount > 0) {
+        console.log(`Tab ${tabName} retry attempt ${retryCount}/${maxRetries}`);
+        
+        // Add retry indication in UI
+        if (propertiesSection) {
+          // Create a retry indicator if it doesn't exist
+          let retryIndicator = propertiesSection.querySelector('.retry-indicator');
+          if (!retryIndicator) {
+            retryIndicator = document.createElement('div');
+            retryIndicator.className = 'retry-indicator text-center text-red-500 py-4';
+            propertiesSection.appendChild(retryIndicator);
+          }
+          
+          retryIndicator.innerHTML = `<p>Retrying... (${retryCount}/${maxRetries})</p>`;
+        }
+      }
+      
+      // Force reset of pagination state by calling the reset function from useProperties
+      propertiesReset();
+      
+      // Update the internal filters state (not what's visible in the search bar)
+      setFilters(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(combinedFilters)) {
+          return prev;
+        }
+        return combinedFilters;
+      });
+    };
+    
+    // Immediately attempt the first fetch
+    attemptFetch();
+    
+    // Setup error monitoring with interval and retry mechanism
+    let errorCheckIntervalId: NodeJS.Timeout | undefined;
+    
+    const setupErrorMonitoring = () => {
+      // Check for errors every 500ms
+      errorCheckIntervalId = setInterval(() => {
+        if (error) {
+          console.error(`Tab ${tabName} error detected:`, error);
+          
+          if (retryCount < maxRetries) {
+            retryCount++;
+            attemptFetch();
+          } else {
+            // Max retries reached, show permanent error
+            if (errorCheckIntervalId) {
+              clearInterval(errorCheckIntervalId);
+            }
+            
+            if (propertiesSection) {
+              propertiesSection.innerHTML = `
+                <div class="text-center py-12">
+                  <p class="text-xl font-medium text-red-500 mb-2">Failed to fetch</p>
+                  <p class="text-gray-500 mb-6">We couldn't load the properties right now</p>
+                  <button
+                    class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md"
+                    onclick="window.location.href='/?tab=${tabName}&retry=true'"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              `;
+              propertiesSection.classList.remove('opacity-50', 'pointer-events-none');
+            }
+          }
+        } else if (properties.length > 0) {
+          // Successfully loaded properties, clear interval
+          if (errorCheckIntervalId) {
+            clearInterval(errorCheckIntervalId);
+          }
+        }
+      }, 500);
+      
+      // Save reference in window for potential cleanup between tab changes
+      window.errorCheckInterval = errorCheckIntervalId;
+      
+      // Ensure interval is cleared after 10 seconds maximum
+      setTimeout(() => {
+        if (errorCheckIntervalId) {
+          clearInterval(errorCheckIntervalId);
+        }
+      }, 10000);
+    };
+    
+    // Begin error monitoring after a short delay to allow for the first fetch
+    setTimeout(setupErrorMonitoring, 300);
+    
+    // Update URL with a delay to prevent excessive navigation
+    setTimeout(() => {
+      router.push(
+        {
+          pathname: '/',
+          query: {
+            tab: tabName,
+            ...(updatedUserFilters.bedrooms ? { bedrooms: updatedUserFilters.bedrooms } : {}),
+            ...(updatedUserFilters.maxPrice ? { maxPrice: updatedUserFilters.maxPrice } : {})
+          }
+        },
+        undefined,
+        { 
+          shallow: true,
+          scroll: false
+        }
+      );
+    }, 50);
+    
+    // Reset loading state after a reasonable delay
+    setTimeout(() => {
+      if (propertiesSection) {
+        propertiesSection.classList.remove('opacity-50', 'pointer-events-none');
+      }
+      
+      // Clean up any pending timeouts if component unmounts
+      return () => {
+        if (errorCheckIntervalId) {
+          clearInterval(errorCheckIntervalId);
+        }
+      };
+    }, 800);
   };
 
   // Handle window resize for mobile detection
@@ -488,8 +675,12 @@ export default function Home() {
       setLocalFilteredProperties(properties);
       // Also sync with property store
       setProperties(properties);
+    } else if (initialProperties.length > 0 && properties.length === 0) {
+      // Fall back to initial properties if no properties loaded yet
+      setLocalFilteredProperties(initialProperties);
+      setProperties(initialProperties);
     }
-  }, [properties, setProperties]);
+  }, [properties, setProperties, initialProperties]);
 
   useEffect(() => {
     // Prefetch all main navigation routes
@@ -517,7 +708,7 @@ export default function Home() {
     }
   };
 
-  // Update handleFilterChange to modify userFilters state
+  // Update handleFilterChange to modify userFilters state and immediately apply the changes
   const handleFilterChange = (newFilters: any) => {
     console.log('Filter changed:', newFilters);
     
@@ -526,43 +717,74 @@ export default function Home() {
       userFilters.bedrooms !== newFilters.bedrooms ||
       userFilters.maxPrice !== newFilters.maxPrice
     ) {
-      // Store the filters in user filters state but don't trigger a reload yet
-      setUserFilters({
+      const updatedFilters = {
         bedrooms: newFilters.bedrooms,
         maxPrice: newFilters.maxPrice === 500 ? undefined : newFilters.maxPrice
-      });
+      };
       
-      console.log('Updated user filters:', {
-        bedrooms: newFilters.bedrooms,
-        maxPrice: newFilters.maxPrice === 500 ? undefined : newFilters.maxPrice
-      });
+      // Update user filters state
+      setUserFilters(updatedFilters);
+      
+      // Set the active tab to 'all-houses' when filter changes
+      setActiveTab('all-houses');
+      
+      // Apply the filters immediately
+      setFilters(updatedFilters);
+      
+      // Update URL to reflect filter changes
+      router.push(
+        {
+          pathname: '/',
+          query: {
+            tab: 'all-houses',
+            ...(updatedFilters.bedrooms ? { bedrooms: updatedFilters.bedrooms } : {}),
+            ...(updatedFilters.maxPrice ? { maxPrice: updatedFilters.maxPrice } : {})
+          }
+        },
+        undefined,
+        { shallow: true }
+      );
+      
+      console.log('Applied filters immediately:', updatedFilters);
     }
   };
   
   // New function to handle search button click
   const handleSearchClick = () => {
+    // Only set loading state for the properties section
+    const propertiesSection = document.querySelector('.property-grid-section');
+    if (propertiesSection) {
+      propertiesSection.classList.add('opacity-50', 'pointer-events-none');
+    }
+    
     // Set the active tab to 'all-houses' when performing a search
     setActiveTab('all-houses');
     
     // Apply the user filters
     setFilters(userFilters);
     
-    // Reset page before fetching with new filters
-    if (propertiesReset) {
-      propertiesReset();
-    }
+    // Update URL with a minimal delay to batch state updates
+    setTimeout(() => {
+      router.push(
+        {
+          pathname: '/',
+          query: {
+            tab: 'all-houses',
+            ...(userFilters.bedrooms ? { bedrooms: userFilters.bedrooms } : {}),
+            ...(userFilters.maxPrice ? { maxPrice: userFilters.maxPrice } : {})
+          }
+        },
+        undefined,
+        { shallow: true }
+      );
+    }, 50);
     
-    // If in map view, fetch all properties for the map with the new filters
-    if (showMap) {
-      console.log('Search performed while in map view - fetching all properties for map');
-      // Use setTimeout to ensure filters are updated first
-      setTimeout(() => {
-        fetchAllForMap();
-      }, 0);
-    }
-    
-    // Reset scroll position to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Reset loading state after a brief delay (only for the property section)
+    setTimeout(() => {
+      if (propertiesSection) {
+        propertiesSection.classList.remove('opacity-50', 'pointer-events-none');
+      }
+    }, 500);
     
     // Log the filters we're applying
     console.log('Applied search filters:', userFilters);
@@ -685,30 +907,22 @@ export default function Home() {
         if (targetView) {
           console.log('Switching to map view - fetching all properties');
           await fetchAllForMap();
-        }
-        
-        // Update the view state
-        setShowMap(targetView);
-        
-        if (!targetView) { // Switching to list view
-          // Keep existing properties state to maintain image loading
-          const propertiesToShow = properties.length > 0 
-            ? properties 
-            : [];
           
-          // Create a new array of properties with preserved image state from existing properties
-          // This avoids the type issues with direct state updates
-          const updatedProperties = propertiesToShow.map(property => {
-            return {
-              ...property,
-              _viewKey: Date.now()
-            };
-          });
+          // Update the view state only after data is loaded
+          setShowMap(true);
+        } else {
+          // Switching to list view
+          // First update the view state to show list
+          setShowMap(false);
           
-          // Update properties state if needed
-          if (propertiesToShow.length === 0) {
-            propertiesReset();
-          }
+          // Force a reset and refetch of properties for list view
+          console.log('Switching to list view - resetting and refetching properties');
+          
+          // Small delay to ensure UI updates first
+          setTimeout(() => {
+            // Force reset properties to trigger a fresh load - always force refetch when coming from map view
+            propertiesReset(true);
+          }, 50);
         }
         
         // Ensure smooth scroll position
@@ -831,8 +1045,11 @@ export default function Home() {
     // Reset properties
     propertiesReset();
     
-    // Increment search bar key to force re-render with cleared state
+    // Force a SearchFilterBar re-render with incremented key
     setSearchBarKey(prev => prev + 1);
+    
+    // Reset the URL completely to root path
+    router.push('/', undefined, { shallow: true });
     
     // Reset scroll position
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -845,6 +1062,92 @@ export default function Home() {
       fetchAllForMap();
     }
   }, [filters, showMap, fetchAllForMap]);
+
+  // Initialize active tab from server props
+  useEffect(() => {
+    if (initialActiveTab) {
+      setActiveTab(initialActiveTab);
+    }
+  }, [initialActiveTab, setActiveTab]);
+
+  // Sync state with URL query parameters when navigating - with debouncing
+  useEffect(() => {
+    // Skip if these are the initial props or router is not ready
+    if (!router.isReady) {
+      return;
+    }
+    
+    // Use a small timeout to batch related changes
+    const syncTimeout = setTimeout(() => {
+      const { query } = router;
+      
+      // Update active tab from URL if it exists
+      if (query.tab && typeof query.tab === 'string' && query.tab !== activeTab) {
+        setActiveTab(query.tab);
+      }
+      
+      // Update user filters from URL if they exist
+      const newUserFilters: {
+        bedrooms?: number;
+        maxPrice?: number;
+      } = {};
+      
+      if (query.bedrooms && !isNaN(Number(query.bedrooms))) {
+        newUserFilters.bedrooms = Number(query.bedrooms);
+      }
+      
+      if (query.maxPrice && !isNaN(Number(query.maxPrice))) {
+        newUserFilters.maxPrice = Number(query.maxPrice);
+      }
+      
+      // Only update if values have changed
+      const hasFilterChanges = (
+        newUserFilters.bedrooms !== prevUserFiltersRef.current.bedrooms ||
+        newUserFilters.maxPrice !== prevUserFiltersRef.current.maxPrice
+      );
+      
+      if (hasFilterChanges) {
+        setUserFilters(newUserFilters);
+        prevUserFiltersRef.current = newUserFilters;
+      }
+    }, 500); // Add a delay to batch updates
+    
+    // Cleanup timeout
+    return () => clearTimeout(syncTimeout);
+  }, [router.query, router.isReady, activeTab, setUserFilters]);
+
+  // Add a useEffect hook to detect and handle retry parameter in URL
+  useEffect(() => {
+    if (router.query.retry === 'true') {
+      console.log('Detected retry=true in URL, performing clean reset');
+      
+      // Show loading state during retry
+      setLoadingMore(true);
+      
+      // Force a clean reset which will also clear the error
+      propertiesReset();
+      
+      // Update URL with retry parameter to trigger a clean reload
+      router.push(
+        {
+          pathname: '/',
+          query: {
+            tab: activeTab,
+            retry: 'true',
+            ...(userFilters.bedrooms ? { bedrooms: userFilters.bedrooms } : {}),
+            ...(userFilters.maxPrice ? { maxPrice: userFilters.maxPrice } : {})
+          }
+        },
+        undefined,
+        { shallow: true }
+      );
+      
+      // Reset loading state after a delay
+      setTimeout(() => {
+        setLoadingMore(false);
+      }, 2000);
+    }
+  }, [router.query, propertiesReset, router, activeTab, userFilters]);
 
   if (isLoading) {
     return (
@@ -913,25 +1216,13 @@ export default function Home() {
               </p>
               
               {/* SearchFilterBar - Hidden on mobile */}
-              <div className="mt-8 mb-4 hidden sm:block">
+              <div className="max-w-3xl mx-auto mt-12 mb-6">
                 <SearchFilterBar 
-                  key={`search-bar-hero-${searchBarKey}`}
+                  key={searchBarKey}
                   initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
                   initialBedrooms={userFilters.bedrooms}
                   onFilterChange={handleFilterChange}
                   onSearch={handleSearchClick}
-                />
-              </div>
-              
-              {/* Mobile Search Bar - Only visible on mobile */}
-              <div className="mt-8 mb-4 sm:hidden">
-                <SearchFilterBar 
-                  key={`search-bar-mobile-${searchBarKey}`}
-                  initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
-                  initialBedrooms={userFilters.bedrooms}
-                  onFilterChange={handleFilterChange}
-                  onSearch={handleSearchClick}
-                  isCompact={true}
                 />
               </div>
             </div>
@@ -944,7 +1235,7 @@ export default function Home() {
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <SearchFilterBar 
-              key={`search-bar-sticky-${searchBarKey}`}
+              key={searchBarKey}
               initialPrice={typeof userFilters.maxPrice === 'number' ? userFilters.maxPrice : undefined}
               initialBedrooms={userFilters.bedrooms}
               onFilterChange={handleFilterChange}
@@ -979,7 +1270,7 @@ export default function Home() {
                 className="w-full h-full relative"
               >
                 <PropertyMap 
-                  key={`map-view-${showMap}-${Date.now()}`}
+                  key={`map-view-${showMap}`}
                   properties={allMapProperties}
                   onViewChange={handleViewToggle}
                   onPropertySelect={(property) => {
@@ -999,17 +1290,52 @@ export default function Home() {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 md:pb-8 bg-transparent`}
             >
-              <div className="max-w-7xl mx-auto">
+              <div className="max-w-7xl mx-auto property-grid-section">
                 {error ? (
-                  <div className="text-center text-red-500 py-12">
-                    <p className="text-lg font-medium">
-                      {error || 'An error occurred fetching properties'}
+                  <div className="text-center py-12">
+                    <p className="text-xl font-medium text-red-500 mb-2">
+                      {error.includes('Failed to fetch') ? 'Failed to fetch' : error}
                     </p>
+                    <p className="text-gray-500 mb-6">We couldn't load the properties right now</p>
                     <button
-                      onClick={() => propertiesReset()}
-                      className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                      onClick={() => {
+                        // Show loading state during retry
+                        setLoadingMore(true);
+                        
+                        // Force a clean reset which will also clear the error
+                        propertiesReset();
+                        
+                        // Update URL with retry parameter to trigger a clean reload
+                        router.push(
+                          {
+                            pathname: '/',
+                            query: {
+                              tab: activeTab,
+                              retry: 'true',
+                              ...(userFilters.bedrooms ? { bedrooms: userFilters.bedrooms } : {}),
+                              ...(userFilters.maxPrice ? { maxPrice: userFilters.maxPrice } : {})
+                            }
+                          },
+                          undefined,
+                          { shallow: true }
+                        );
+                        
+                        // Reset loading state after a delay
+                        setTimeout(() => {
+                          setLoadingMore(false);
+                        }, 2000);
+                      }}
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md flex items-center"
+                      disabled={loadingMore}
                     >
-                      Try Again
+                      {loadingMore ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          <span>Trying...</span>
+                        </>
+                      ) : (
+                        "Try Again"
+                      )}
                     </button>
                   </div>
                 ) : (
@@ -1100,6 +1426,20 @@ export default function Home() {
                                 if (activeTab === 'all-houses') {
                                   setFilters(updatedFilters);
                                   propertiesReset();
+                                  
+                                  // Update URL to reflect new filters
+                                  router.push(
+                                    {
+                                      pathname: '/',
+                                      query: {
+                                        tab: 'all-houses',
+                                        ...(updatedFilters.bedrooms ? { bedrooms: updatedFilters.bedrooms } : {}),
+                                        maxPrice: newMaxPrice
+                                      }
+                                    },
+                                    undefined,
+                                    { shallow: true }
+                                  );
                                 }
                               }}
                               className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left flex items-center gap-4"
@@ -1126,6 +1466,19 @@ export default function Home() {
                                 if (activeTab === 'all-houses') {
                                   setFilters(updatedFilters);
                                   propertiesReset();
+                                  
+                                  // Update URL to reflect new filters
+                                  router.push(
+                                    {
+                                      pathname: '/',
+                                      query: {
+                                        tab: 'all-houses',
+                                        ...(updatedFilters.maxPrice ? { maxPrice: updatedFilters.maxPrice } : {})
+                                      }
+                                    },
+                                    undefined,
+                                    { shallow: true }
+                                  );
                                 }
                               }}
                               className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left flex items-center gap-4"
@@ -1168,32 +1521,6 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* View Toggle (Desktop Only) */}
-        <div className="hidden md:flex items-center space-x-3 ml-3">
-          <button
-            onClick={() => setShowMap(false)}
-            className={`flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md ${
-              !showMap
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <ListBulletIcon className="h-4 w-4 mr-1.5" />
-            LIST
-          </button>
-          <button
-            onClick={() => setShowMap(true)}
-            className={`flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md ${
-              showMap
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <MapIcon className="h-4 w-4 mr-1.5" />
-            MAP
-          </button>
-        </div>
-
         {/* Floating Map Toggle Button - Always show regardless of modal state */}
         <div
           className="fixed z-[90] left-1/2 transform -translate-x-1/2 bottom-20 md:bottom-8"
@@ -1203,7 +1530,7 @@ export default function Home() {
             className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-lg rounded-full shadow-lg border border-gray-200/50 hover:bg-white/95 transition-all"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            aria-label={showMap ? "Switch to list view" : "Switch to map view"}
+            aria-label={showMap ? t('mapView.switchToList', "Switch to list view") : t('mapView.switchToMap', "Switch to map view")}
           >
             <motion.span 
               initial={false}
@@ -1225,7 +1552,7 @@ export default function Home() {
               }}
               transition={{ duration: 0.2 }}
             >
-              {showMap ? "LIST" : "MAP"}
+              {showMap ? t('mapView.list', 'LIST') : t('mapView.map', 'MAP')}
             </motion.span>
           </motion.button>
         </div>
@@ -1270,17 +1597,61 @@ export default function Home() {
 
 export const getServerSideProps: GetServerSideProps = async ({
   locale,
+  query,
 }: {
   locale?: string;
+  query: any;
 }) => {
   try {
     // Get campus properties from JSON file with keyFeatures
     const campusProperties = getCampusPropertiesWithKeyFeatures();
     
+    // Determine which tab is active from query or default to 'all-houses'
+    const activeTab = query.tab || 'all-houses';
+    
+    // Get the filter parameters for this tab
+    const tabFilters = getTabApiParams(activeTab as string);
+    
+    // Extract any user filters from query params
+    const userFilters: Record<string, any> = {};
+    if (query.bedrooms && !isNaN(Number(query.bedrooms))) {
+      userFilters.bedrooms = Number(query.bedrooms);
+    }
+    if (query.maxPrice && !isNaN(Number(query.maxPrice))) {
+      userFilters.maxPrice = Number(query.maxPrice);
+    }
+    
+    // Combine tab filters and user filters
+    const apiParams = {
+      ...tabFilters,
+      ...userFilters
+    };
+    
+    // Convert to URL search params for API call
+    const searchParams = new URLSearchParams();
+    Object.entries(apiParams).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, String(value));
+      }
+    });
+    
+    // Fetch initial properties from API
+    const initialPropertiesResponse = await fetch(
+      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/properties?${searchParams.toString()}`
+    );
+    
+    let initialProperties = { properties: [], nextCursor: null, hasMore: false };
+    if (initialPropertiesResponse.ok) {
+      initialProperties = await initialPropertiesResponse.json();
+    }
+    
     return {
       props: {
         ...(await serverSideTranslations(locale || 'en', ['common'])),
         campusProperties,
+        initialProperties: initialProperties.properties || [],
+        initialActiveTab: activeTab,
+        initialFilters: apiParams
       },
     };
   } catch (error) {
@@ -1289,6 +1660,9 @@ export const getServerSideProps: GetServerSideProps = async ({
       props: {
         ...(await serverSideTranslations(locale || 'en', ['common'])),
         campusProperties: [],
+        initialProperties: [],
+        initialActiveTab: 'all-houses',
+        initialFilters: {}
       },
     };
   }

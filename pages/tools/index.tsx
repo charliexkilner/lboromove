@@ -66,16 +66,17 @@ export default function StudentToolsPage() {
     },
     {
       id: "rent-calculator",
-      title: t('tools.moveout_checklist.title'),
-      description: t('tools.moveout_checklist.description'),
-      longDescription: t('tools.moveout_checklist.long_description'),
+      title: t('tools.rent_calculator.title'),
+      description: t('tools.rent_calculator.description'),
+      longDescription: t('tools.rent_calculator.long_description'),
       category: "finance",
       features: [
-        t('tools.moveout_checklist.features.track'),
-        t('tools.moveout_checklist.features.print'),
-        t('tools.moveout_checklist.features.filter')
+        t('tools.rent_calculator.features.bills'),
+        t('tools.rent_calculator.features.deposit'),
+        t('tools.rent_calculator.features.monthly'),
+        t('tools.rent_calculator.features.annual')
       ],
-      buttonText: t('tools.moveout_checklist.button'),
+      buttonText: t('tools.rent_calculator.button'),
       color: "bg-red-100",
     },
     {

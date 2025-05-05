@@ -91,11 +91,17 @@
     "houses": "HOUSES",
     "discussion": "DISCUSSION",
     "tools": "TOOLS",
-    "profile": "PROFILE"
+    "profile": "PROFILE",
+    "viewProfile": "View Profile",
+    "settings": "Settings",
+    "changelog": "Changelog",
+    "signOut": "Sign Out"
   },
   "mapView": {
     "map": "MAP",
-    "list": "LIST"
+    "list": "LIST",
+    "switchToMap": "Switch to map view",
+    "switchToList": "Switch to list view"
   },
   "searchBar": {
     "price": "PRICE",
@@ -111,6 +117,17 @@
     "resetAll": "Reset all",
     "viewProperties": "View properties"
   },
+  "profile": {
+    "editProfile": "Edit Profile",
+    "favoriteHouses": "Favourite Houses",
+    "myDiscussions": "My Discussions",
+    "houses": "houses",
+    "discussions": "discussions",
+    "noFavorites": "No favourite properties yet.",
+    "browseProperties": "Browse Properties",
+    "noDiscussions": "You haven't participated in any discussions yet.",
+    "joinDiscussion": "Join the discussion"
+  },
   "tools": {
     "page_title": "Student Tools",
     "heading": "STUDENT TOOLS",
@@ -120,15 +137,7 @@
     "finance": "Finance", 
     "utilities": "Utilities",
     "moveout_checklist": {
-      "title": "Move-Out Checklist",
-      "description": "Complete checklist for a stress-free end of tenancy",
-      "long_description": "Use our comprehensive move-out checklist to ensure you don't miss any important tasks when leaving your student accommodation. Increase your chances of getting your full deposit back.",
-      "features": {
-        "track": "Track your progress",
-        "print": "Printable checklist",
-        "filter": "Filter by category"
-      },
-      "button": "View Checklist"
+      "title": "Move-Out Checklist"
     },
     "room_allocator": {
       "title": "Room Allocator",
@@ -171,9 +180,10 @@
       "description": "Complete checklist for a stress-free end of tenancy",
       "long_description": "Use our comprehensive move-out checklist to ensure you don't miss any important tasks when leaving your student accommodation. Increase your chances of getting your full deposit back.",
       "features": {
-        "track": "Track your progress",
-        "print": "Printable checklist",
-        "filter": "Filter by category"
+        "bills": "Track your progress",
+        "deposit": "Printable checklist",
+        "monthly": "Filter by category",
+        "annual": "Get full deposit back"
       },
       "button": "View Checklist"
     },
