@@ -1037,7 +1037,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   };
 
   // Define handler functions for property interactions
-  function handlePropertyClick(e: any) {
+  const handlePropertyClick = (e: any) => {
     if (e.features.length > 0) {
       // Get the property details from the clicked feature
       const propertyId = e.features[0].properties.id;
@@ -1082,9 +1082,9 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         console.log("Available properties:", validProperties.map(p => p.id));
       }
     }
-  }
+  };
 
-  function handlePropertyHover(e: any) {
+  const handlePropertyHover = (e: any) => {
     if (e.features.length > 0) {
       // Get the current hovered property ID
       const newHoveredId = e.features[0].properties.id;
@@ -1110,9 +1110,9 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
         map.current.setFilter('property-tooltip', ['==', ['get', 'id'], hoveredPropertyIdRef.current]);
       }
     }
-  }
+  };
 
-  function handlePropertyLeave() {
+  const handlePropertyLeave = () => {
     if (hoveredPropertyIdRef.current !== null) {
       // Remove hover state
       map.current.setFeatureState(
@@ -1126,7 +1126,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
       // Reset hover ID
       hoveredPropertyIdRef.current = null;
     }
-  }
+  };
 
   // Add a handler to close the modal
   const handleCloseModal = () => {
