@@ -68,6 +68,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check-config": "node scripts/check-config.js",
     "fix-next-dev": "node scripts/fix-next-dev.js",
     "dev:safe": "node scripts/dev-setup.js && next dev",
     "dev:clean": "rm -rf .next node_modules/.cache && next dev",
