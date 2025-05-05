@@ -1,4 +1,4 @@
-import { Discuession } from '../types/discussion';
+import { Discussion } from '../types/discussion';
 import { ArrowUpIcon } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -7,7 +7,7 @@ import FullScreenGallery from './FullScreenGallery';
 import Image from 'next/image';
 
 interface DiscussionCardProps {
-  discussion: Discuession;
+  discussion: Discussion;
   initialHasUpvoted?: boolean;
 }
 

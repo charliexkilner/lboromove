@@ -3,11 +3,37 @@ import GoogleProvider from 'next-auth/providers/google';
 import AppleProvider from 'next-auth/providers/apple';
 import EmailProvider from 'next-auth/providers/email';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole, StudyYear } from '@prisma/client';
 import type { NextAuthOptions } from 'next-auth';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+declare module 'next-auth' {
+  interface User {
+    id: string;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+    studyYear?: StudyYear | null;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  }
+
+  interface Session {
+    user: {
+      id: string;
+      role: UserRole;
+      firstName: string;
+      lastName: string;
+      studyYear?: StudyYear | null;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    }
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -66,6 +92,8 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
           role: user.role,
         };
       },

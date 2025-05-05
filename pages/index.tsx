@@ -9,7 +9,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import PropertyCard from '../components/PropertyCard';
 import { Property } from '@prisma/client';
 import DiscussionCard from '../components/DiscussionCard';
-import { Discuession } from '../types/discussion';
+import { Discussion } from '../types/discussion';
 import React from 'react';
 import FilterPopover from '../components/FilterPopover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -246,7 +246,7 @@ export default function Home({
     fetchAllForMap,
     allMapProperties
   } = useProperties(filters, initialProperties);
-  const [discussions, setDiscussions] = useState<Discuession[]>([]);
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);

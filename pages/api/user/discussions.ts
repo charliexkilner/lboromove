@@ -77,7 +77,7 @@ export default async function handler(
       id: discussion.id,
       title: discussion.title,
       content: discussion.content,
-      photoUrl: discussion.photoUrl,
+      imageUrl: discussion.imageUrl,
       replyCount: discussion._count.comments,
       upvotes: discussion._count.votes,
       lastReplied: discussion.updatedAt,

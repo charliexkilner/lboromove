@@ -1,4 +1,4 @@
-export interface Discuession {
+export interface Discussion {
   id: string;
   title: string;
   content: string;

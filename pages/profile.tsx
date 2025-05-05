@@ -11,7 +11,7 @@ import PropertyCard from "../components/PropertyCard";
 import DiscussionCard from "../components/DiscussionCard";
 import { Property as PrismaProperty, Prisma, UserRole } from "@prisma/client";
 import { useRouter } from "next/router";
-import { Discuession } from "../types/discussion";
+import { Discussion } from "../types/discussion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Session } from "next-auth";
 import { ArrowUpIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
@@ -29,23 +29,10 @@ type PropertyWithOptionalFields = Prisma.PropertyGetPayload<{}> & {
   _imageKey?: number;
 };
 
-// Extend Session type to include our custom user fields
-interface ExtendedSession extends Session {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    id: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    role: UserRole;
-  }
-}
-
 export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: session, status } = useSession() as { data: ExtendedSession | null, status: "loading" | "authenticated" | "unauthenticated" };
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState("favorites");
   const { t, ready } = useTranslation('common');
 
@@ -72,7 +59,7 @@ export default function ProfilePage() {
     gcTime: 1000 * 60 * 30,
   });
 
-  const { data: userDiscussions = [], isLoading: isDiscussionsLoading } = useQuery<Discuession[]>({
+  const { data: userDiscussions = [], isLoading: isDiscussionsLoading } = useQuery<Discussion[]>({
     queryKey: ['userDiscussions'],
     queryFn: async () => {
       const response = await fetch('/api/user/discussions');
@@ -294,15 +281,19 @@ export default function ProfilePage() {
                           {post.category || 'general'}
                         </div>
 
-                        <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mt-6">
-                          <span className="truncate">
-                            Posted by {post.author.firstName} • {formatTimeAgo(post.lastReplied)}
-                          </span>
-
-                          <div className="flex items-center gap-1 ml-2 text-black">
-                            <ChatBubbleLeftIcon className="h-4 w-4 text-black" />
-                            <span>{post.replyCount}</span>
+                        <div className="flex items-center text-gray-500 text-sm mt-2">
+                          <div className="flex items-center mr-4">
+                            <ChatBubbleLeftIcon className="w-4 h-4 mr-1" />
+                            <span>{post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}</span>
                           </div>
+                          <div className="flex items-center">
+                            <ArrowUpIcon className="w-4 h-4 mr-1" />
+                            <span>{post.upvotes}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-gray-400 mt-2">
+                          Posted by {post.author.firstName} • {formatTimeAgo(post.lastReplied instanceof Date ? post.lastReplied.toISOString() : post.lastReplied)}
                         </div>
                       </div>
                     </div>
