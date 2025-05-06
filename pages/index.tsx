@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { useFavorites } from '@/hooks/useFavorites';
 import Head from 'next/head';
 import { useProperties } from '../hooks/useProperties';
+import { getTranslationsProps } from '../lib/i18n-helper';
 
 // Add a type declaration at the top of the file, after imports
 // Add TypeScript global Window interface extension
@@ -1603,66 +1604,73 @@ export const getServerSideProps: GetServerSideProps = async ({
   query: any;
 }) => {
   try {
-    // Get campus properties from JSON file with keyFeatures
-    const campusProperties = getCampusPropertiesWithKeyFeatures();
+    // Get view mode (list or map)
+    const viewMode = query.view || 'list';
+    const activeTab = (query.tab as string) || 'all-houses';
     
-    // Determine which tab is active from query or default to 'all-houses'
-    const activeTab = query.tab || 'all-houses';
+    // Parse and prepare filters from query
+    const filters: Record<string, any> = {};
+    const parametersToCheck = [
+      'price',
+      'minPrice',
+      'maxPrice',
+      'bedrooms', 
+      'bathrooms', 
+      'minBedrooms', 
+      'maxBedrooms',
+      'isGoldenTriangle',
+      'nearCampus'
+    ];
     
-    // Get the filter parameters for this tab
-    const tabFilters = getTabApiParams(activeTab as string);
-    
-    // Extract any user filters from query params
-    const userFilters: Record<string, any> = {};
-    if (query.bedrooms && !isNaN(Number(query.bedrooms))) {
-      userFilters.bedrooms = Number(query.bedrooms);
-    }
-    if (query.maxPrice && !isNaN(Number(query.maxPrice))) {
-      userFilters.maxPrice = Number(query.maxPrice);
-    }
-    
-    // Combine tab filters and user filters
-    const apiParams = {
-      ...tabFilters,
-      ...userFilters
-    };
-    
-    // Convert to URL search params for API call
-    const searchParams = new URLSearchParams();
-    Object.entries(apiParams).forEach(([key, value]) => {
-      if (value !== undefined) {
-        searchParams.append(key, String(value));
+    parametersToCheck.forEach(param => {
+      if (query[param] !== undefined) {
+        // Convert numeric params
+        if (['price', 'minPrice', 'maxPrice', 'bedrooms', 'bathrooms', 'minBedrooms', 'maxBedrooms'].includes(param)) {
+          filters[param] = Number(query[param]);
+        } 
+        // Convert boolean params
+        else if (['isGoldenTriangle', 'nearCampus'].includes(param)) {
+          filters[param] = query[param] === 'true';
+        }
+        // Keep other params as is
+        else {
+          filters[param] = query[param];
+        }
       }
     });
     
-    // Fetch initial properties from API
-    const initialPropertiesResponse = await fetch(
-      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/properties?${searchParams.toString()}`
-    );
-    
-    let initialProperties = { properties: [], nextCursor: null, hasMore: false };
-    if (initialPropertiesResponse.ok) {
-      initialProperties = await initialPropertiesResponse.json();
+    // Get more accurate filters from tab if no filters are specified
+    if (Object.keys(filters).length === 0 && activeTab !== 'all-houses') {
+      Object.assign(filters, TAB_FILTERS[activeTab as keyof typeof TAB_FILTERS] || {});
     }
     
+    // Get campus properties
+    const campusProperties = await getCampusPropertiesAsProperties();
+    
+    // Use the i18n helper to ensure translations are properly loaded
+    const translationsProps = await getTranslationsProps(locale);
+    
+    // Return the props
     return {
       props: {
-        ...(await serverSideTranslations(locale || 'en', ['common'])),
-        campusProperties,
-        initialProperties: initialProperties.properties || [],
+        ...translationsProps,
+        campusProperties: JSON.parse(JSON.stringify(campusProperties)),
+        initialProperties: [], // Server-side data loading disabled, load client-side
         initialActiveTab: activeTab,
-        initialFilters: apiParams
+        initialFilters: filters,
       },
     };
   } catch (error) {
     console.error('Error in getServerSideProps:', error);
+    
+    // Still return translations even if there's an error
     return {
       props: {
         ...(await serverSideTranslations(locale || 'en', ['common'])),
         campusProperties: [],
         initialProperties: [],
         initialActiveTab: 'all-houses',
-        initialFilters: {}
+        initialFilters: {},
       },
     };
   }

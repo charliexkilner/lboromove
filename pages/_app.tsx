@@ -12,6 +12,8 @@ import dynamic from 'next/dynamic';
 const DebugInfo = dynamic(() => import('../components/DebugInfo'), { ssr: false });
 // Import TranslationLoader dynamically to avoid SSR issues
 const TranslationLoader = dynamic(() => import('../components/TranslationLoader'), { ssr: false });
+// Import FallbackTranslationLoader as a backup solution
+const FallbackTranslationLoader = dynamic(() => import('../components/FallbackTranslationLoader'), { ssr: false });
 
 function App({ Component, pageProps }: AppProps) {
   const [showDebug, setShowDebug] = useState(false);
@@ -50,7 +52,10 @@ function App({ Component, pageProps }: AppProps) {
     <SessionProvider session={pageProps.session}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          {/* Primary translation loader */}
           <TranslationLoader />
+          {/* Fallback translation loader in case the primary one fails */}
+          <FallbackTranslationLoader />
           <Component {...pageProps} />
           <Toaster />
           {showDebug && <DebugInfo />}
