@@ -33,14 +33,21 @@ export function useProperties(
 ): UsePropertiesResult {
   const [properties, setProperties] = useState<Property[]>(initialProperties);
   const [mapProperties, setMapProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(initialProperties.length === 0);
+  const [loading, setLoading] = useState<boolean>(initialProperties.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<number | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [isInitialized, setIsInitialized] = useState(initialProperties.length > 0);
+  
+  // Ref to track if the component is mounted
+  const isMountedRef = useRef<boolean>(false);
+  // Ref to track previous filters to detect actual changes
   const prevFiltersRef = useRef<string>(JSON.stringify(filters));
+  // Ref to track if the initial fetch has been triggered
+  const initialFetchTriggeredRef = useRef<boolean>(initialProperties.length > 0);
+
   const fetchInProgressRef = useRef<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastMapFetchFiltersRef = useRef<string>("");
@@ -171,24 +178,42 @@ export function useProperties(
     fetchProperties(isInitialLoad);
   }, 300);
 
-  // Force fetch when filters change
+  // Effect for fetching properties when filters change or on initial mount if needed
   useEffect(() => {
-    // Compare current filters with previous filters
+    isMountedRef.current = true;
     const currentFiltersString = JSON.stringify(filters);
-    
-    // Only fetch if filters have changed
-    if (currentFiltersString !== prevFiltersRef.current) {
-      console.log('Filters changed, fetching properties with new filters');
+
+    // Determine if an initial fetch is needed and hasn't been triggered
+    const needsInitialFetch = !initialFetchTriggeredRef.current && initialProperties.length === 0;
+    // Determine if filters have actually changed since the last fetch
+    const filtersHaveChanged = currentFiltersString !== prevFiltersRef.current;
+
+    if (needsInitialFetch || filtersHaveChanged) {
+      if (filtersHaveChanged) {
+        console.log('Filters changed, fetching properties with new filters:', filters);
+      } else if (needsInitialFetch) {
+        console.log('Initial fetch needed, no initial properties provided.');
+      }
+      
       prevFiltersRef.current = currentFiltersString;
+      if (needsInitialFetch) {
+        initialFetchTriggeredRef.current = true;
+      }
       
-      // Reset pagination state when filters change
-      setCursor(null);
-      setHasMore(true);
-      
-      // Always fetch when filters change, regardless of initialization state
-      debouncedFetchProperties(true);
+      // Reset pagination state and trigger fetch
+      if (isMountedRef.current) { // Check mount status before setting state
+        setCursor(null);
+        setHasMore(true);
+      }
+      debouncedFetchProperties(true); // true for isInitialLoad
     }
-  }, [filters, debouncedFetchProperties]);
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  // Ensure debouncedFetchProperties is stable or correctly handled if it changes.
+  // Filters is the primary trigger.
+  }, [filters, debouncedFetchProperties, initialProperties.length]);
 
   // New function to fetch all properties for map view
   const fetchAllForMap = useCallback(async (retryCount = 0) => {
@@ -299,20 +324,29 @@ export function useProperties(
   }, [loading, isLoadingMore, hasMore, fetchProperties, cursor]);
 
   const reset = useCallback((forceRefetch = false) => {
-    console.log('Resetting properties, clearing cursor');
+    console.log('Resetting properties, forceRefetch:', forceRefetch);
     
-    // Skip reset if we already have properties and forceRefetch is false
-    if (!forceRefetch && properties.length > 0) {
-      console.log('Properties already loaded, skipping refetch');
-      return;
-    }
-    
+    if (!isMountedRef.current) return;
+
+    // Always clear properties and reset pagination on explicit reset
     setProperties([]);
     setCursor(null);
     setHasMore(true);
-    setError(null); // Explicitly clear any error state
-    fetchProperties(true);
-  }, [fetchProperties, properties.length]);
+    setError(null); 
+    initialFetchTriggeredRef.current = false; // Allow initial fetch logic to run again
+    prevFiltersRef.current = JSON.stringify(null); // Force filter change detection on next effect run
+
+    // if forceRefetch is true, or if there were no initial properties, trigger a new fetch.
+    if (forceRefetch || initialProperties.length === 0) {
+        console.log('Triggering fetch from reset function');
+        // Directly call fetchProperties to bypass debounce if immediate fetch is needed
+        fetchProperties(true); 
+    } else {
+        // If not forcing refetch and had initial properties, still update prevFiltersRef to current filters
+        // so that a subsequent actual filter change is detected correctly.
+        prevFiltersRef.current = JSON.stringify(filters);
+    }
+  }, [fetchProperties, initialProperties.length, filters]); // Added filters
   
   // Cleanup abort controller on unmount
   useEffect(() => {

@@ -210,7 +210,8 @@ export default function Home({
   initialActiveTab,
   initialFilters
 }: HomeProps) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
+  console.log('[Home Component] Render. Locale:', i18n.language, 't(hero.title):', t('hero.title'));
   const router = useRouter();
   const { locale, pathname } = router;
   // Split the filters into visible user filters (shown in search bar) and internal filters (used for querying)
@@ -288,110 +289,96 @@ export default function Home({
   // Add a ref to track previous filter values
   const prevUserFiltersRef = useRef<{ bedrooms?: number; maxPrice?: number }>({});
   
-  // Create a dedicated function to fetch counts with debouncing
-  const fetchTabCounts = useCallback(async () => {
-    // Cancel any in-progress fetches
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-    
-    setLoadingCounts(true);
-    try {
-      // Only fetch counts for the visible tabs
-      const tabsToFetch = [
-        'all-houses',
-        'golden-triangle',
-        'silver-square',
-        'great-value',
-        'solo-living',
-        'large-houses',
-        'near-campus',
-        'on-campus',
-        'recently-added'
-      ];
-      
-      const newCounts: Record<string, number> = {};
-      
-      // Extract user filters for counts
-      const userFilterParams: Record<string, string> = {};
-      if (userFilters.bedrooms !== undefined) {
-        userFilterParams.bedrooms = String(userFilters.bedrooms);
-      }
-      if (userFilters.maxPrice !== undefined) {
-        userFilterParams.maxPrice = String(userFilters.maxPrice);
-      }
-      
-      // Use Promise.all to fetch all counts in parallel
-      await Promise.all(tabsToFetch.map(async (tabId) => {
-        try {
-          // Get the tab's specific filters
-          const tabFilters = getTabApiParams(tabId);
-          
-          // Convert tab filters to strings for URLSearchParams
-          const tabParamsAsStrings: Record<string, string> = {};
-          Object.entries(tabFilters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              tabParamsAsStrings[key] = String(value);
-            }
-          });
-          
-          // Handle special cases for tab filtering:
-          // For tabs that filter by bedrooms (solo-living, large-houses),
-          // we should not apply the user's bedroom filter
-          let filteredUserParams = {...userFilterParams};
-          if ('bedrooms' in tabParamsAsStrings || 'minBedrooms' in tabParamsAsStrings) {
-            delete filteredUserParams.bedrooms;
-          }
-          
-          // For great-value tab, we should not apply the user's maxPrice filter
-          if ('maxPrice' in tabParamsAsStrings) {
-            delete filteredUserParams.maxPrice;
-          }
-          
-          // Combine tab filters with the user's filters - tab filters have priority
-          const query = new URLSearchParams({
-            ...filteredUserParams,
-            ...tabParamsAsStrings, // Tab params should override user params
-            countOnly: 'true'
-          });
-          
-          const res = await fetch(`/api/properties?${query.toString()}`, { signal });
-          if (!res.ok) throw new Error(`Failed to fetch count for ${tabId}`);
-          const data = await res.json();
-          newCounts[tabId] = data.total || 0;
-        } catch (error) {
-          if (!(error instanceof DOMException && error.name === 'AbortError')) {
-            console.error(`Error fetching count for ${tabId}:`, error);
-          }
-        }
-      }));
-      
-      // Only update state if not aborted
-      if (!signal.aborted) {
-        setTabCounts(newCounts);
-      }
-    } catch (error) {
-      console.error('Error fetching counts:', error);
-    } finally {
-      if (!signal.aborted) {
-        setLoadingCounts(false);
-      }
-    }
-  }, [userFilters]); // Add userFilters as a dependency
-
-  // Fetch counts on mount and when filters change
+  // Fetch counts on mount and when user filters change
   useEffect(() => {
-    fetchTabCounts();
-    
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+    // Create an abort controller for this effect
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // Define the actual fetching logic inside the effect
+    const doFetchTabCounts = async () => {
+      setLoadingCounts(true);
+      try {
+        const tabsToFetch = [
+          'all-houses',
+          'golden-triangle',
+          'silver-square',
+          'great-value',
+          'solo-living',
+          'large-houses',
+          'near-campus',
+          'on-campus',
+          'recently-added'
+        ];
+        
+        const newCounts: Record<string, number> = {};
+        const userFilterParams: Record<string, string> = {};
+        if (userFilters.bedrooms !== undefined) {
+          userFilterParams.bedrooms = String(userFilters.bedrooms);
+        }
+        if (userFilters.maxPrice !== undefined) {
+          userFilterParams.maxPrice = String(userFilters.maxPrice);
+        }
+        
+        await Promise.all(tabsToFetch.map(async (tabId) => {
+          if (signal.aborted) return;
+          try {
+            const tabFilters = getTabApiParams(tabId);
+            const tabParamsAsStrings: Record<string, string> = {};
+            Object.entries(tabFilters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                tabParamsAsStrings[key] = String(value);
+              }
+            });
+            
+            let filteredUserParams = {...userFilterParams};
+            if ('bedrooms' in tabParamsAsStrings || 'minBedrooms' in tabParamsAsStrings) {
+              delete filteredUserParams.bedrooms;
+            }
+            if ('maxPrice' in tabParamsAsStrings) {
+              delete filteredUserParams.maxPrice;
+            }
+            
+            const query = new URLSearchParams({
+              ...filteredUserParams,
+              ...tabParamsAsStrings,
+              countOnly: 'true'
+            });
+            
+            const res = await fetch(`/api/properties?${query.toString()}`, { signal });
+            if (signal.aborted) return;
+            if (!res.ok) throw new Error(`Failed to fetch count for ${tabId}`);
+            const data = await res.json();
+            if (signal.aborted) return;
+            newCounts[tabId] = data.total || 0;
+          } catch (error) {
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+              console.error(`Error fetching count for ${tabId}:`, error);
+            }
+          }
+        }));
+        
+        if (!signal.aborted) {
+          setTabCounts(newCounts);
+        }
+      } catch (error) {
+        if (!signal.aborted) {
+           console.error('Error fetching counts:', error);
+        }
+      } finally {
+        if (!signal.aborted) {
+          setLoadingCounts(false);
+        }
       }
     };
-  }, [fetchTabCounts, userFilters]); // Add userFilters as a dependency
+
+    doFetchTabCounts();
+    
+    // Cleanup function to abort fetch if component unmounts or dependencies change
+    return () => {
+      controller.abort();
+    };
+  }, [userFilters]); // Only depends on userFilters
 
   const getTabCount = (tabId: string): number => {
     return tabCounts[tabId] || 0;
@@ -454,192 +441,59 @@ export default function Home({
     // Abort any in-progress fetches
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      abortControllerRef.current = new AbortController();
+      // Create a new one for subsequent fetches by useProperties
+      abortControllerRef.current = new AbortController(); 
     }
-    
-    // Only set loading state for the properties section
-    const propertiesSection = document.querySelector('.property-grid-section');
-    if (propertiesSection) {
-      propertiesSection.classList.add('opacity-50', 'pointer-events-none');
-    }
-    
+        
     // Update the active tab immediately for better UX
     setActiveTab(tabName);
     
     // Get the tab-specific filters
     const tabFilters = getTabApiParams(tabName);
     
-    // Special handling for tab-specific filters
+    // Determine user filters to apply, considering tab-specific overrides
     let updatedUserFilters = {...userFilters};
-    
-    // When switching FROM solo-living TO another tab, clear the bedrooms filter
-    if (activeTab === 'solo-living' && tabName !== 'solo-living') {
-      updatedUserFilters = {
-        ...updatedUserFilters,
-        bedrooms: undefined
-      };
-      setUserFilters(updatedUserFilters);
-      // Force the search bar to re-render with cleared state
-      setSearchBarKey(prev => prev + 1);
+
+    // If the new tab has specific bedroom requirements, don't use user's bedroom filter
+    if (tabFilters.bedrooms !== undefined || tabFilters.minBedrooms !== undefined) {
+      updatedUserFilters.bedrooms = undefined; 
+    }
+    // If the new tab has a specific maxPrice, don't use user's maxPrice filter
+    if (tabFilters.maxPrice !== undefined) {
+      updatedUserFilters.maxPrice = undefined;
     }
     
-    // When switching FROM great-value TO another tab, clear the maxPrice filter
-    if (activeTab === 'great-value' && tabName !== 'great-value') {
-      updatedUserFilters = {
-        ...updatedUserFilters,
-        maxPrice: undefined
-      };
-      setUserFilters(updatedUserFilters);
-      // Force the search bar to re-render with cleared state
-      setSearchBarKey(prev => prev + 1);
-    }
-    
-    // Combine tab filters with updated user filters
     const combinedFilters = {
-      // First apply tab filters (highest priority)
-      ...tabFilters,
-      // Then apply user filters for properties not covered by tab filters
-      ...(updatedUserFilters.maxPrice !== undefined && !tabFilters.maxPrice 
-        ? { maxPrice: updatedUserFilters.maxPrice } 
-        : {}),
-      ...(updatedUserFilters.bedrooms !== undefined && !tabFilters.bedrooms && !tabFilters.minBedrooms
-        ? { bedrooms: updatedUserFilters.bedrooms } 
-        : {})
+      ...tabFilters, // Tab filters take precedence
+      // Apply remaining user filters if not overridden by tab
+      ...(updatedUserFilters.bedrooms !== undefined ? { bedrooms: updatedUserFilters.bedrooms } : {}),
+      ...(updatedUserFilters.maxPrice !== undefined ? { maxPrice: updatedUserFilters.maxPrice } : {}),
     };
     
     console.log(`Tab change to ${tabName} - combined filters:`, combinedFilters);
     
-    // Stop any existing error check intervals
-    if (window.errorCheckInterval) {
-      clearInterval(window.errorCheckInterval);
-    }
+    // Reset properties and trigger a new fetch via useProperties hook
+    propertiesReset(); 
+    setFilters(combinedFilters); // This will trigger the useEffect in useProperties
     
-    // Create a reliable retry mechanism
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 1000; // 1 second between retries
-    
-    const attemptFetch = () => {
-      if (retryCount > 0) {
-        console.log(`Tab ${tabName} retry attempt ${retryCount}/${maxRetries}`);
-        
-        // Add retry indication in UI
-        if (propertiesSection) {
-          // Create a retry indicator if it doesn't exist
-          let retryIndicator = propertiesSection.querySelector('.retry-indicator');
-          if (!retryIndicator) {
-            retryIndicator = document.createElement('div');
-            retryIndicator.className = 'retry-indicator text-center text-red-500 py-4';
-            propertiesSection.appendChild(retryIndicator);
-          }
-          
-          retryIndicator.innerHTML = `<p>Retrying... (${retryCount}/${maxRetries})</p>`;
-        }
-      }
-      
-      // Force reset of pagination state by calling the reset function from useProperties
-      propertiesReset();
-      
-      // Update the internal filters state (not what's visible in the search bar)
-      setFilters(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(combinedFilters)) {
-          return prev;
-        }
-        return combinedFilters;
-      });
+    // Update URL
+    const queryForRouter = {
+      tab: tabName,
+      ...(updatedUserFilters.bedrooms ? { bedrooms: updatedUserFilters.bedrooms } : {}),
+      ...(updatedUserFilters.maxPrice ? { maxPrice: updatedUserFilters.maxPrice } : {}),
     };
-    
-    // Immediately attempt the first fetch
-    attemptFetch();
-    
-    // Setup error monitoring with interval and retry mechanism
-    let errorCheckIntervalId: NodeJS.Timeout | undefined;
-    
-    const setupErrorMonitoring = () => {
-      // Check for errors every 500ms
-      errorCheckIntervalId = setInterval(() => {
-        if (error) {
-          console.error(`Tab ${tabName} error detected:`, error);
-          
-          if (retryCount < maxRetries) {
-            retryCount++;
-            attemptFetch();
-          } else {
-            // Max retries reached, show permanent error
-            if (errorCheckIntervalId) {
-              clearInterval(errorCheckIntervalId);
-            }
-            
-            if (propertiesSection) {
-              propertiesSection.innerHTML = `
-                <div class="text-center py-12">
-                  <p class="text-xl font-medium text-red-500 mb-2">Failed to fetch</p>
-                  <p class="text-gray-500 mb-6">We couldn't load the properties right now</p>
-                  <button
-                    class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md"
-                    onclick="window.location.href='/?tab=${tabName}&retry=true'"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              `;
-              propertiesSection.classList.remove('opacity-50', 'pointer-events-none');
-            }
-          }
-        } else if (properties.length > 0) {
-          // Successfully loaded properties, clear interval
-          if (errorCheckIntervalId) {
-            clearInterval(errorCheckIntervalId);
-          }
-        }
-      }, 500);
-      
-      // Save reference in window for potential cleanup between tab changes
-      window.errorCheckInterval = errorCheckIntervalId;
-      
-      // Ensure interval is cleared after 10 seconds maximum
-      setTimeout(() => {
-        if (errorCheckIntervalId) {
-          clearInterval(errorCheckIntervalId);
-        }
-      }, 10000);
-    };
-    
-    // Begin error monitoring after a short delay to allow for the first fetch
-    setTimeout(setupErrorMonitoring, 300);
-    
-    // Update URL with a delay to prevent excessive navigation
-    setTimeout(() => {
-      router.push(
-        {
-          pathname: '/',
-          query: {
-            tab: tabName,
-            ...(updatedUserFilters.bedrooms ? { bedrooms: updatedUserFilters.bedrooms } : {}),
-            ...(updatedUserFilters.maxPrice ? { maxPrice: updatedUserFilters.maxPrice } : {})
-          }
-        },
-        undefined,
-        { 
-          shallow: true,
-          scroll: false
-        }
-      );
-    }, 50);
-    
-    // Reset loading state after a reasonable delay
-    setTimeout(() => {
-      if (propertiesSection) {
-        propertiesSection.classList.remove('opacity-50', 'pointer-events-none');
+
+    router.push(
+      {
+        pathname: '/',
+        query: queryForRouter,
+      },
+      undefined,
+      { 
+        shallow: true,
+        scroll: false // Prevent page from scrolling to top on tab change
       }
-      
-      // Clean up any pending timeouts if component unmounts
-      return () => {
-        if (errorCheckIntervalId) {
-          clearInterval(errorCheckIntervalId);
-        }
-      };
-    }, 800);
+    );
   };
 
   // Handle window resize for mobile detection
@@ -1066,89 +920,105 @@ export default function Home({
 
   // Initialize active tab from server props
   useEffect(() => {
-    if (initialActiveTab) {
+    // Only set from initialActiveTab on first mount if no tab is in URL
+    // This prevents overriding URL tab with initial prop on subsequent renders
+    if (initialActiveTab && !router.query.tab) {
       setActiveTab(initialActiveTab);
     }
-  }, [initialActiveTab, setActiveTab]);
+  }, [initialActiveTab]);
 
-  // Sync state with URL query parameters when navigating - with debouncing
+  // Sync state with URL query parameters
   useEffect(() => {
-    // Skip if these are the initial props or router is not ready
     if (!router.isReady) {
       return;
     }
+
+    const { query } = router;
+
+    // --- Derive NEW target state directly from router.query and props ---
+    const newUrlTab = query.tab as string | undefined;
+    const targetActiveTab = newUrlTab || initialActiveTab || 'all-houses';
+
+    const newUrlBedrooms = query.bedrooms ? Number(query.bedrooms) : undefined;
+    const newUrlMaxPrice = query.maxPrice ? Number(query.maxPrice) : undefined;
     
-    // Use a small timeout to batch related changes
-    const syncTimeout = setTimeout(() => {
-      const { query } = router;
-      
-      // Update active tab from URL if it exists
-      if (query.tab && typeof query.tab === 'string' && query.tab !== activeTab) {
-        setActiveTab(query.tab);
-      }
-      
-      // Update user filters from URL if they exist
-      const newUserFilters: {
-        bedrooms?: number;
-        maxPrice?: number;
-      } = {};
-      
-      if (query.bedrooms && !isNaN(Number(query.bedrooms))) {
-        newUserFilters.bedrooms = Number(query.bedrooms);
-      }
-      
-      if (query.maxPrice && !isNaN(Number(query.maxPrice))) {
-        newUserFilters.maxPrice = Number(query.maxPrice);
-      }
-      
-      // Only update if values have changed
-      const hasFilterChanges = (
-        newUserFilters.bedrooms !== prevUserFiltersRef.current.bedrooms ||
-        newUserFilters.maxPrice !== prevUserFiltersRef.current.maxPrice
-      );
-      
-      if (hasFilterChanges) {
-        setUserFilters(newUserFilters);
-        prevUserFiltersRef.current = newUserFilters;
-      }
-    }, 500); // Add a delay to batch updates
+    const targetUserFilters = {
+      bedrooms: newUrlBedrooms,
+      maxPrice: newUrlMaxPrice,
+    };
+
+    const tabSpecificFiltersForTarget = getTabApiParams(targetActiveTab);
+    const targetCombinedFilters = {
+      ...tabSpecificFiltersForTarget,
+      ...(targetUserFilters.bedrooms !== undefined && !tabSpecificFiltersForTarget.bedrooms && !tabSpecificFiltersForTarget.minBedrooms 
+          ? { bedrooms: targetUserFilters.bedrooms } 
+          : {}),
+      ...(targetUserFilters.maxPrice !== undefined && !tabSpecificFiltersForTarget.maxPrice 
+          ? { maxPrice: targetUserFilters.maxPrice } 
+          : {}),
+    };
+
+    // --- Compare and update state ---
+    let needsFilterReset = false;
+
+    if (targetActiveTab !== activeTab) {
+      console.log(`Syncing activeTab from URL/props: ${targetActiveTab}`);
+      setActiveTab(targetActiveTab);
+      needsFilterReset = true; // Tab change implies filters might need reset/recalc
+    }
+
+    // Compare userFilters by stringifying, as object comparison can be tricky
+    if (JSON.stringify(targetUserFilters) !== JSON.stringify(userFilters)) {
+      console.log('Syncing userFilters from URL/props:', targetUserFilters);
+      setUserFilters(targetUserFilters);
+      needsFilterReset = true; // User filters change implies filters might need reset/recalc
+    }
     
-    // Cleanup timeout
-    return () => clearTimeout(syncTimeout);
-  }, [router.query, router.isReady, activeTab, setUserFilters]);
+    // Only update combined filters if targetCombinedFilters is different or a reset was triggered
+    if (needsFilterReset || JSON.stringify(targetCombinedFilters) !== JSON.stringify(filters)) {
+      console.log("Re-calculating and setting internal filters due to URL/props sync:", targetCombinedFilters);
+      propertiesReset(); 
+      setFilters(targetCombinedFilters);
+    }
+
+  }, [
+    router.isReady, 
+    router.query, // Main source of truth for changes
+    initialActiveTab, // Prop that can change
+    // Current state values for comparison:
+    activeTab, 
+    userFilters, 
+    filters     
+  ]);
 
   // Add a useEffect hook to detect and handle retry parameter in URL
   useEffect(() => {
-    if (router.query.retry === 'true') {
-      console.log('Detected retry=true in URL, performing clean reset');
+    if (router.isReady && router.query.retry === 'true') {
+      console.log('Detected retry=true in URL, performing clean reset and removing retry param');
       
-      // Show loading state during retry
-      setLoadingMore(true);
+      // Show loading state during retry (optional, if you have such a state)
+      // setLoadingMore(true); // Or a general isLoading state
       
-      // Force a clean reset which will also clear the error
-      propertiesReset();
+      // Force a clean reset of properties
+      propertiesReset(true); // true to force refetch
       
-      // Update URL with retry parameter to trigger a clean reload
-      router.push(
+      // Remove the retry query parameter to prevent loops
+      const newQuery = { ...router.query };
+      delete newQuery.retry;
+      
+      router.replace(
         {
-          pathname: '/',
-          query: {
-            tab: activeTab,
-            retry: 'true',
-            ...(userFilters.bedrooms ? { bedrooms: userFilters.bedrooms } : {}),
-            ...(userFilters.maxPrice ? { maxPrice: userFilters.maxPrice } : {})
-          }
+          pathname: router.pathname,
+          query: newQuery,
         },
         undefined,
         { shallow: true }
       );
       
-      // Reset loading state after a delay
-      setTimeout(() => {
-        setLoadingMore(false);
-      }, 2000);
+      // Reset loading state after a delay if you set it
+      // setTimeout(() => setLoadingMore(false), 1000);
     }
-  }, [router.query, propertiesReset, router, activeTab, userFilters]);
+  }, [router.isReady, router.query, propertiesReset, router]);
 
   if (isLoading) {
     return (
@@ -1597,7 +1467,7 @@ export default function Home({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({
-  locale,
+  locale, // locale is still available if needed for other things, but not for _nextI18Next
   query,
 }: {
   locale?: string;
@@ -1647,17 +1517,20 @@ export const getServerSideProps: GetServerSideProps = async ({
     // Get campus properties
     const campusProperties = await getCampusPropertiesAsProperties();
     
-    // Use the i18n helper to ensure translations are properly loaded
-    const translationsProps = await getTranslationsProps(locale);
+    // Use the ACTUAL locale for serverSideTranslations
+    const i18nProps = await serverSideTranslations(locale || 'en', ['common']);
     
     // Return the props
     return {
       props: {
-        ...translationsProps,
+        ...i18nProps, // Spread the result of serverSideTranslations
         campusProperties: JSON.parse(JSON.stringify(campusProperties)),
         initialProperties: [], // Server-side data loading disabled, load client-side
         initialActiveTab: activeTab,
         initialFilters: filters,
+        // Explicitly pass the locale that was determined by next-i18next for client-side use if needed
+        // This is separate from _nextI18Next which will now always be 'en' from the server
+        currentLocale: locale || 'en', 
       },
     };
   } catch (error) {
@@ -1666,11 +1539,12 @@ export const getServerSideProps: GetServerSideProps = async ({
     // Still return translations even if there's an error
     return {
       props: {
-        ...(await serverSideTranslations(locale || 'en', ['common'])),
+        ...(await serverSideTranslations(locale || 'en', ['common'])), // Use actual locale here too
         campusProperties: [],
         initialProperties: [],
         initialActiveTab: 'all-houses',
         initialFilters: {},
+        currentLocale: locale || 'en', // Provide current locale
       },
     };
   }

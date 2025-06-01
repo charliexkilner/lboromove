@@ -62,21 +62,6 @@ class MyDocument extends Document<DocumentProps> {
         <body>
           <Main />
           <NextScript />
-          
-          {/* Script to validate translations loaded */}
-          <script 
-            dangerouslySetInnerHTML={{ 
-              __html: `
-                // Check if translations loaded correctly
-                if (window.location.pathname === '/' && !window.__NEXT_DATA__.props?.initialI18nStore) {
-                  console.warn('Translations not loaded in initial props, attempting reload');
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 3000);
-                }
-              `
-            }} 
-          />
         </body>
       </Html>
     );
