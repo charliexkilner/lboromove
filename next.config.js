@@ -68,8 +68,10 @@ const nextConfig = {
   // Increase build timeouts for larger apps
   experimental: {
     serverComponentsExternalPackages: ['prisma', '@prisma/client'],
-    optimizeCss: true
+    optimizeCss: true,
+    outputFileTracingRoot: require('path').join(__dirname, '../../'), // Recommended for monorepos, but can help ensure all files are traced.
   },
+  output: 'standalone',
   webpack: (config) => {
     // Add support for importing worker files
     config.module.rules.push({
