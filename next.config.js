@@ -69,7 +69,6 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['prisma', '@prisma/client'],
     optimizeCss: true,
-    outputFileTracingRoot: require('path').join(__dirname, '../../'), // Recommended for monorepos, but can help ensure all files are traced.
   },
   output: 'standalone',
   webpack: (config) => {
